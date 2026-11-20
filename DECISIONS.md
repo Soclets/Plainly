@@ -711,3 +711,31 @@ or `?? crash` finds every deliberate one. This is Cyborg's design, and Plainly v
 
 **Tankun's words.** "Use Cyborg's? With `?`, `??`, and `otherwise:`?", "That's longer for a common one, though", then,
 asked "Handling required, with `?`, `??` (a value, `ignore` or `crash`) and `otherwise:`?", the owner chose: "yea".
+
+## D24. Labels: names for arguments, chosen by the procedure and written at every call
+
+2026-11-20.
+
+**Chosen.** A procedure can give its arguments labels, and every call writes them:
+
+```
+let $secret: Whole = random(from: 1, to: 100);
+```
+
+- The procedure's writer chooses each label. A call can't leave one off, or write one the procedure doesn't have.
+- By convention, the first argument, the thing being worked on, has no label, as in `show_msg("Hi")` or a slide's
+  value (D5), so simple calls stay simple.
+
+(How a procedure declares its labels, defaults, label order, and `random` itself aren't decided yet. The first sketch
+of a declaration, labels inside the parameter list, was the form Plainly v1's D9 turned down, and was dropped.)
+
+**Weighed.**
+- Arguments by position only, `random(1, 100)`. The reader has to remember which is which, and two can be swapped by
+  mistake.
+- Optional names, as Python's keyword arguments. Most code then skips them, so the reader still guesses.
+
+**Why this won.** A call says what each value means, so it reads without opening the procedure, and arguments can't be
+swapped by mistake. This is Cyborg's labels, and Plainly v1's D8.
+
+**Tankun's words.** "What the fuck is that label decl syntax", "What does `random` do?", then, asked "Labels at the
+call?", the owner chose: "yea".

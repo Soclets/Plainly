@@ -33,7 +33,19 @@ add(1, 2);
 roll_dice();
 ```
 
-**Not decided:** labels on arguments.
+### Labels
+
+A procedure can give its arguments labels, and every call writes them, with `:` after each (D24):
+
+```
+let $secret: Whole = random(from: 1, to: 100);
+```
+
+- **The procedure's writer chooses each label.** A call can't leave one off, or write one the procedure doesn't have
+  (D24).
+- **By convention, the first argument has no label,** as in `show_msg("Hi")` (D24).
+
+**Not decided:** how a procedure declares its labels; defaults; label order; `random` itself.
 
 ## `proc.main`
 

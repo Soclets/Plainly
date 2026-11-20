@@ -31,6 +31,8 @@ The words this standard uses, each defined before a chapter relies on it.
 - **Definition:** the block that writes a procedure, starting with `proc`.
 - **Parameter:** a name in a definition's `( )`, standing for a value the procedure is given.
 - **Argument:** a value given to a procedure when it's called.
+- **Label:** a name for an argument, chosen by the procedure and written at every call, as `from:` in
+  `random(from: 1, to: 100)` (chapter 4).
 - **Call:** running a procedure, written as its name and `( )`, as in `roll_dice()`.
 - **Slide:** a chain of steps joined by `|>`, passing a value along (chapter 4).
 - **Step:** one procedure in a slide.
