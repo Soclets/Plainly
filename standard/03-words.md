@@ -21,7 +21,8 @@ message".
 | `true`, `false` | | D33 |
 | `and`, `or`, `not` | | D34 |
 | `be` | | D22 |
-| `ignore`, `crash`, `otherwise`, `case` | | D23 |
+| `ignore`, `crash`, `otherwise`, `case` | | D23, D40 |
+| `instead` | | D40 |
 | `labels`, `as` | | D25 |
 | `.fmt` | format | D2, D29 |
 | `extern`, `.rust` | external | D2, D36 |

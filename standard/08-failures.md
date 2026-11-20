@@ -54,8 +54,31 @@ load_level($name) ?? crash;
 
 ## `otherwise:`
 
-`otherwise:` handles each failure in its own `case`, each ending in a fallback value, `return`, `break`, or failing on
-purpose (D23).
+`otherwise:` handles each failure in its own `case` (D23, D40):
 
-**Not decided:** the exact form of the `otherwise:` block and its cases; how a procedure fails on purpose; handler
-families.
+```
+call otherwise:
+    case failure:
+        body
+end otherwise
+```
+
+where `call` is the call that can fail, each `failure` one of its failures' names, and each `body` the statements run
+for it.
+
+```
+let $best: Whole = load_best_score() otherwise:
+    case not_found:
+        show_msg("No high score yet.");
+        instead 0;
+    case unreadable:
+        instead 0;
+end otherwise
+```
+
+- **The cases must cover every failure still possible at that call** (D40).
+- **Each case ends in one of four ways:** `instead` a value, carrying on with it; `return`; `break`; or failing on
+  purpose. A case that could fall off its end is refused (D40).
+- **`case` is indented one level in, and its body one level further** (D10, D40).
+
+**Not decided:** how a procedure fails on purpose; `return`; handler families.

@@ -1157,3 +1157,39 @@ next to what the procedure gives back, since a failure is what it can give back 
 reasoning as D25's `labels` line.
 
 **Tankun's words.** Asked "`fails`, then names separated by commas, no brackets?", the owner chose: "yea".
+
+## D40. The `otherwise:` block: one `case` per failure, each ending in `instead`, `return`, `break` or failing
+
+2026-11-20.
+
+**Chosen.**
+
+```
+let $best: Whole = load_best_score() otherwise:
+    case not_found:
+        show_msg("No high score yet.");
+        instead 0;
+    case unreadable:
+        instead 0;
+end otherwise
+```
+
+- `otherwise:` after a call that can fail opens the block, and `end otherwise` closes it (D8).
+- One `case` per failure, naming it (D39). The cases must cover every failure still possible at that call, so a
+  procedure gaining a failure makes every incomplete block a build error.
+- Each case ends in one of four ways: `instead` a value, carrying on with it; `return`; `break`; or failing on purpose.
+  A case that could fall off its end is refused.
+- `case` is indented one level in, and its body one level further (D10).
+
+(How a procedure fails on purpose, and `return` itself, aren't decided yet.)
+
+**Weighed.**
+- `?? value` for every failure alike (D23). It can't treat failures differently, as when a missing file means "no score
+  yet" but a broken one should warn.
+- `match`, `catch` or `except` blocks, from other languages. `otherwise` reads as English after a call: "load the best
+  score, otherwise...".
+
+**Why this won.** Each failure gets its own handling where it's needed, the build checks none is forgotten, and every
+case says how the line carries on. This is Cyborg's `otherwise:` and Plainly v1's D55, with v2's indentation.
+
+**Tankun's words.** Asked "The `otherwise:` block like that?", the owner chose: "yea".
