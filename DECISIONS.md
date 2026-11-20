@@ -1907,6 +1907,8 @@ does.
 **Tankun's words.** In their answer to D57 (quoted whole there), then the messages listed in D58; asked "The short form required when two or more parameters share
 one type?", the owner chose: "yea".
 
+(Replaced by D126: every parameter writes its own type after its name.)
+
 ## D62. PlainCompiler's stages, with one IR of Plainly's own
 
 2026-11-20.
@@ -3878,3 +3880,30 @@ being rewritten from a clean start (2026-11-21), nothing built has to change.
 
 **Tankun's words.** "yea. Mf, yk? I'm missing `$`, and `$a: Whole, $b: Whole`" (in answer to a question about Verus),
 then, asked "Should `$` come back on every name, replacing D58?", the owner chose: "yea".
+
+## D126. Every parameter writes its own type after its name
+
+2026-11-20.
+
+**Chosen.** Each parameter writes its own type, after its name, as a declaration does (D13), replacing D61's shared type
+in front:
+
+```
+proc add($a: Whole, $b: Whole) returns Whole:
+proc draw($x: Whole, $name: Text):
+proc double($n: Whole) returns Whole:
+```
+
+D61's short form, `proc add(Whole a, b)`, is refused, with this form as the fix; its message's wording comes with a
+later batch.
+
+**Weighed.**
+- D61's type written once in front when every parameter shares it. Faster to read for short headers, but two forms to
+  learn, and adding a parameter of another type rewrites the header.
+
+**Why this won.** One form everywhere, in the same order as `let $a: Whole`, and nothing to rewrite when a header
+grows. Tankun missed it, and the clean start (2026-11-21) means nothing built has to change. The cost is a longer header
+when many parameters share a type.
+
+**Tankun's words.** "yea. Mf, yk? I'm missing `$`, and `$a: Whole, $b: Whole`" (quoted in D125), then, asked "Should
+every parameter write its own type after its name, `$a: Whole, $b: Whole`, replacing D61?", the owner chose: "yea".
