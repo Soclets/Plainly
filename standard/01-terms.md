@@ -39,6 +39,8 @@ The words this standard uses, each defined before a chapter relies on it.
 
 - **While building:** when a program is checked and turned into something that can run, before it runs.
 - **While running:** when the built program runs.
+- **Failure:** something a procedure can give back instead of its result, which every call must deal with (chapter
+  8).
 - **Refused:** rejected while building, with a message saying why. A refused program doesn't run.
 - **Placeholder:** a part of a general form that stands for something you fill in. Each one is explained where it's
   used (D12).

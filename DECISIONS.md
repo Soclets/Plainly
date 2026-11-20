@@ -670,3 +670,44 @@ for each type. Refusing a conversion that does nothing catches a misunderstandin
 Plainly v1's D6 and D90.
 
 **Tankun's words.** Asked "`be.Type(value)` for converting?", the owner chose: "yea".
+
+## D23. Failures must be handled: `?`, `??` and `otherwise:`
+
+2026-11-20.
+
+**Chosen.** A procedure that can fail says so, and every call to it must deal with the failure, or the program is
+refused while building. There are three ways, taken from Cyborg:
+
+```
+let $level: Text = load_text("level1.txt")?;
+let $guess: Whole = be.Whole($typed) ?? 0;
+save_text($line, "save.txt") ?? ignore;
+load_level($name) ?? crash;
+```
+
+- **`?` passes the failure up** to whoever called this procedure, which must list that failure itself.
+- **`??` handles it on one line:** `?? value` carries on with that value, `?? ignore` ignores the failure on purpose,
+  and `?? crash` stops the program on purpose.
+- **`otherwise:` handles each failure in its own `case`,** each ending in a fallback value, `return`, `break`, or
+  failing on purpose.
+
+(How a procedure lists its failures, failures' names, the exact form of the `otherwise:` block and its cases, and how
+a procedure fails on purpose aren't decided yet.)
+
+**Weighed.**
+- No checking, as with Python's exceptions, where any call can fail unnoticed until it happens; or special values like
+  `-1`, which get ignored.
+- `otherwise use 0`, `otherwise ignore` and `otherwise crash` in place of `??`, as in Plainly v1 (its D56), arguing
+  that `??` and `otherwise` would be two spellings of "if this fails". Tankun: "That's longer for a common one, though":
+  15 characters against 4 for a fallback value, which games need often. And since there's no `otherwise use`, `??` is
+  the only one-line form and `otherwise:` the only block form, two shapes for two sizes of job, not two spellings.
+- `?? void`, Cyborg's word for ignoring. "Ignore" says what's happening.
+
+**Why this won.** An unhandled failure is a crash waiting for the one input nobody tested, like a player typing `abc`;
+refusing it while building means it's dealt with before anyone plays, and a library procedure gaining a failure gives
+its callers a build error, not a surprise. `?` and `??` read as a family, "on failure, pass it up" and "on failure, do
+this instead", short where they're common, as D2's "learn the concept, then type it short" asks. Searching `?? ignore`
+or `?? crash` finds every deliberate one. This is Cyborg's design, and Plainly v1's D42, D43 and D55.
+
+**Tankun's words.** "Use Cyborg's? With `?`, `??`, and `otherwise:`?", "That's longer for a common one, though", then,
+asked "Handling required, with `?`, `??` (a value, `ignore` or `crash`) and `otherwise:`?", the owner chose: "yea".

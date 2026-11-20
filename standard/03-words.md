@@ -18,6 +18,7 @@ message".
 | `at_least`, `at_most` | | D17 |
 | `while` | | D19 |
 | `be` | | D22 |
+| `ignore`, `crash`, `otherwise`, `case` | | D23 |
 
 **Not decided:** every other keyword.
 
@@ -53,3 +54,5 @@ Each kind of bracket has one job (D3):
 | `.` | narrows, touching the words on both sides | D4, D6, D18 |
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |
+| `?` | passes a failure up | D23 |
+| `??` | handles a failure on one line | D23 |

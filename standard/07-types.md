@@ -44,4 +44,4 @@ show_msg(be.Text($guess));
 - **Converting to the type a value already is, is refused,** since it does nothing (D22).
 - **A conversion can fail,** as `be.Whole("abc")` does (D22).
 
-**Not decided:** how a failure is handled; what may be converted to what.
+**Not decided:** what may be converted to what, and what a failed conversion's failure is called (chapter 8).

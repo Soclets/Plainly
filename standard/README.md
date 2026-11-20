@@ -24,3 +24,4 @@ happened; this standard says what the rules are today (D12).
 5. [Control flow](05-control-flow.md): `if`, comparisons, `while`, and what may follow an `if`
 6. [Variables](06-variables.md): `let` and `var`
 7. [Types](07-types.md): `Whole`, `Text` and converting
+8. [Failures](08-failures.md): `?`, `??` and `otherwise:`
