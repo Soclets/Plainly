@@ -165,7 +165,14 @@ students.add("Mult");
 students.remove(pos: 1);
 ```
 
-**Not decided:** which methods lists and text have; how a type's methods are declared; length; changing an item;
+After a value's `.`, a name with no `( )` is a fact the value already knows, read without running anything. A list's
+number of items is `.len` (D79):
+
+```
+let count: Whole = students.len;
+```
+
+**Not decided:** which other methods and facts lists and text have; how a type's methods are declared; changing an item;
 going through a list.
 
 ## Converting

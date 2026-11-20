@@ -2459,3 +2459,30 @@ reachable through it might change. It's what lets every worker read a `let` with
 
 **Tankun's words.** "yea. Btw, `let` is deep" (in D77's answer); then, asked "`let` is deep, with `share` refused
 between a `let` and a `var`?", the owner chose: "yea".
+
+## D79. A fact about a value is read with no `()`: a list's length is `.len`
+
+2026-11-20.
+
+**Chosen.** After a value's `.`, a name with `( )` is a method, which does something (D77), and a name with no `( )` is
+a fact the value already knows, read without running anything. A list's number of items is the fact `.len`:
+
+```
+let count: Whole = students.len;
+```
+
+`len` is short for length (D2).
+
+(Which other facts lists and text have, and records' fields, which will be read the same way, aren't decided yet.)
+
+**Weighed.**
+- `students.len()`, every name after a value's `.` a method call. One rule fewer for now, but records' fields will
+  bring the split back.
+- `students.length`, the full word, as first proposed with no `()`. D2's short form is `len`, which Python readers
+  know from `len(x)`.
+
+**Why this won.** The `()` tells at a glance whether a line does something or reads something, as D4 has it: `( )`
+means "run this", and reading a length runs nothing.
+
+**Tankun's words.** "students.length?", "Why no `()`, btw just `len`", then, asked "`students.len`, read with no
+`()`?", the owner chose: "yea".
