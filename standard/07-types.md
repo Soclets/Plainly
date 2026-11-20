@@ -135,7 +135,9 @@ show_msg.fmt("Type \{help} to see the commands, {name}.");
 show_msg("She said \"hi\".");
 ```
 
-**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; empty text; comparing text; lists.
+Empty text is `""` (D76).
+
+**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; comparing text; lists.
 
 ## Lists
 
@@ -153,7 +155,9 @@ let also_first: Text = students[offset: 0];
 
 `pos` is short for position (D2).
 
-**Not decided:** empty lists; adding and removing; length; changing an item; going through a list.
+An empty list is `[]`, taking its type from where it goes (D76).
+
+**Not decided:** adding and removing; length; changing an item; going through a list.
 
 ## Converting
 

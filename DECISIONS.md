@@ -2372,3 +2372,28 @@ let also_first: Text = students[offset: 0];
 available. This is multifinity's sketch, as Plainly v1 (its D15) and Cyborg do it.
 
 **Tankun's words.** Asked "Lists like that, with `pos:` and `offset:` and no default?", the owner chose: "yea".
+
+## D76. An empty list is `[]`, and empty text is `""`
+
+2026-11-20.
+
+**Chosen.** The empty brackets and quotes themselves:
+
+```
+var hand: List<Text> = [];
+var typed: Text = "";
+```
+
+`[]` takes its list type from where it goes, which every variable writes (D13).
+
+(Comparing lists and comparing text, as in `hand == []`, aren't decided yet.)
+
+**Weighed.**
+- `.empty`, with `[]` and `""` refused, as in Plainly v1 (its D68): an empty pair looks like unfinished work, and
+  `.empty` says it's empty on purpose. A word to learn where every other language writes `[]` and `""`.
+
+**Why this won.** Nothing new to learn, as in Python, and since every variable writes its type, `[]` is never
+ambiguous. Tankun's choice.
+
+**Tankun's words.** Asked "`.empty` for empty lists and text, with `[]` and `""` refused?", the owner chose: "no";
+then, asked "`[]` and `""` for empty lists and text?", the owner chose: "yea".
