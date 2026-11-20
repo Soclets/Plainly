@@ -57,6 +57,16 @@ The standard follows the decisions: a decision that changes a rule updates
 and anything it leaves open is marked **Not decided** there
 (`standard/README.md`). (Owner, 2026-11-20, from Plainly v1's rule 9.)
 
+Fixing stale documents: the design session may correct a document that
+contradicts the decisions, such as the standard, a prompt file, a README, or
+a note under an old entry, but only when the proof is firsthand in its current
+context: Tankun's own message, or a file it has read since the last
+compaction. A compaction summary doesn't count, so after a compaction it reads
+the files again before correcting anything. Each correction says in its commit
+what was stale and which decision shows it. It never overrules Tankun's
+recorded words: an entry in DECISIONS.md changes only through a new decision.
+(Owner, 2026-11-20, from Plainly v1's rule 6.)
+
 Tankun's words are quoted whole and exactly, typos included, never in pieces
 or trimmed. That holds everywhere in an entry, the Weighed and Why parts
 included, and for messages from other repos and old versions: to back up a
