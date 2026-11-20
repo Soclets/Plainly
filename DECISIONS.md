@@ -203,3 +203,31 @@ the way `.main` narrows `proc`. `.same_line` says exactly what appears on screen
 name.
 
 **Tankun's words.** Asked "`show_msg` ends the line, and `show_msg.same_line` doesn't?", the owner chose: "yea".
+
+## D7. `;` ends every statement
+
+2026-11-20.
+
+**Chosen.** Every statement ends with `;`, slides included, so a statement can run over several lines and ends only
+at its `;`:
+
+```
+$score
+|> clamp(min: 0, max: 100)
+|> be.Text
+|> show_msg;
+```
+
+A missing `;` is refused, with the place it goes as the fix.
+
+(How a block's opening line and closer are written isn't decided yet.)
+
+**Weighed.**
+- Ending a statement at the end of its line, as Python does. One less symbol per line, and a forgotten `;` is the
+  most common beginner mistake in C-like languages. But a statement running over several lines then needs a rule:
+  Python's brackets or `\`, or JavaScript's guessing where statements end, which goes wrong in well-known ways.
+
+**Why this won.** Every statement visibly stops, which was Plainly v1's reason (its D31), and long slides need no
+special rule. With the exact fix in every message, a missing `;` costs a keystroke, not confusion.
+
+**Tankun's words.** Asked "`;` ends every statement?", the owner chose: "yea".
