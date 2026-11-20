@@ -39,7 +39,7 @@ as they are.
 ## Indentation
 
 A body is indented one level inside its opening line and closer, and a block inside a body one level further. One level
-is 4 spaces. Any other indentation, a tab included, is refused while building, with the whole corrected line as the fix
+is 4 spaces. Any other indentation, a tab included, is refused at compile time, with the whole corrected line as the fix
 (D10).
 
 Since every block ends with its closer, indentation never decides where a block ends (D8, D10).

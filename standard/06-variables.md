@@ -54,5 +54,5 @@ Changing `b` leaves `a` alone; changing `c` changes `a`. A plain value like a `W
 is refused between a `let` and a `var`, either way, with `copy` as the fix; it's allowed between two `let`s or two
 `var`s (D78).
 
-**Not decided:** whether arguments and changes with `=` need a word; shorthand like `+=`; constants known while building, like `const`; the types themselves; declaring
+**Not decided:** whether arguments and changes with `=` need a word; shorthand like `+=`; constants known at compile time, like `const`; the types themselves; declaring
 a variable without a first value.

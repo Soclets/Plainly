@@ -1,7 +1,7 @@
 # 8. Failures
 
 A **failure** is something a procedure can give back instead of its result, like text that isn't a number. A procedure
-that can fail says so, and every call to it must deal with the failure, or the program is refused while building
+that can fail says so, and every call to it must deal with the failure, or the program is refused at compile time
 (D23).
 
 ```

@@ -44,10 +44,11 @@ The words this standard uses, each defined before a chapter relies on it.
 
 - **Garbage collector:** the part of a running program that frees memory nothing uses any more (chapter 10).
 
-- **While building:** when a program is checked and turned into something that can run, before it runs.
-- **While running:** when the built program runs.
+- **Compile time:** when PlainCompiler checks a program and turns it into something that can run, before it runs
+  (D90).
+- **Runtime:** when the compiled program runs (D90).
 - **Failure:** something a procedure can give back instead of its result, which every call must deal with (chapter
   8).
-- **Refused:** rejected while building, with a message saying why. A refused program doesn't run.
+- **Refused:** rejected at compile time, with a message saying why. A refused program doesn't run.
 - **Placeholder:** a part of a general form that stands for something you fill in. Each one is explained where it's
   used (D12).

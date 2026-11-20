@@ -123,7 +123,7 @@ let line: Text = be.Text.fmt("{name}: {score}");
 
 - **Braces hold only a variable's name;** a calculation or a call in them is refused (D29).
 - **A number in braces becomes text by itself** (D29).
-- **The text is checked while building:** a name in braces that isn't a variable is refused (D29).
+- **The text is checked at compile time:** a name in braces that isn't a variable is refused (D29).
 - **Without `.fmt`, text is plain,** so `show_msg("{tries}")` shows exactly `{tries}` (D29).
 
 `fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first

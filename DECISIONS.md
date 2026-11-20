@@ -2764,3 +2764,24 @@ The fourth batch, with names and types filled in from the program:
 
 **Tankun's words.** "I think some may be using "and" wrongly, instead it should be "but"?", then, asked "With those
 changes, does the fourth batch read right, and should the two approved ones change too?", the owner chose: "yea\".
+
+## D90. "Compile time" and "runtime" are the words for when a program is checked and when it runs
+
+2026-11-20.
+
+**Chosen.** The standard, the docs and messages say **compile time** for when PlainCompiler checks a program and turns
+it into something that can run, and **runtime** for when the compiled program runs, as in "checked at compile time"
+and "a check that fails at runtime". They replace "while building" and "while running".
+
+**Weighed.**
+- "While building" and "while running", the plain phrases used until now. Every other language, tutorial and error
+  message says "compile time" and "runtime", so a learner meets them almost at once.
+
+**Why this won.** They're the real words, learnt once and used everywhere, as with `.floor` and `.trunc` (D70).
+Tankun raised it.
+
+**Tankun's words.** "I think we should use "compile time" and "runtime"? Like, those are very important words. What's
+`(or)`? What's "this program has two proc.mains, plus because: the first is here"
+What's the "space" in "every name in a program shares one space, so two procedures can’t have one name."", then,
+asked "Compile time and runtime everywhere, in place of while building and while
+running?", the owner chose: "yea, what about `plainly compile`?"

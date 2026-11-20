@@ -112,7 +112,7 @@ A Plainly program can run several parts of itself at once (D66), in two ways (D6
 Real threads are **workers** (D68):
 - **Each worker has its own variables;** nothing changeable is shared between two workers.
 - **Workers talk by sending values,** which arrive as copies.
-- **`share` can't cross from one worker to another,** and trying is refused while building, so data races are
+- **`share` can't cross from one worker to another,** and trying is refused at compile time, so data races are
   impossible.
 - **Values that can never change, like a `let`, may be read by every worker** without copying.
 
@@ -130,7 +130,7 @@ block, and code that should run afterwards goes in the ways that don't leave (D9
 - **only some ways leaving,** where code after `end if` would run only after the others;
 - **every way leaving, `else` included,** where code after `end if` could never run.
 
-Each is refused while building (D9).
+Each is refused at compile time (D9).
 
 ```
 proc larger(a: Whole, b: Whole) returns Whole:

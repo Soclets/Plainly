@@ -11,12 +11,12 @@ refused: game.plainly:5:5, line 5 column 5
  why:     only a `var` can be given a new value.
 ```
 
-- **The first word is the kind:** `refused:` while building, `check failed:` while running (D54).
+- **The first word is the kind:** `refused:` at compile time, `check failed:` at runtime (D54).
 - **The place is written twice:** `file:line:column` for tools, then `line N column M` for people (D54).
 - **The source line is shown,** with `^` under exactly the part in question (D54).
 - **Then labelled lines, each only when known, in this order** (D54):
   1. `fix:` when there's exactly one fix, showing the whole corrected line (D84), otherwise `what:`;
-  2. `when:`, the values that broke a check while running;
+  2. `when:`, the values that broke a check at runtime;
   3. `because:`, the earlier place the error comes from, as a sentence, then that line with `^` under the cause;
   4. `why:`, the rule, as a plain sentence.
 - **No error codes, and no "did you mean" guesses** (D54).
@@ -51,10 +51,10 @@ beyond plain English letters.
 | Status | When |
 |---|---|
 | 0 | the program ran to its end |
-| 1 | it was refused while building |
+| 1 | it was refused at compile time |
 | 2 | the file couldn't be read |
 | 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
-| 4 | a check failed while running |
+| 4 | a check failed at runtime |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
 | 6 | the command itself was written wrong, like a missing mode or an unknown command (D82) |
 | 7 | PlainCompiler or PlainOracle itself went wrong, a bug in the tool, with a message saying how to report it (D82) |
