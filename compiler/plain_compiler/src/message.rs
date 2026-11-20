@@ -33,31 +33,6 @@ pub struct Edit {
     pub replacement: String,
 }
 
-/// A fix that removes whole lines, for blank lines in a row (D97).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RemovedLines {
-    pub first_line: usize,
-    pub count: usize,
-}
-
-impl RemovedLines {
-    /// The fix, as `fix:` says it. There's no corrected line to show (D84), so it names the lines.
-    pub fn describe(self) -> String {
-        let last = self.first_line + self.count - 1;
-        match self.count {
-            1 => format!("remove blank line {}, leaving one", self.first_line),
-            2 => format!(
-                "remove blank lines {} and {last}, leaving one",
-                self.first_line
-            ),
-            _ => format!(
-                "remove blank lines {} to {last}, leaving one",
-                self.first_line
-            ),
-        }
-    }
-}
-
 /// `because:`: the earlier place the error comes from, as a sentence, then that place (D54).
 #[derive(Clone, Debug)]
 pub struct Because {
@@ -74,8 +49,6 @@ pub struct Message {
     pub edit: Option<Edit>,
     /// More places on the same line to mark with `^`, as for every spacing mistake on a line (D100).
     pub more_places: Vec<Place>,
-    /// The fix, when it removes blank lines instead (D97): `count` lines from `first_line`, in the message's file.
-    pub removed_lines: Option<RemovedLines>,
     /// `what:`, shown when there's no single fix (D54).
     pub what: Option<String>,
     pub because: Option<Because>,
@@ -89,7 +62,6 @@ impl Message {
             place,
             edit: None,
             more_places: Vec::new(),
-            removed_lines: None,
             what: None,
             because: None,
             why: None,
@@ -164,9 +136,7 @@ impl Message {
             &self.more_places,
             number_width,
         ));
-        if let Some(removed) = self.removed_lines {
-            text.push_str(&labelled_line("fix", &removed.describe()));
-        } else if let Some(edit) = &self.edit {
+        if let Some(edit) = &self.edit {
             // trace: D84
             let fixed = format!("`{}`", fixed_line(sources, edit));
             text.push_str(&labelled_line("fix", &fixed));

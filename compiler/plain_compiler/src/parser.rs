@@ -1,7 +1,7 @@
 //! The parser: tokens to the syntax tree (D62), with the layout rules that need no types: indentation (D10),
 //! spacing (D17, D18, D27, D59), `;` (D7) and closers (D8).
 
-use crate::message::{Edit, Message, RemovedLines};
+use crate::message::{Edit, Message};
 use crate::source::{Place, SourceFile};
 use crate::syntax_tree::{
     Argument, BinaryOperator, Callee, Expression, ExpressionKind, LabelPair, Name, Parameter,
@@ -1849,22 +1849,21 @@ impl<'a> Parser<'a> {
                 run += 1;
             }
             if run > 1 {
-                let mut message = Message::refused(
-                    Place {
-                        file: self.file,
-                        line: line + 1,
-                        column: 1,
-                        length: 1,
-                    },
-                    "",
-                )
-                .why("one blank line is enough to separate the parts of a program.");
-                message.what = None;
-                message.removed_lines = Some(RemovedLines {
-                    first_line: line + 1,
-                    count: run - 1,
-                });
-                self.messages.push(message);
+                // trace: D97, D101
+                let extra = run - 1;
+                let plural = if extra == 1 { "" } else { "s" };
+                self.messages.push(
+                    Message::refused(
+                        Place {
+                            file: self.file,
+                            line: line + 1,
+                            column: 1,
+                            length: 1,
+                        },
+                        format!("{extra} extra blank line{plural}, after the one on line {line}"),
+                    )
+                    .why("one blank line is enough to separate the parts of a program."),
+                );
             }
             line += run;
         }

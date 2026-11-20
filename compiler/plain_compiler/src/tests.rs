@@ -352,11 +352,10 @@ fn d97_one_blank_line_at_a_time() {
     let found = messages(three);
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].place.line, 4);
+    assert!(found[0].edit.is_none());
     assert_eq!(
-        found[0]
-            .removed_lines
-            .map(|removed| (removed.first_line, removed.count)),
-        Some((4, 2))
+        found[0].what.as_deref(),
+        Some("2 extra blank lines, after the one on line 3")
     );
 }
 

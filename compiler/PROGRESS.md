@@ -151,9 +151,8 @@ mode. Each is marked `// trace: D92`.
 - D99's names: what: `` `Score` has a capital letter, and names have none `` (or `` starts with a digit ``,
   `` starts with `_` ``, `` ends with `_` ``, `` has two `_` in a row ``); why: a name is lowercase letters and digits,
   starting with a letter, with `_` only between words.
-- D97's blank lines in a row: no line to correct, so `fix:` names the lines, as in `remove blank lines 4 and 5,
-  leaving one` (D84 has `fix:` show the whole corrected line); why: one blank line is enough to separate the parts of
-  a program.
+- D97's blank lines in a row, with no `fix:` (D101): what: `2 extra blank lines, after the one on line 3`; why: one
+  blank line is enough to separate the parts of a program.
 - D94's two: a name declared again while in use (what: `` `guess` is already in use here ``; because: `` `guess` is
   declared here ``; why: a name in use can't be declared again; two things get two names.), and a variable or
   parameter with a procedure's name (what: `` `roll` is already a procedure's name ``; because: `` the procedure
