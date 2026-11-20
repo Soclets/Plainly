@@ -240,9 +240,10 @@ fn tokenize_line(
             break;
         }
         let start = index;
-        let kind = if character.is_ascii_alphabetic() || character == '_' {
+        // Letters beyond English stay in the word, so the name check can say they aren't decided (D99).
+        let kind = if character.is_alphabetic() || character == '_' {
             while index < characters.len()
-                && (characters[index].is_ascii_alphanumeric() || characters[index] == '_')
+                && (characters[index].is_alphanumeric() || characters[index] == '_')
             {
                 index += 1;
             }
@@ -254,6 +255,18 @@ fn tokenize_line(
                 index += 1;
             }
             let written: String = characters[start..index].iter().collect();
+            if written.chars().any(|letter| letter.is_ascii_alphabetic()) {
+                // A word starting with a digit, like `2player`: the parser refuses it as a name (D99).
+                tokens.push(Token {
+                    kind: TokenKind::Word(written),
+                    place: place(column, index - start),
+                    spaces_before,
+                    first_on_line,
+                });
+                first_on_line = false;
+                spaces_before = 0;
+                continue;
+            }
             if !written.chars().all(|digit| digit.is_ascii_digit())
                 || (written.len() > 1 && written.starts_with('0'))
             {

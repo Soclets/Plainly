@@ -570,11 +570,17 @@ impl<'a> Parser<'a> {
                 // trace: D87
                 .why("a name can't be one of Plainly's own words."),
             );
-        } else if !is_plain_name(&text) {
+        } else if !text.is_ascii() {
             self.messages.push(Message::not_designed_yet(
                 token.place,
-                format!("which characters a name may hold isn't decided beyond lowercase words joined by `_`, so `{text}` can't be used yet"),
+                format!("letters beyond English in a name, as in `{text}`, aren't decided"),
             ));
+        } else if let Some(problem) = name_problem(&text) {
+            // trace: D99
+            self.messages.push(
+                Message::refused(token.place, format!("`{text}` {problem}"))
+                    .why("a name is lowercase letters and digits, starting with a letter, with `_` only between words."),
+            );
         }
         Name {
             text,
@@ -1869,10 +1875,20 @@ fn arithmetic_place(expression: &Expression) -> Option<Place> {
     }
 }
 
-/// Lowercase words joined by `_`, like `roll_dice`: the only names the standard shows (D58).
-fn is_plain_name(text: &str) -> bool {
-    !text.is_empty()
-        && text
-            .split('_')
-            .all(|word| !word.is_empty() && word.chars().all(|letter| letter.is_ascii_lowercase()))
+/// What's wrong with a name, if anything (D99): it's lowercase letters `a` to `z` and digits, starting with a letter,
+/// with `_` only between words, as in `player2` or `hp_max_2`.
+fn name_problem(text: &str) -> Option<&'static str> {
+    if text.chars().any(|letter| letter.is_ascii_uppercase()) {
+        Some("has a capital letter, and names have none")
+    } else if text.starts_with(|first: char| first.is_ascii_digit()) {
+        Some("starts with a digit")
+    } else if text.starts_with('_') {
+        Some("starts with `_`")
+    } else if text.ends_with('_') {
+        Some("ends with `_`")
+    } else if text.contains("__") {
+        Some("has two `_` in a row")
+    } else {
+        None
+    }
 }

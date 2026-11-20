@@ -18,7 +18,7 @@ the test results (`python3 compiler/run_tests.py`).
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- Blank lines anywhere, one at a time (D97), and all spacing fixed (D98).
+- Blank lines anywhere, one at a time (D97); all spacing fixed (D98); names with digits (D99).
 - `be.Whole` reads numbers as players type them (D95), and `ask` ends the program quietly when input runs out (D96).
 - A variable ends with its block (D93); a name in use can't be declared again, and a variable can't take a
   procedure's name (D94).
@@ -78,8 +78,7 @@ Inside `plain_compiler`: `tokenizer.rs`, `parser.rs` (syntax tree, with indentat
 ## What `NotDesignedYet` covers
 
 The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard is silent or says "Not decided". Each
-place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; names beyond lowercase
-words joined by `_`; a statement over several lines (its later lines' indentation);
+place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; letters beyond English in names; a statement over several lines (its later lines' indentation);
 two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; a call whose value isn't used; `??` on a call that can't fail; label order;
 sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
@@ -145,6 +144,9 @@ mode. Each is marked `// trace: D92`.
   spaces never come two in a row, outside indentation.; a line never ends with spaces.; a blank line has no spaces
   on it. A word followed by a spaced `(`, as in `show_msg ("a")`, is read as a call, so its space is refused like
   any other.
+- D99's names: what: `` `Score` has a capital letter, and names have none `` (or `` starts with a digit ``,
+  `` starts with `_` ``, `` ends with `_` ``, `` has two `_` in a row ``); why: a name is lowercase letters and digits,
+  starting with a letter, with `_` only between words.
 - D97's blank lines in a row: no line to correct, so `fix:` names the lines, as in `remove blank lines 4 and 5,
   leaving one` (D84 has `fix:` show the whole corrected line); why: one blank line is enough to separate the parts of
   a program.
@@ -259,8 +261,8 @@ uses a placeholder until it's decided.
   extra ones. Whether a blank line may hold spaces is part of Q8.
 - **Q8. Answered by D98:** the spacing every example uses is the rule, and anything else is refused with the
   corrected line as the fix.
-- **Q9. Which characters a name may hold** (standard chapter 3): digits, as in `player2`, capitals, `_` at the start
-  or end. Only lowercase words joined by `_` are accepted.
+- **Q9. Answered by D99:** lowercase letters and digits, starting with a letter, with `_` only between words;
+  letters beyond English stay `NotDesignedYet`.
 - **Q10. Answered by D72, D73 and D81.** `??` sticks to the call before it; `a < b < c` and `x |> f + 1` are refused
   with their fixes.
 - **Q11. Answered by D93:** a variable ends with its block; using it after is refused with "there's no variable

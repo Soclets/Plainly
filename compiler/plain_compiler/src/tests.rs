@@ -377,3 +377,20 @@ fn d98_spacing_is_fixed() {
         assert!(found[0].edit.is_some(), "{line}");
     }
 }
+
+#[test]
+fn d99_names() {
+    assert_eq!(
+        found(&main_with(&[
+            "let player2: Whole = 1;",
+            "let hp_max_2: Whole = player2;"
+        ])),
+        vec![]
+    );
+    for name in ["Score", "2player", "_x", "x_", "hp__max"] {
+        let program = main_with(&[&format!("let {name}: Whole = 1;")]);
+        assert_eq!(found(&program), refused_on(2), "{name}");
+    }
+    let beyond_english = main_with(&["let café: Whole = 1;"]);
+    assert_eq!(found(&beyond_english), vec![(Kind::NotDesignedYet, 2)]);
+}
