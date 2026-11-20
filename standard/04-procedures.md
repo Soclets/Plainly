@@ -39,7 +39,19 @@ Using what such a procedure gives as a value is refused (D38).
 - **Nothing may follow `return` in the same block** (D57).
 - **A bare `return;` as a procedure's last line is refused** (D57).
 
-**Not decided:** how a parameter is written. Failures in a header: chapter 8.
+### Parameters
+
+A parameter is written as its name, `:` and its type. When two or more parameters all share one type, the type is
+written once, in front, and covers them all; with mixed types, or a single parameter, each writes its own. The other
+form is refused (D61):
+
+```
+proc add(Whole a, b) returns Whole:
+proc draw(x: Whole, name: Text):
+proc double(n: Whole) returns Whole:
+```
+
+Failures in a header: chapter 8.
 
 ## Procedures written in Rust
 

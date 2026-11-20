@@ -1872,3 +1872,38 @@ as a reader learns `-5` and `a - b` apart without thinking. Tankun put it this w
 
 **Tankun's words.** "So, what should the loosen rule be?", "No, I meant the symbol", "They aren't in the same place",
 then, asked "Record it: a symbol has one job in any one place?", the owner chose: "yea".
+
+## D61. Parameters sharing one type write it once, in front
+
+2026-11-20.
+
+**Chosen.** When a procedure has two or more parameters, all of one type, the type is written once, in front, and
+covers them all. With mixed types, or a single parameter, each parameter writes its own type after its name:
+
+```
+proc add(Whole a, b) returns Whole:
+proc draw(x: Whole, name: Text):
+proc double(n: Whole) returns Whole:
+```
+
+The other form is refused, with the right one as the fix, so each header has exactly one spelling: the form follows
+the situation, and the writer never chooses (D2's aim, as D60 does for symbols).
+
+**Weighed.**
+- Each parameter always writing its own type, `add(a: Whole, b: Whole)`, as the design claude recommended. One order
+  everywhere, matching `let a: Whole` (D13), and nothing to rewrite when a parameter of another type is added. Tankun
+  compared the two side by side: "Tbh, 2nd was faster."
+- A type in front covering every name after it until the next type, as in C's `int a, b`. The design claude first
+  misread Tankun's idea this way; to find a parameter's type you scan back past others, and C's `int* a, b` shows the
+  trap.
+- Go's order, `add(a, b: Whole)`, type after the names it covers. To find the first name's type you scan forward.
+- Allowing both forms. Two spellings for one header.
+
+**Why this won.** With every parameter one type, the short form reads faster: "all Whole" at a glance. Requiring it
+exactly then, and the long form otherwise, keeps one spelling per header. The costs are accepted: the type comes first
+only in short headers, and adding a parameter of another type means rewriting the header, which the refusal's fix
+does.
+
+**Tankun's words.** In their answer to D57 (quoted whole there), then the messages listed in D58, which include "Tbh,
+2nd was faster." (as part of a message with code); asked "The short form required when two or more parameters share
+one type?", the owner chose: "yea".
