@@ -1695,7 +1695,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             _ => {
                 self.messages.push(
                     Message::refused(
-                        callee.place,
+                        callee.words.get(2).map_or(callee.place, |word| word.place),
                         format!(
                             "`be.{target}` has no narrowing `.{}`",
                             rest.first().copied().unwrap_or_default()
