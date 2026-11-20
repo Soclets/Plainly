@@ -90,6 +90,11 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    sped up later. Each part of the language arrives with `final` mode's optimizations for it (D124), and compiling is
    fast from the start: parallel, cached and in the background (D65). `working` mode stays the light build (D46).
    PlainOracle stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
+2. **Keep going.** In long work, a finished step, a report or a wrap-up isn't a reason to stop: send the report in the
+   same message as the next action, and go straight on. Stop only when blocked on a design question with nothing else
+   to work on, when a test's expected output looks wrong and nothing else can go ahead, at 8:30 PM, when Tankun says
+   so, or before anything hard to undo, which still needs Tankun's OK. This is a rule, not just a prompt, because a
+   session's first prompt doesn't survive compaction, and this file does. (From Cyborg's rule 17.)
 
 ## Prompting
 
