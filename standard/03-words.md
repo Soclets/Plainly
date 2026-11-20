@@ -73,7 +73,7 @@ own (D60).
 | `//`, `///` | a comment to the end of the line; a doc comment before a declaration | D74 |
 | `:` | ends an opening line | D8 |
 | `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
-| `.` | narrows, touching the words on both sides | D4, D6, D18 |
+| `.` | after a word, names a kind (narrows); after a value, calls a method; touching both sides | D4, D6, D18, D41, D77 |
 | `::` | names a package, when two packages share a name | D64 |
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |

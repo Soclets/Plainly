@@ -29,6 +29,7 @@ The words this standard uses, each defined before a chapter relies on it.
 ## Procedures
 
 - **Procedure:** a named block of statements that can be run from elsewhere. `proc` is short for procedure (D2).
+- **Method:** a procedure called on a value with a `.` after it, as in `students.add("Mult")` (chapter 7).
 - **Family:** a word and its kinds, declared together, as `show_msg` and `show_msg.same_line` (chapter 4).
 - **Definition:** the block that writes a procedure, starting with `proc`.
 - **Parameter:** a name in a definition's `( )`, standing for a value the procedure is given.

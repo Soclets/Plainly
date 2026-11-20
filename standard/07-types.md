@@ -157,7 +157,16 @@ let also_first: Text = students[offset: 0];
 
 An empty list is `[]`, taking its type from where it goes (D76).
 
-**Not decided:** adding and removing; length; changing an item; going through a list.
+A value's methods are called with a plain `.` after it, and a method that changes its value can only be called on a
+`var` (D77):
+
+```
+students.add("Mult");
+students.remove(pos: 1);
+```
+
+**Not decided:** which methods lists and text have; how a type's methods are declared; length; changing an item;
+going through a list.
 
 ## Converting
 

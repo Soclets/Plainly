@@ -2397,3 +2397,39 @@ ambiguous. Tankun's choice.
 
 **Tankun's words.** Asked "`.empty` for empty lists and text, with `[]` and `""` refused?", the owner chose: "no";
 then, asked "`[]` and `""` for empty lists and text?", the owner chose: "yea".
+
+## D77. Methods are called on a value with a plain `.`, and ones that change it need a `var`
+
+2026-11-20.
+
+**Chosen.** A value's methods are called with a plain `.` after it:
+
+```
+var students: List<Text> = ["Fern", "Plern"];
+students.add("Mult");
+students.remove(pos: 1);
+```
+
+- **`.` after a value calls a method; `.` after a word names a kind** (D41), as in `show_msg.same_line`. These are two
+  places, so D60 allows it, and highlighting shows which is which: the value is coloured as a variable, the word as a
+  procedure or keyword.
+- **A method that changes its value can only be called on a `var`;** on a `let` it's refused.
+
+(Which methods lists and text have, how a type's methods are declared, and whether programs can declare their own
+aren't decided yet.)
+
+**Weighed.**
+- A procedure with `var` at the call, `add(var students, "Mult")`, as Swift's and Hylo's `inout`. It shows the change
+  at the call and keeps `.` to one job, but looks least like Python.
+- Giving back a new list to store, `students = add(students, "Mult")`. Forgetting the `students =` silently does
+  nothing, and each call copies the list.
+- Cyborg's `.%` and `.%%`. The design claude first took their `%` for a way around D41's rule for `.`; Tankun corrected
+  it: the `%` says how the value is borrowed, because Cyborg makes ownership explicit, and v2 has no ownership (D68).
+
+**Why this won.** It's the most familiar shape there is, Python's and nearly every language's, and reads as English.
+`var` still marks every list that can change, where it's declared (D13). Without `$` (D58), `students.add` and
+`show_msg.same_line` look alike in plain text, and highlighting tells them apart, as D58 already counts on.
+
+**Tankun's words.** "Isn't it a method?", "Actually, no. It's because Cyborg doesn't do implicit ownership", "There's
+highlightung, though", then, asked "Methods on values with a plain `.`, with changing ones only allowed on a `var`?",
+the owner chose: "yea. Btw, `let` is deep".
