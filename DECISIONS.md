@@ -2200,3 +2200,40 @@ games, where positions divided into tiles go wrong with truncation as soon as th
 that `.trunc`? If so, just say it like that", "What does floor do?", "Ah, so we could use `.down` for floor", "Why is
 it called floor?", "`.down` doesn't sound like it says there's a limit, though", then, asked "`/` exact with a
 remainder as a failed check, and `div.floor` and `div.trunc` for rounding?", the owner chose: "yea".
+
+## D71. `rem.floor` and `rem.trunc` give the remainder, matching `div`
+
+2026-11-20.
+
+**Chosen.** The remainder, what's left after taking out as many whole groups as fit, is `rem` with the same two
+narrowings as `div` (D70), with a space on each side:
+
+```
+let left: Whole = 7 rem.floor 2;
+let left: Whole = 7 rem.trunc 2;
+```
+
+Both give 1. With -7 in place of 7, `rem.floor` gives 1 and `rem.trunc` gives -1.
+
+- **Each remainder matches its division,** so `a div.floor b` and `a rem.floor b` always fit back together into `a`,
+  and the same for `.trunc`.
+- **`rem.floor`'s remainder has the sign of the number divided by,** as Python's `%`, so wrapping around works:
+  `-1 rem.floor 8` is 7, the last square of a board of 8.
+- **`rem.trunc`'s has the sign of the number divided,** as C's, Java's and Rust's `%`.
+- **A bare `rem` is refused,** as `div` is.
+- `rem` is short for remainder (D2).
+
+(Dividing by zero, and remainders of floats, aren't decided yet.)
+
+**Weighed.**
+- `%`, as most languages write it. It means floor's remainder in Python and trunc's in C, which is the trap, and Plainly
+  may want `%` for percentages.
+- `mod`, short for modulo, as Plainly v1 had. "Remainder" is the word school uses.
+- One remainder only. The negative-number split would then surprise whoever expected the other.
+
+**Why this won.** Games use the remainder for even and odd, every third turn, and wrapping around a board, and
+`.floor` gets wrapping right with negatives, where C's and Java's `%` give the classic bug. Matching `div` means
+nothing new to learn.
+
+**Tankun's words.** "What does it do?", then, asked "`rem.floor` and `rem.trunc`, matching `div`?", the owner chose:
+"yea".

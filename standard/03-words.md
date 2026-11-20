@@ -30,6 +30,7 @@ message".
 | `return` | | D57 |
 | `fam` | family | D2, D41 |
 | `div`, `.floor`, `.trunc` | divide, truncate | D2, D70 |
+| `rem` | remainder | D2, D71 |
 | `handler` | | D42 |
 | `include` | | D43 |
 | `copy`, `share` | | D49 |

@@ -45,7 +45,20 @@ These give 4, 3 and 3. With -7 in place of 7, `div.floor` gives -4 and `div.trun
 
 `div` is short for divide and `trunc` for truncate (D2).
 
-**Not decided:** remainders; dividing by zero; going past the range; maths order; how whole numbers are written; other
+### Remainders
+
+`rem.floor` and `rem.trunc` give what's left after dividing, each matching its division (D71):
+
+```
+let left: Whole = 7 rem.floor 2;
+let left: Whole = 7 rem.trunc 2;
+```
+
+Both give 1. With -7, `rem.floor` gives 1, with the sign of the number divided by, so `-1 rem.floor 8` is 7; and
+`rem.trunc` gives -1, with the sign of the number divided. A bare `rem` is refused (D71). `rem` is short for remainder
+(D2).
+
+**Not decided:** dividing by zero; going past the range; maths order; how whole numbers are written; other
 number types.
 
 ## `Bool`
