@@ -31,10 +31,12 @@ let total: Whole = price * count;
 ### Dividing
 
 ```
-let half: Whole = 8 / 2;            // 4
-let each: Whole = 7 div.floor 2;    // 3, and -7 div.floor 2 is -4
-let each: Whole = 7 div.trunc 2;    // 3, and -7 div.trunc 2 is -3
+let half: Whole = 8 / 2;
+let each: Whole = 7 div.floor 2;
+let each: Whole = 7 div.trunc 2;
 ```
+
+These give 4, 3 and 3. With -7 in place of 7, `div.floor` gives -4 and `div.trunc` gives -3.
 
 - **`/` divides exactly.** A remainder is a failed check that stops the program in both modes (D46, D70).
 - **`div.floor` rounds down to the nearest whole number below;** **`div.trunc` cuts the fraction off,** toward zero
