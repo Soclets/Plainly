@@ -33,7 +33,12 @@ refused: game.plainly:5:5, line 5 column 5
 5. **A broken block opener:** checking carries on into the body if it's clear what was meant, and stops there if it
    isn't (D55).
 
-**Not decided:** each message's wording; how columns are counted in text beyond plain English letters.
+## Wording
+
+Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables.
+
+**Not decided:** the wording of every other message; where the label column lines up; how columns are counted in text
+beyond plain English letters.
 
 ## Exit statuses
 
