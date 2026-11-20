@@ -204,5 +204,7 @@ let typed: Text = ask("Your guess: ");
 
 What's typed always comes back as text, even digits: typing `42` gives `"42"`, not the number 42 (D20).
 
-**Not decided:** text itself; filling values into text; turning text into a number; asking with no question; running
-out of input; reading single key presses.
+When there's no more input (the end-of-input key, or a file of answers running out), `ask` ends the program right
+there, quietly, with exit status 0. A last line with no Enter after it still counts as an answer (D96).
+
+**Not decided:** asking with no question; reading single key presses; what Ctrl+C does.

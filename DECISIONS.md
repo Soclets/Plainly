@@ -2949,3 +2949,32 @@ count as "not a number". The compiler session found the gap (its Q13).
 
 **Tankun's words.** "Isn't `1,000` 1000?", "nvm then", "Why is `+` and `-` allowed?", then, asked "`be.Whole` accepting
 spaces around the number, a `+` or `-`, and leading zeros, with everything else failing?", the owner chose: "yea".
+
+## D96. When input runs out, `ask` ends the program quietly, with status 0
+
+2026-11-20.
+
+**Chosen.**
+- When there's no more input, because the player pressed the end-of-input key (Ctrl+D on macOS and Linux, Ctrl+Z then
+  Enter on Windows) or a file of answers ran out, `ask` ends the program right there, quietly, with exit status 0, as
+  if the player chose to quit.
+- A last line with no Enter after it still counts as an answer.
+
+**Weighed.**
+- `ask` able to fail, so a program could save before stopping (D23). Every `ask` in every program would then need
+  handling, even a three-line hello-name program. Writing it as `?? save_game()` (Tankun's question) doesn't work:
+  `??` carries on with a value, and `save_game()` gives none and doesn't stop the program.
+- Ending with a message and a status of its own. More to learn for something that isn't an error; a message would be
+  noise for the player who pressed the key on purpose.
+
+The dangers, accepted: the program stops without a chance to save; status 0 doesn't tell a script that input ran out
+(a test still catches it, since its output won't match); and it's silent when a file of answers runs out early. A
+narrowed `ask` that reports running out as a failure, for games that want to save on quit, can be added when one
+needs it.
+
+**Why this won.** Ending input is something a person does on purpose, and the shell and most terminal programs take
+it as "I'm done". It keeps `ask` simple for every program. The compiler session asked (its Q14).
+
+**Tankun's words.** "Doesn't  Control + Z mean undo?", "Does it mean end program?", "Isn't Control + C copy?", "any
+danger?", "handle?", "Why not just `?? save_game()`?", then, asked "When input runs out, `ask` ends the program
+quietly with status 0, and a last line without Enter still counts?", the owner chose: "yea".

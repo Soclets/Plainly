@@ -51,7 +51,7 @@ beyond plain English letters.
 
 | Status | When |
 |---|---|
-| 0 | the program ran to its end |
+| 0 | the program ran to its end, or `ask` found no more input (D96) |
 | 1 | it was refused at compile time |
 | 2 | the file couldn't be read |
 | 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
