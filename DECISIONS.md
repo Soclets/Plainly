@@ -3222,3 +3222,32 @@ that will be built, and "further" admits a narrowing that's already there while 
 narrowings, right?". Asked "For an already-narrowed word with nothing more allowed, should the `why:` be "`be.Whole`
 can't be narrowed further"?", the owner chose: "yea". Then, asked "Do they all read right as drafted?" of the rest of
 part two, the owner chose: "yea".
+
+## D104. A program that stops with its line open finishes the line on standard output before the message
+
+2026-11-20.
+
+**Chosen.** When a program stops at runtime with a message, such as `check failed:`, while its output's last line is
+still open, as after `show_msg.same_line("Your guess: ")`, the runtime first writes the missing line break to standard
+output. Then the message goes to standard error as always, starting with its kind:
+
+```
+Your guess: 
+check failed: game.plainly:9:21, line 9 column 21
+```
+
+Every message still goes to standard error, and the program's own output to standard output.
+
+**Weighed.**
+- Leaving it, so the message starts on the open line, as in `Your guess: check failed: ...`. The kind, the first word
+  of every message (D54), is buried.
+- A line break at the start of the message, on standard error, whenever a line was open. The open line belongs to
+  standard output, and a message's first line would sometimes be blank, depending on what the program printed before.
+
+**Why this won.** The open line is standard output's, so it's closed there: the program's output always ends with a
+complete line, and a message always starts with its kind, in a terminal or read by a tool.
+
+**Tankun's words.** Asked "When a program stops with its line still open, should the runtime finish that line on
+standard output before the message?", Tankun wrote: "WHATATTTAYSIUJKSL":", then "Waht?". Shown an example, they asked
+"Do we err on stdout or stderr", and told errors go to standard error and that the suggestion was to close the open
+line on standard output, the owner chose: "yea".

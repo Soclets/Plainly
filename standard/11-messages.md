@@ -21,6 +21,9 @@ refused: game.plainly:5:5, line 5 column 5
   3. `because:`, the earlier place the error comes from, as a sentence, then that line with `^` under the cause;
   4. `why:`, the rule, as a plain sentence.
 - **No error codes, and no "did you mean" guesses** (D54).
+- **A message never starts mid-line:** every message goes to standard error, and when a program stops while its
+  output's last line is still open, as after `show_msg.same_line`, the runtime first ends that line on standard
+  output (D104).
 - **Every error is shown** (D54).
 
 ## One mistake, one message
