@@ -119,6 +119,8 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
 6. **Cores.** On Tankun's 10-core Mac: the design session 1, the compiler session 3, and the oracle session 3 once it
    exists. That covers builds and tests, as in `cargo build -j 3`, `CARGO_BUILD_JOBS=3` and
    `cargo test -- --test-threads=3`. (From Cyborg's rule 9.)
+7. **Scratchpad.** Scratch space is for what can be lost. Anything needed later goes in the repository and gets
+   committed. This holds for every session, the design session included. (From Cyborg's rule 14.)
 
 ## Prompting
 
