@@ -3116,3 +3116,57 @@ copy, and anything that can't be shown that way, like deleting or moving lines, 
 **Tankun's words.** "Isn't yours also an exception?", "Does that `what:` say fix or the problem", then, asked "`fix:`
 only when there's one fix that can be shown as a line, and a `what:` saying what's wrong otherwise?", the owner chose:
 "yea".
+
+## D102. The wording of the sixth batch, part one: parameters, narrowings, `else:`, D81, names in use, knock-on errors, names, blank lines and spacing
+
+2026-11-20.
+
+**Chosen.** These messages, in D54's layout, with D84's `fix:`, D86's label column, D89's "but" and D101's `fix:` or
+`what:`. Names, types, values and places are filled in from the program:
+
+| When refused | `what:` or `fix:` | `because:` | `why:` |
+|---|---|---|---|
+| two parameters with one name | `` two parameters are named `x` `` | | each parameter needs its own name. |
+| a narrowing written twice | `` `.fmt` is written twice `` | | each narrowing is written once. |
+| an unknown narrowing | `` `show_msg` has no narrowing `.x` `` | | `` `show_msg`'s narrowings are `.fmt` and `.same_line`. `` |
+| anything after `else:` but `end if` | `` nothing can follow an `if`'s `else:` part but `end if` `` | | `` an `if` has at most one `else:`, and it comes last. `` |
+| `1 < x < 10` (D81) | fix: `1 < x and x < 10` | | `` a comparison sets two values against each other; `and` joins two comparisons, naming the middle value twice. `` |
+| `x \|> f + 1` (D81) | fix: `(x \|> f) + 1` | | a slide's step is a procedure, so an operator after it goes outside brackets around the slide. |
+| `??` not after a call (D81) | `` `??` here doesn't follow a call that can fail `` | | `` `??` deals with the failure of the call right before it. `` |
+| a name declared again (D94) | `` `guess` is already in use here `` | `` `guess` is declared here `` | a name in use can't be declared again; two things get two names. |
+| a variable or parameter with a procedure's name (D94) | `` `roll` is already a procedure's name `` | `` the procedure `roll` is declared here `` | `` a variable can't take a procedure's name, since `roll` and `roll()` would look alike. `` |
+| a variable used after its block (D93) | D92's unknown variable | `` `note` is declared inside a block that has ended `` | D92's unknown variable |
+| a knock-on error (D83) | the error's own | it follows from the error at line 3 column 5 | the error's own |
+| a bad name (D99) | `` `Score` has a capital letter, but names have none ``, and likewise for a name that starts with a digit, starts with `_`, ends with `_`, or has two `_` in a row | | `` a name is lowercase letters and digits, starting with a letter, with `_` only between words. `` |
+| extra blank lines (D97, D101) | 2 extra blank lines, after the one on line 3 | | one blank line is enough to separate the parts of a program. |
+| several spacing mistakes on a line (D100) | fix: the corrected line | | `` spacing follows one rule: one space around operators and after `,` and `:`, none inside brackets or before a call's `(`, never two in a row, and none at the end of a line. `` |
+| one spacing mistake (D98) | fix: the corrected line | | by its kind: `` `==` has one space on each side. `` / `` `,` and `2` have one space between them. `` / `` no space goes between `(` and `"three"`. `` / spaces never come two in a row, outside indentation. / a line never ends with spaces. / a blank line has no spaces on it. |
+
+An unknown narrowing's `why:` lists the word's narrowings in the same pattern for any number: "`` `x`'s narrowings are
+`.a`, `.b` and `.c` ``", or "`` `x`'s only narrowing is `.a` ``" when it has one.
+
+Parameters count as variables for D94: a parameter named `roll` in a program with `proc roll` is refused too.
+
+**Weighed.**
+- "`` `show_msg` is narrowed by `.fmt` and `.same_line` ``", as drafted. It can be read as "always narrowed by both
+  together", though each works alone and both together are written `show_msg.fmt.same_line`.
+- "and/or" there. It fixes the meaning, but it isn't plain English for a beginner, and the slash reads like a symbol.
+- "`` `.fmt`, `.same_line`, or both ``". Exact, but clumsy for a word with three narrowings, and "both" says nothing of
+  their order, which has its own rule (D89).
+- "two comparisons in a row are refused", as the `1 < x < 10` `why:` was drafted. It repeats the refusal and explains
+  nothing.
+- "`` `Score` has a capital letter, and names have none ``", as drafted. D89's rule wants "but" for what's found against
+  what's expected.
+- Letting a parameter take a procedure's name. `roll` and `roll()` would look alike all the same.
+
+**Why this won.** Each `why:` names the rule rather than repeating the refusal, and a list of a word's narrowings says
+what exists without suggesting how they combine.
+
+**Tankun's words.** Shown the batch and asked "Do all of these read right?", Tankun asked:
+
+> `show_msg is narrowed by .fmt and .same_line.`
+> should it be `and/or` or clearer?
+
+Asked "Change that `why:` to "`show_msg`'s narrowings are `.fmt` and `.same_line`"?", the owner chose: "yea". Then,
+asked "Do the other rows read right as they are, including parameters counting as variables in the D94 row?", the
+owner chose: "yea".

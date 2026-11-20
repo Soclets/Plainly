@@ -36,10 +36,11 @@ refused: game.plainly:5:5, line 5 column 5
 
 ## Wording
 
-Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables, and D87 for
+Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables, D87 for
 declarations, comparing, converting, unhandled failures, joining text and keywords used as names, D88 for
-procedures, calls and `return`, and D89 for types, labels lines, narrowing order, parameter forms and `&` beside
-maths, and D92 for `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages. Where a
+procedures, calls and `return`, D89 for types, labels lines, narrowing order, parameter forms and `&` beside
+maths, D92 for `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages, and D102 for
+parameters, narrowings, `else:`, D81's refusals, names in use, knock-on errors, names, blank lines and spacing. Where a
 `what:` sets what's expected against what was found, it says "but" (D89).
 
 The text after every label starts at the same column, one space after the longest label, `because:`, in every message
