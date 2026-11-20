@@ -125,7 +125,12 @@ pub mod glue {
     }
 
     /// Stops the program because `procedure`'s Rust code panicked with `panic`, at the Plainly call `site` (D111).
-    pub fn rust_went_wrong(procedure: &str, panic: Box<dyn Any + Send>, site: *const u8, site_length: i64) -> ! {
+    pub fn rust_went_wrong(
+        procedure: &str,
+        panic: Box<dyn Any + Send>,
+        site: *const u8,
+        site_length: i64,
+    ) -> ! {
         let message = if let Some(text) = panic.downcast_ref::<&str>() {
             text.to_string()
         } else if let Some(text) = panic.downcast_ref::<String>() {
