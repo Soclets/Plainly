@@ -72,7 +72,7 @@ So `2 + 3 * 4` is 14. Where maths doesn't say, brackets are required: `&` next t
 
 Dividing by zero is a failed check that stops the program (D46, D72).
 
-**Not decided:** going past the range; maths order; how whole numbers are written; other
+**Not decided:** going past the range; how whole numbers are written; other
 number types.
 
 ## `Bool`
@@ -137,7 +137,7 @@ show_msg("She said \"hi\".");
 
 Empty text is `""` (D76).
 
-**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; comparing text; lists.
+**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; comparing text.
 
 ## Lists
 
