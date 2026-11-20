@@ -92,8 +92,9 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    PlainOracle stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
 2. **Keep going.** In long work, a finished step, a report or a wrap-up isn't a reason to stop: send the report in the
    same message as the next action, and go straight on. Stop only when blocked on a design question with nothing else
-   to work on, when a test's expected output looks wrong and nothing else can go ahead, at 8:30 PM, when Tankun says
-   so, or before anything hard to undo, which still needs Tankun's OK. This is a rule, not just a prompt, because a
+   to work on, when a test's expected output looks wrong and nothing else can go ahead, when a new decision redesigns
+   the part you're building (rule 5), at 8:30 PM, when Tankun says so, or before anything hard to undo, which still
+   needs Tankun's OK. This is a rule, not just a prompt, because a
    session's first prompt doesn't survive compaction, and this file does. (From Cyborg's rule 17.)
 3. **Style and lints.** `rustfmt`, `clippy`, and comments that say why, not what. Every crate has
    `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` and `#![warn(clippy::pedantic)]`, and denies
@@ -107,6 +108,15 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
    the design session first. (From Cyborg's rule 18.)
+5. **Keep up with decisions.** Pull and read any new entries in DECISIONS.md after every working step, and after every
+   pull. If a new decision redesigns the part you're building right now, like a new syntax for it, stop your turn
+   straight away, even halfway through, without finishing or committing the old version, and say what you stopped on.
+   Carry on once Tankun or the design session says how. If the change is small, like `end if` becoming `end`, don't
+   stop: carry on, but with the new decision, changing what you'd already written to match. Any other small decision in
+   your area, like a renamed word or a new refusal, just gets built. A big one, like a change to most of your tests or
+   how a whole part works, gets built after you finish what you're doing; ask the design session if it's unclear. The
+   design session messages only for what's urgent, like a decision that changes what a session is building right now,
+   for what needs explaining, or to wake an idle session. (From Cyborg's rule 16, with Tankun's change for redesigns.)
 
 ## Prompting
 
