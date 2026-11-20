@@ -142,9 +142,9 @@ It can come later for one small, critical piece if a bug there ever gets through
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
 9. **Language.** PlainCompiler, PlainGC, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
-   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is OCaml and Rocq (D129); each
-   test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12); one-line commands
-   in config; and scratch work that's never committed. (From Cyborg's rule 1.)
+   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is OCaml and Rocq
+   (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
+   one-line commands in config; and scratch work that's never committed. (From Cyborg's rule 1.)
 10. **No design in code.** Code follows `standard/`. Nothing undecided is guessed: anything the standard leaves open,
     or marks **Not decided**, stops with `NotDesignedYet` (D56), and the question goes to Tankun through the design
     session. Something decided but not built yet stops with `NotBuiltYet`, never `NotDesignedYet`. (From Cyborg's
