@@ -2025,3 +2025,26 @@ Cyborg's `okay` keeps cached builds exactly equal to fresh ones.
 the language, is still to be checked), "Let me answer compiling first. By background I meant that it compiles on
 another thread while you work", "Background compiling is on another thread, but not para", then, asked "Background
 compiling on one thread while you edit, parallel when you run or build, and a shared cache?", the owner chose: "yea".
+
+## D66. Plainly programs can run several things at once
+
+2026-11-20.
+
+**Chosen.** v2 has threads in the language: a Plainly program can run several parts of itself at once, like a game's
+music and its enemies beside the player's turn. This is apart from PlainCompiler's own threads (D65), which only make
+building faster.
+
+(How it's written, how parts talk to each other, what may be shared between them, and how PlainGC handles them aren't
+decided yet.)
+
+**Weighed.**
+- One step at a time, with threads left for later, as the design claude recommended: terminal games rarely need them,
+  they bring the hardest bugs (two parts changing one thing at once, results that differ between runs), and they're
+  easy to add later but hard to take back.
+
+**Why this won.** Tankun's choice: real-time terminal games want music, timers and enemies moving on their own, and
+it's better designed in from the start than bolted on later.
+
+**Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (quoted in D65 too), "What is the
+diff?", then, asked "Should Plainly programs themselves run one step at a time in v2, with threads in the language
+left for later?", the owner chose: "We should have".
