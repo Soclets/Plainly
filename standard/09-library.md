@@ -1,6 +1,8 @@
 # 9. Library
 
-Procedures that come with Plainly.
+Procedures that come with Plainly. The library targets the terminal: showing text, asking, single key presses,
+colours, drawing at a position and clearing the screen, on Windows, macOS and Linux, built on the Rust crate
+`crossterm`. A GUI, if ever, is a separate package (D63).
 
 ## `random`
 

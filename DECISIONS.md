@@ -1939,3 +1939,27 @@ where tests and PlainOracle catch it.
 Plainly's own for its checks and optimizations, with the backend library doing the rest.
 
 **Tankun's words.** Asked "These stages for PlainCompiler?", the owner chose: "yea".
+
+## D63. The standard library targets the terminal, on `crossterm`; a GUI only as a later package, if ever
+
+2026-11-20.
+
+**Chosen.** Plainly's standard library targets the terminal: showing text (D6), asking (D20), reading single key
+presses, colours, drawing at a position and clearing the screen, on Windows, macOS and Linux alike. It's built on
+`crossterm`, a Rust crate that handles every terminal's differences, through `extern.rust` procedures (D36). Examples
+and the README show terminal games. A GUI, if it ever comes, is a separate package wrapping a library like raylib
+behind `extern.rust`, and the language doesn't change for it.
+
+(The library's procedures and names, beyond those decided, aren't decided yet.)
+
+**Weighed.**
+- Writing terminal escape codes directly. Every terminal's differences, Windows' especially, would land on Plainly.
+- A GUI in the standard library. A far larger library, for games Plainly isn't aimed at first.
+- The browser as the main target. multifinity's notes warn that Fale died drifting into a contained sandbox; the web
+  playground stays a trailer (D45).
+
+**Why this won.** Offline terminal games are Plainly's first target, and `crossterm` is the proven way to reach every
+terminal from Rust. This is Plainly v1's D49.
+
+**Tankun's words.** Asked "The standard library built on `crossterm`, terminal first, with a GUI only as a later
+package?", the owner chose: "yea, if ever".
