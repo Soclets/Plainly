@@ -24,6 +24,8 @@ message".
 | `ignore`, `crash`, `otherwise`, `case` | | D23 |
 | `labels`, `as` | | D25 |
 | `.fmt` | format | D2, D29 |
+| `extern`, `.rust` | external | D2, D36 |
+| `returns` | | D37 |
 
 **Not decided:** every other keyword.
 

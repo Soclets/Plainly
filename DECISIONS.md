@@ -1079,3 +1079,25 @@ D40, with v2's short forms.
 
 **Tankun's words.** Asked "`extern.rust proc` like that?", the owner chose: "yea. `returns` locked" (the second half
 is D37).
+
+## D37. A procedure's header says what it gives back with `returns`
+
+2026-11-20.
+
+**Chosen.** A procedure that gives back a value says so at the end of its header, with `returns` and the type:
+
+```
+proc larger($a: Whole, $b: Whole) returns Whole:
+proc roll_dice returns Whole:
+extern.rust proc beep returns Bool:
+```
+
+(How a procedure gives back its value in the body, a procedure that gives back nothing, and how failures are listed
+in the header aren't decided yet.)
+
+**Weighed.** Nothing else was put forward: the word had been in every example since D3, and Tankun locked it.
+
+**Why this won.** It reads as what it says, "returns a whole number", in the header where a reader looks for what a
+procedure takes and gives. It's Plainly v1's word.
+
+**Tankun's words.** In answer to D36's question: "yea. `returns` locked".

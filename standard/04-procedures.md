@@ -21,8 +21,24 @@ end proc roll_dice
 
 where `...` stands for the procedure's body.
 
-**Not decided:** how a parameter is written; `returns` and the types; how a procedure gives back its value; a
-procedure that gives nothing back.
+A procedure that gives back a value says so at the end of its header, with `returns` and the type (D37).
+
+**Not decided:** how a parameter is written; how a procedure gives back its value in its body; a procedure that gives
+nothing back.
+
+## Procedures written in Rust
+
+`extern.rust` in front of `proc` says the procedure's body is written in Rust, outside the Plainly file. Its body is
+empty, or holds only a `labels` line, and its closer doesn't repeat `extern.rust` (D36):
+
+```
+extern.rust proc beep returns Bool:
+end proc beep
+```
+
+Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
+
+**Not decided:** how values cross into Rust; what an extern procedure does when it fails.
 
 ## Calls
 
