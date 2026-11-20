@@ -41,20 +41,25 @@ pub const PAYLOAD_OFFSET: usize = WORD;
 #[derive(Debug, PartialEq, Eq)]
 pub enum AllocationError {
     /// The heap can't grow past its hard limit, or the system has no more memory to give, and collecting freed too
-    /// little (D115). `in_use` is the hard limit when that's what stopped it, and otherwise how many bytes the heap
-    /// holds.
-    OutOfMemory { in_use: usize },
+    /// little (D115): `needed` more bytes were asked for, with `in_use` of the `limit` in use (D122).
+    OutOfMemory {
+        needed: usize,
+        in_use: usize,
+        limit: usize,
+    },
     /// A bug in PlainGC or PlainCompiler, described for the report.
     Internal(String),
 }
 
 impl AllocationError {
-    /// The error, with how many bytes the heap holds when it ran out.
-    fn in_heap(self, heap: &Heap) -> AllocationError {
+    /// The error, with how many bytes the heap holds when it ran out, and its limit.
+    fn in_collector(self, collector: &Collector) -> AllocationError {
         match self {
-            AllocationError::OutOfMemory { .. } => {
-                AllocationError::OutOfMemory { in_use: heap.used }
-            }
+            AllocationError::OutOfMemory { needed, .. } => AllocationError::OutOfMemory {
+                needed,
+                in_use: collector.heap.used,
+                limit: collector.hard_limit,
+            },
             other => other,
         }
     }
@@ -63,7 +68,11 @@ impl AllocationError {
 impl From<HeapError> for AllocationError {
     fn from(error: HeapError) -> AllocationError {
         match error {
-            HeapError::OutOfMemory => AllocationError::OutOfMemory { in_use: 0 },
+            HeapError::OutOfMemory { needed } => AllocationError::OutOfMemory {
+                needed,
+                in_use: 0,
+                limit: 0,
+            },
             HeapError::Internal(what) => AllocationError::Internal(what),
         }
     }
@@ -171,7 +180,7 @@ fn with_collector<T>(
 ) -> Result<T, AllocationError> {
     let mut guard = lock()?;
     let collector = guard.get_or_insert_with(new_collector);
-    work(collector).map_err(|error| error.in_heap(&collector.heap))
+    work(collector).map_err(|error| error.in_collector(collector))
 }
 
 /// Starts PlainGC for a compiled program.
@@ -234,19 +243,17 @@ pub(crate) fn allocate_with_roots(
                 }
                 Ok(object) => return Ok(collector.heap.reference_to(object)),
                 // The system refused memory before the hard limit: collect, as at the limit.
-                Err(HeapError::OutOfMemory) => {}
+                Err(HeapError::OutOfMemory { .. }) => {}
                 Err(HeapError::Internal(what)) => return Err(AllocationError::Internal(what)),
             }
         }
         // trace: D115
         if collected || !started {
-            let needed = collector.heap.used.saturating_add(object_size(length));
+            // trace: D122
             return Err(AllocationError::OutOfMemory {
-                in_use: if needed > collector.hard_limit {
-                    collector.hard_limit
-                } else {
-                    collector.heap.used
-                },
+                needed: object_size(length),
+                in_use: collector.heap.used,
+                limit: collector.hard_limit,
             });
         }
         // The program waits while PlainGC collects everything it can, as ZGC's allocation stall does.
@@ -455,7 +462,7 @@ fn worker() {
             Ok(false) => None,
             Ok(true) => Some(None),
             Err(HeapError::Internal(what)) => Some(Some(what)),
-            Err(HeapError::OutOfMemory) => Some(Some(
+            Err(HeapError::OutOfMemory { .. }) => Some(Some(
                 "PlainGC's thread ran out of memory while moving objects".to_string(),
             )),
         };

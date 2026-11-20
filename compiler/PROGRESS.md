@@ -59,8 +59,8 @@ the test results (`python3 compiler/run_tests.py`).
   PlainGC finishes the collection under way and one more (ZGC's allocation stall); if there's still no room, the
   program stops with D115's `check failed:`, status 4, at the line that needed the memory. Every allocating step now
   carries its site: the runtime notes it before making a value, and an `extern.rust` call's glue before its Rust code
-  runs. The `when:` shows the hard limit when that's what stopped it, and otherwise the bytes in use, as `64.0 MiB`,
-  or `14.4 GiB` from a GiB up.
+  runs. The `when:` is D122's: "needed 64.0 MiB more, with 32.0 MiB of the 64.0 MiB it may use on this
+  computer in use", each amount in whichever of bytes, KiB, MiB or GiB reads best.
 - **A bug fixed on the way:** an evacuated page's memory went back to the system as soon as its objects had moved,
   while the forwarding table still had entries for its addresses. When the system gave the same address back for a
   new page, a new object there was taken for one that had moved away, and the barrier "healed" it to the old one.

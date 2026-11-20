@@ -129,21 +129,32 @@ fn rust_went_wrong(went_wrong: plainly::glue::RustWentWrong) -> ! {
     std::process::exit(STATUS_INTERNAL_ERROR);
 }
 
-/// An amount of memory as people read it: `14.4 GiB`, or `48.0 MiB` when under a GiB.
+/// An amount of memory in whichever of bytes, KiB, MiB or GiB reads best (D122): `48 bytes`, `3.5 KiB`, `64.0 MiB`,
+/// `14.4 GiB`.
 fn amount_of_memory(bytes: usize) -> String {
-    const MIB: f64 = 1024.0 * 1024.0;
-    let mebibytes = bytes as f64 / MIB;
-    if mebibytes >= 1024.0 {
-        format!("{:.1} GiB", mebibytes / 1024.0)
+    const KIB: f64 = 1024.0;
+    let amount = bytes as f64;
+    if bytes == 1 {
+        "1 byte".to_string()
+    } else if amount < KIB {
+        format!("{bytes} bytes")
+    } else if amount < KIB * KIB {
+        format!("{:.1} KiB", amount / KIB)
+    } else if amount < KIB * KIB * KIB {
+        format!("{:.1} MiB", amount / (KIB * KIB))
     } else {
-        format!("{mebibytes:.1} MiB")
+        format!("{:.1} GiB", amount / (KIB * KIB * KIB))
     }
 }
 
 /// Stops the program when PlainGC can't go on: out of memory, or a bug in PlainGC itself.
 fn gc_failed(error: plain_gc::AllocationError) -> ! {
     match error {
-        plain_gc::AllocationError::OutOfMemory { in_use } => {
+        plain_gc::AllocationError::OutOfMemory {
+            needed,
+            in_use,
+            limit,
+        } => {
             let (site, site_length) = plain_gc::noted_site();
             // SAFETY: every site noted is one PlainCompiler wrote into the program, which lives as long as it.
             let site = unsafe { site_text(site, site_length) };
@@ -156,7 +167,13 @@ fn gc_failed(error: plain_gc::AllocationError) -> ! {
                     ("what", "the program ran out of memory".to_string()),
                     (
                         "when",
-                        format!("{} in use, the most it may use on this computer", amount_of_memory(in_use)),
+                        // trace: D122
+                        format!(
+                            "needed {} more, with {} of the {} it may use on this computer in use",
+                            amount_of_memory(needed),
+                            amount_of_memory(in_use),
+                            amount_of_memory(limit)
+                        ),
                     ),
                     (
                         "why",
@@ -596,6 +613,14 @@ mod tests {
         ] {
             assert_eq!(read(failing), None, "{failing:?}");
         }
+    }
+
+    #[test]
+    fn d122_amounts_of_memory_read_best() {
+        assert_eq!(amount_of_memory(48), "48 bytes");
+        assert_eq!(amount_of_memory(3584), "3.5 KiB");
+        assert_eq!(amount_of_memory(64 * 1024 * 1024), "64.0 MiB");
+        assert_eq!(amount_of_memory(15_461_882_266), "14.4 GiB");
     }
 
     #[test]

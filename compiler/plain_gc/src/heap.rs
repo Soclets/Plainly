@@ -31,8 +31,8 @@ const PAGE_ALIGNMENT: usize = 16;
 /// Why an allocation or a collection couldn't go on.
 #[derive(Debug, PartialEq, Eq)]
 pub enum HeapError {
-    /// The system has no more memory to give.
-    OutOfMemory,
+    /// The system has no more memory to give for `needed` more bytes.
+    OutOfMemory { needed: usize },
     /// PlainGC found something that can only be a bug in PlainGC or PlainCompiler.
     Internal(String),
 }
@@ -56,12 +56,12 @@ struct Page {
 
 impl Page {
     fn new(size: usize, large: bool) -> Result<Page, HeapError> {
-        let layout =
-            Layout::from_size_align(size, PAGE_ALIGNMENT).map_err(|_| HeapError::OutOfMemory)?;
+        let layout = Layout::from_size_align(size, PAGE_ALIGNMENT)
+            .map_err(|_| HeapError::OutOfMemory { needed: size })?;
         // SAFETY: `layout` has a non-zero size, since every page holds at least one object of at least one word.
         let start = unsafe { alloc_zeroed(layout) };
         if start.is_null() {
-            return Err(HeapError::OutOfMemory);
+            return Err(HeapError::OutOfMemory { needed: size });
         }
         Ok(Page {
             start: start as usize,
@@ -305,7 +305,7 @@ impl Heap {
     /// Allocates an object of `kind` with a payload of `length` bytes, all zero. Gives its address.
     pub fn allocate(&mut self, kind: ObjectKind, length: usize) -> Result<usize, HeapError> {
         if length > MAX_LENGTH {
-            return Err(HeapError::OutOfMemory);
+            return Err(HeapError::OutOfMemory { needed: length });
         }
         let size = object_size(length);
         let address = if size > LARGEST_SMALL_OBJECT {
