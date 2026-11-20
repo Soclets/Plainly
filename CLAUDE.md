@@ -56,6 +56,12 @@ backticks). Pick by a check, never by feel: write the whole message to a file
 python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has code" if "```" in m else "too long" if len(m)>300 else "quote", "| commit:", "has code" if "`" in m else "too long" if len(m)>60 else "quote")' message.txt
 ```
 
+## PlainOracle's C problems
+
+PlainOracle is written in C as an experiment, to see how many problems C causes (D52). Any session working on it
+records every problem C causes in `design/c-problems.md` as it happens, in that file's format, including ones caught
+before they did harm. Never skip one for being small.
+
 ## Git
 
 - Branch `main`; remote `Soclets/Plainly` (public).

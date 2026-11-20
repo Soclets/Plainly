@@ -1592,8 +1592,13 @@ rails that keep it obviously correct aren't decided yet.)
   Unicode, and signed overflow is undefined behaviour unless every addition uses a checked form such as C23's
   `ckd_add`.
 
-**Why this won.** Tankun's choice. C needs nothing beyond a C compiler, runs everywhere, compiles to WebAssembly
-through Emscripten, and is a different language from PlainCompiler's Rust, so the two can't share code or bugs (D12).
+**Why this won.** It's an experiment: Tankun wants to see how many problems C causes. So every problem C causes
+in PlainOracle is recorded, as it happens, in [`design/c-problems.md`](design/c-problems.md): what went wrong, which
+part of C caused it, how it was caught, and what it cost. C also needs nothing beyond a C compiler, runs everywhere,
+compiles to WebAssembly through Emscripten, and is a different language from PlainCompiler's Rust, so the two can't
+share code or bugs (D12).
 
 **Tankun's words.** "You know what's fucking funny? Clang C", "Can I see C syntax?", "What about SPARK? Not hardcore
-SPARK, though", "C or C++ for PlainOracle, if there's two options only", then "C for PlainOracle, and I'm not kidding."
+SPARK, though", "C or C++ for PlainOracle, if there's two options only", "C for PlainOracle, and I'm not kidding.",
+then, asked for the reason, "My reason for C is that I wanted to see how much problems C would cause, so make sure to
+record them."
