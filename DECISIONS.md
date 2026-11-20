@@ -1393,3 +1393,35 @@ the compiler and `extern.rust` procedures (D36) share one world. This is Plainly
 **Tankun's words.** Asked "A Rust compiler, ahead of time to native through Cranelift?", the owner chose: "yea, what
 about build modes? `--Working` (no optimization, every runtime check kept) and `--Final` (max optimization from backend
 and frontend, cheap checks kept)?"
+
+## D46. Two build modes, working and final, with no default; final never drops a check
+
+2026-11-20.
+
+**Chosen.** Every build names one of two modes, with the flags `--working` and `--final`. There's no default.
+
+- **Working:** no optimizations, so the fastest compile, and every check kept, each stopping at the exact line:
+  whole-number overflow, a bad list position, division by zero, NaN in floats.
+- **Final:** full optimization, from Plainly's own front end and from Cranelift. It never drops a check; it only makes
+  expensive ones cheaper. Overflow, position and division-by-zero checks cost almost nothing and stay. Checks the
+  optimizer proves can never fail are removed. The NaN check after every float operation becomes the CPU's own flags,
+  read where a value leaves a procedure; its message names the procedure, and says to build in working mode to find
+  the line.
+
+(How the modes are written in docs and messages, the command's name, and what each check's message says aren't
+decided yet. Overflow, positions, division and floats themselves aren't decided either; the list says what's checked
+once they are.)
+
+**Weighed.**
+- Plainly v1's three modes, `Working`, `FinalSafe` and `FinalPerf` (its D19), where the third dropped safety checks for
+  speed. A terminal game never needs that speed, and a dropped check turns a clear stop into a silent wrong answer.
+- `--Working` and `--Final`, capitalised, as Tankun first wrote them. Command-line flags are lowercase almost
+  everywhere.
+- A default mode. Someone ships a slow working build by accident, or debugs in final without knowing it.
+
+**Why this won.** Two modes cover the two jobs, writing a game and shipping it, and the rule that final never drops a
+check means a shipped game is exactly as safe as the one that was tested. Tankun proposed the pair.
+
+**Tankun's words.** In D45's answer (quoted there), Tankun proposed `--Working` and `--Final`. Asked "Two modes,
+`Working` and `Final`, where `Final` never drops a check, with no default and lowercase flags?", the owner chose: "yea,
+lowercase in docs too?"
