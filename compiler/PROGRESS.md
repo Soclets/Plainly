@@ -8,7 +8,7 @@ the test results (`python3 compiler/run_tests.py`).
 **Milestone 1 is done.**
 
 - **All 21 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including message tests for D85, D87 and D88.
-- **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
+- **The guessing game builds and plays** (`plainly compile examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
 - `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 37 Rust unit tests pass, among them one
@@ -18,6 +18,7 @@ the test results (`python3 compiler/run_tests.py`).
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
+- `plainly compile` replaces `plainly build` (D91), and messages say "compile time" and "runtime" (D90).
 - Follows the decisions up to D83: `??` sticks to its call, and comparison chains and operators after a step are
   refused with their fixes (D81); exit statuses 6 and 7 (D82); knock-ons as D83 confirms.
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
@@ -167,7 +168,7 @@ type (D23); the four `labels` messages (D25); `-` on something that isn't a numb
 | D27, D59 | `+`, `-`, `*` on anything but two `Whole`s | what: `` `+` works on two `Whole`s, but this is a `Bool` and a `Whole` `` | `+`, `-` and `*` are only for numbers. |
 | D28 | a number joined with `&` | fix: the line with `be.Text(...)` around it | `&` joins two pieces of text, and a number becomes text only where `be.Text` says so. |
 | D28 | a `Bool` joined with `&` | what: `` `&` joins text, but this is a `Bool` `` | (same) |
-| D29 | a brace that isn't a variable | what: `` there's no variable named `nme` here `` | braces in `.fmt` text hold a variable's name, checked while building. |
+| D29 | a brace that isn't a variable | what: `` there's no variable named `nme` here `` | braces in `.fmt` text hold a variable's name, checked at compile time. |
 | D29 | a calculation or a call in braces | what: braces in `.fmt` text hold only a variable's name | text never hides a calculation or a call; work it out into a variable first. |
 | D29 | `.fmt` with no text, or with a label | what: `` `.fmt` takes one piece of text `` / `` `.fmt`'s text has no label `` | `.fmt` fills in the braces of the text it's given. |
 | D31 | `show_msg.same_line.fmt` | fix: the line with `show_msg.fmt.same_line` | narrowings go strongest first: `.fmt` changes what's shown, `.same_line` only where it ends. |
@@ -191,7 +192,7 @@ type (D23); the four `labels` messages (D25); `-` on something that isn't a numb
 | (any) | something the parser can't read | what: `` `;` should be here, not `x` `` / the line ends where `` `)` `` should be / the file ends where a value should be | (none) |
 | (any) | a value of the wrong type | what: `` `x` is a `Whole`, but this value is a `Text` `` (fix: `be.Text(...)` when a `Whole` is given for `Text`) | a value's type has to match where it's used. / a number becomes text only where `be.Text` says so. |
 
-### Checks while running (`check failed:`, exit status 4)
+### Checks at runtime (`check failed:`, exit status 4)
 
 | Decision | Check | `what:` | `when:` | `why:` |
 |---|---|---|---|---|
@@ -206,7 +207,7 @@ The `^` is under the whole calculation, like `tries + 1`.
 | `NotDesignedYet:`, `NotBuiltYet:` (D56) | as listed above | `what:` says what isn't decided or built, as in "maths order isn't decided, so more than one of `+`, `-` and `*` needs brackets for now" |
 | `internal error:` (status 7, D82) | PlainCompiler itself goes wrong | `what:` the problem; `why:` this is a bug in PlainCompiler. Please report it at https://github.com/Soclets/Plainly/issues, with the program that caused it. |
 | `can't read:` (status 2) | the file can't be read | `can't read: game.plainly` then `what:` the system's reason |
-| `plainly:` (status 6, D82) | a mistake in the command | `plainly: run and build need a mode: --working or --final`, then the usage lines |
+| `plainly:` (status 6, D82) | a mistake in the command | `plainly: run and compile need a mode: --working or --final`, then the usage lines |
 
 ## Open questions for the design session
 
@@ -235,17 +236,17 @@ uses a placeholder until it's decided.
 - **Q12. Declaring a name that's already in use:** a variable again while the first is still in use, or a variable or
   parameter with a procedure's name, or a procedure named like a library one (`ask`, `random`, `show_msg`).
 - **Q13. Which text `be.Whole` reads.** Digits with an optional `-` in front are read, and anything that isn't nearly a
-  number fails, as `abc` does (D22). These stop with `NotDesignedYet` while running: spaces around the number
+  number fails, as `abc` does (D22). These stop with `NotDesignedYet` at runtime: spaces around the number
   (`" 42"`), a `+` (`"+5"`), extra zeros in front (`"007"`, `"-0"`), `_` or `,` between digits, and a number outside
   `Whole`'s range. Empty text (a player pressing Enter at once) fails.
 - **Q14. Running out of input** in `ask` (chapter 4 says it isn't decided), and input that ends without Enter after
-  the last answer: both `NotDesignedYet` while running.
+  the last answer: both `NotDesignedYet` at runtime.
 - **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone; and `?? ignore` on a call that gives
   a value.
 - **Q16. Code after `break;` in the same block.** D57 refuses code after `return`, and D9 code after an `if` that can
   leave; a line straight after `break;` isn't covered. `NotDesignedYet`.
-- **Q17. What the command's file means, and where `build` puts its file.** D64 makes a program every `.plainly` file
-  in its folder, so `plainly run games/guess.plainly` compiles every `.plainly` file in `games/`. `plainly build`
+- **Q17. What the command's file means, and where `compile` puts its file.** D64 makes a program every `.plainly` file
+  in its folder, so `plainly run games/guess.plainly` compiles every `.plainly` file in `games/`. `plainly compile`
   writes the executable into the current folder, named after the file (`guess`).
 - **Q18. Answered by D84:** `fix:` shows the whole corrected line, in backticks so its indentation shows.
 - **Q19. Answered by D83:** each knock-on stays a message of its own, with a `because:` pointing back to the first

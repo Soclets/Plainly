@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! plainly run game.plainly --working
-//! plainly build game.plainly --working
+//! plainly compile game.plainly --working
 //! plainly check game.plainly
 //! ```
 //!
@@ -45,9 +45,9 @@ const STATUS_COMMAND_MISTAKE: u8 = 6;
 const STATUS_INTERNAL_ERROR: u8 = 7;
 
 const USAGE: &str = "usage:
-  plainly run FILE.plainly --working     build in a temporary file and run it
-  plainly build FILE.plainly --working   build the file to ship
-  plainly check FILE.plainly             say what's refused, without building
+  plainly run FILE.plainly --working       compile to a temporary file and run it
+  plainly compile FILE.plainly --working   compile the file to ship
+  plainly check FILE.plainly               say what's refused, without compiling
 ";
 
 fn main() -> ExitCode {
@@ -59,7 +59,7 @@ fn main() -> ExitCode {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Action {
     Run,
-    Build,
+    Compile,
     Check,
 }
 
@@ -74,7 +74,8 @@ fn run_command(arguments: &[String]) -> u8 {
     };
     let action = match command.as_str() {
         "run" => Action::Run,
-        "build" => Action::Build,
+        // trace: D91
+        "compile" => Action::Compile,
         "check" => Action::Check,
         "oracle" => {
             eprintln!(
@@ -106,12 +107,12 @@ fn run_command(arguments: &[String]) -> u8 {
         (Action::Check, None) => {}
         (Action::Check, Some(_)) => return command_mistake("`check` needs no mode"),
         (_, None) => {
-            return command_mistake("`run` and `build` need a mode: `--working` or `--final`");
+            return command_mistake("`run` and `compile` need a mode: `--working` or `--final`");
         }
         (_, Some("--working")) => {}
         (_, Some("--final")) => {
             eprintln!(
-                "NotBuiltYet: `final` mode (D46) isn't built yet; build in `working` mode with `--working`"
+                "NotBuiltYet: `final` mode (D46) isn't built yet; compile in `working` mode with `--working`"
             );
             return STATUS_NOT_YET;
         }
@@ -239,7 +240,7 @@ fn compile_and_go(action: Action, file: &Path) -> Result<u8, InternalError> {
     let program: IrProgram = lowering::lower_program(&typed, &sources)?;
     let object = code_generation::generate(&program)?;
     match action {
-        Action::Build => {
+        Action::Compile => {
             let name = file
                 .file_stem()
                 .ok_or_else(|| InternalError::new("the file has no name"))?;
@@ -250,7 +251,7 @@ fn compile_and_go(action: Action, file: &Path) -> Result<u8, InternalError> {
     }
 }
 
-/// `plainly run`: builds to a temporary file, runs it, and gives its exit status (D45, D50).
+/// `plainly run`: compiles to a temporary file, runs it, and gives its exit status (D45, D50, D91).
 fn run_in_temporary_file(object: &[u8]) -> Result<u8, InternalError> {
     let nanoseconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

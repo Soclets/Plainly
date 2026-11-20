@@ -8,7 +8,7 @@ use crate::source::{Place, SourceFile};
 /// What kind of message it is, the first word of its first line (D54, D56).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
-    /// Rejected while building (D54).
+    /// Rejected at compile time (D54, D90).
     Refused,
     /// Decided, but PlainCompiler can't do it yet (D56).
     NotBuiltYet,

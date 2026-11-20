@@ -45,7 +45,7 @@ pub fn link(object: &[u8], output: &Path) -> Result<(), InternalError> {
     let _ = fs::remove_file(&object_path);
     let result = result.map_err(|error| {
         InternalError::new(format!(
-            "running the C linker, `cc`, which building needs: {error}"
+            "running the C linker, `cc`, which compiling needs: {error}"
         ))
     })?;
     if !result.status.success() {

@@ -1,5 +1,5 @@
 //! The checker: the syntax tree to the typed tree, resolving names and types. Refusals happen here (D62), and
-//! checking carries on after each one, so one build shows every real error (D55).
+//! checking carries on after each one, so one compile shows every real error (D55).
 
 use std::collections::HashMap;
 
@@ -1741,7 +1741,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
     }
 
     /// The text given to `.fmt`, with its braces read (D29, D30). It must be written in the call, so it can be
-    /// checked while building.
+    /// checked at compile time.
     fn check_format(
         &mut self,
         slid: Option<Checked>,
@@ -1774,7 +1774,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         let ExpressionKind::Text(characters) = &argument.value.kind else {
             self.messages.push(Message::not_designed_yet(
                 argument.value.place,
-                "`.fmt` with text that isn't written in the call isn't decided, since its braces are checked while building",
+                "`.fmt` with text that isn't written in the call isn't decided, since its braces are checked at compile time",
             ));
             let _ = self.value(&argument.value);
             return None;
@@ -1858,7 +1858,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                                 brace_place,
                                 format!("there's no variable named `{inside}` here"),
                             )
-                            .why("braces in `.fmt` text hold a variable's name, checked while building.")
+                            .why("braces in `.fmt` text hold a variable's name, checked at compile time.")
                         };
                         self.messages.push(message);
                         refused = true;
