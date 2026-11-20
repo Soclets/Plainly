@@ -66,11 +66,15 @@ end proc beep
 Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
 
 Its Rust code lives in a folder named `rust` in the program's folder, holding an ordinary Cargo project, which
-PlainCompiler builds and links into the program. Each `extern.rust proc` matches the Rust function with the same name,
-which holds Plainly values through handles (D105, D107).
+PlainCompiler builds and links into the program (D107). Each procedure's Rust function is marked with a macro naming
+it exactly, which writes the glue that links it, and holds Plainly values through handles (D105, D108):
 
-**Not decided:** how values other than PlainGC's cross into Rust; what an extern procedure does when it fails; how a
-name with a narrowing is written in Rust.
+```rust
+#[plainly::procedure("show_msg.same_line")]
+fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
+```
+
+**Not decided:** how values other than PlainGC's cross into Rust; what an extern procedure does when it fails.
 
 ## Families
 

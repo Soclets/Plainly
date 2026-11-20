@@ -3328,6 +3328,7 @@ my_game/
 
 - PlainCompiler builds it with Cargo and links it into the program.
 - Each `extern.rust proc` matches the Rust function with the same name, which takes the call and its handles (D105).
+  (Changed by D108: the match is made by a macro naming the procedure, not by the function's name.)
 - Since it's a Cargo project, the Rust code can use other crates, like `crossterm` for the terminal.
 - Rust needs to be installed only for a program with a `rust` folder.
 
@@ -3344,3 +3345,38 @@ the crates games need for the terminal, with one command still building everythi
 
 **Tankun's words.** Asked "Should `extern.rust` code live in a `rust` folder holding a Cargo project, beside the
 program's `.plainly` files, built and linked by PlainCompiler?", the owner chose: "yea".
+
+## D108. An `extern.rust` procedure's Rust function is marked with `#[plainly::procedure("...")]`
+
+2026-11-20.
+
+**Chosen.** Each Rust function for an `extern.rust` procedure is marked with a macro naming its Plainly procedure
+exactly as written, replacing D107's match by name:
+
+```rust
+#[plainly::procedure("show_msg.same_line")]
+fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
+```
+
+- The macro writes the linking glue: a fixed symbol for Cranelift's code to call, and the conversion from the raw
+  values passed in into D105's handles, so no `unsafe` lands in the Rust writer's code.
+- It checks the Rust function's parameters when the Rust is built.
+- The Rust function's own name is free, since the macro's text does the matching, so any Plainly name works, narrowed
+  or not.
+- PlainCompiler provides the macro, as a small crate the `rust` project depends on.
+
+**Weighed.**
+- The Rust function with the same name, as D107 had it, with each narrowing a Rust module: `show_msg.same_line` as
+  `show_msg::same_line`. Rust scrambles a module path's symbol (mangling), and `#[no_mangle]` keeps only the last
+  name, so `same_line` on two words would clash; every function would also need hand-written `unsafe` glue; and a
+  narrowing like `.Text` would make a module named `Text`, which Rust warns about.
+- `show_msg_same_line`, `.` written as `_`. It can clash with a procedure really named that.
+- `show_msg__same_line`, `.` written as `__`, which can't clash, since D99 bans `__` in names. Rust's compiler warns
+  that it "should have a snake case name".
+
+**Why this won.** One line names the procedure exactly and does the linking and the conversion to handles, which the
+other ways leave to hand-written `unsafe` code, at the cost of a small crate that PlainCompiler provides.
+
+**Tankun's words.** Shown the module way as the recommendation, Tankun asked: "Why not macro?". Asked "Should each
+`extern.rust` procedure's Rust function be marked with `#[plainly::procedure("...")]` naming its Plainly procedure,
+with the macro writing the glue that links it?", the owner chose: "yea".
