@@ -118,5 +118,10 @@ let $title: Text = load_word($file) otherwise:
 end otherwise
 ```
 
-**Not decided:** how a procedure fails on purpose; `return`; handlers that take arguments; whether failing on purpose
-inside a case counts as a jump.
+A handler can take parameters, written as a procedure's are, and is given arguments where it's used (D44):
+
+```
+let $title: Text = first_word($heading) otherwise word_failed.use_default(with: "Untitled");
+```
+
+**Not decided:** how a procedure fails on purpose; `return`; whether failing on purpose inside a case counts as a jump.

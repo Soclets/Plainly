@@ -1332,3 +1332,37 @@ exactly what happens, its cases included as if written there, and leaves `use` f
 
 **Tankun's words.** "`include` instead?", then, asked "`include` inside `otherwise:` to combine a handler with extra
 cases?", the owner chose: "yea".
+
+## D44. Handlers take parameters as procedures do
+
+2026-11-20.
+
+**Chosen.** A handler can take parameters, written as a procedure's are: `( )` only when it has some (D4), a `labels`
+line at the top of its body (D25), and arguments in `( )` with their labels where it's used (D24). An argument is
+worked out at the call, before the cases run, and the cases read it like any parameter.
+
+```
+fam.handler word_failed:
+    handler word_failed.use_default($fallback: Text):
+        labels $fallback as with;
+        case too_long:
+            instead $fallback;
+        case no_words:
+            instead $fallback;
+    end handler word_failed.use_default
+end fam.handler word_failed
+
+let $title: Text = first_word($heading) otherwise word_failed.use_default(with: "Untitled");
+```
+
+`include` takes arguments the same way: `include word_failed.use_default(with: "?");` (D43).
+
+**Weighed.**
+- No parameters, so every fallback value needs its own handler. Cyborg's design claude reports this as the gap its
+  users hit first ("use_placeholder" wants to be "use_default(with: …)"), and Cyborg never settled it.
+
+**Why this won.** A handler is reusable across calls that want different fallbacks, and it's written with the rules
+procedures already use, so nothing new is learnt.
+
+**Tankun's words.** Asked "Handlers take parameters like procedures do?", the owner chose: "yea. Let's decide arch,
+like backend, memory, etc"
