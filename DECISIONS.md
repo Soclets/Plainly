@@ -2695,6 +2695,8 @@ line (D84) and the label column of D86. Names and types in them are filled in fr
 | a number joined with `&` (D28) | (a `fix:` with `be.Text(...)`) | | `&` joins two pieces of text, and a number becomes text only where `be.Text` says so. |
 | a keyword used as a name (D58) | `` `if` is a keyword, so it can't be a name `` | | a name can't be one of Plainly's own words. |
 
+Changed by D89: "but this is a `Whole` and a `Text`".
+
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
 
 ## D88. The wording of the third batch of refusals: procedures, calls and `return`
@@ -2721,6 +2723,8 @@ Names, types and numbers in them are filled in from the program:
 | a bare `return;` as the last line (D57) | a bare `return;` as a procedure's last line does nothing | | a procedure ends there anyway; `return;` is for leaving early. |
 | a line after an `if` that can leave (D9) | this line follows an `if` that can leave | `` the `if` on line 4 can leave `` | when any way through an `if` leaves, nothing may follow its `end if`; code that should run afterwards goes in the ways that don't leave. |
 | `break` outside a loop (D32) | this `break` isn't inside a loop | | `break` leaves the innermost loop it's in. |
+
+Changed by D89: "but this call gives 1 value".
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
 
