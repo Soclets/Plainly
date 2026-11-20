@@ -46,14 +46,15 @@ plainly oracle game.plainly
 
 ## Memory
 
-PlainGC (D51), a garbage collector in the style of Go's, frees memory (D48):
-- **it marks what's in use while the program keeps running,** so pauses stay well under a millisecond;
-- **it never moves objects,** so an `extern.rust` procedure can hold a plain pointer during a call;
-- **it needs only a write barrier,** a check when a reference is stored;
-- **it groups objects by size;**
-- **it's precise,** finding references through Cranelift's stack maps.
+PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69):
+- **one heap for every worker's thread,** collected while they all keep running, with pauses that stay tiny at any
+  heap size;
+- **it moves objects as it collects,** so memory never fragments;
+- **every read of a reference gets a small check** (a load barrier), so a moved object is found;
+- **it's precise,** finding references through Cranelift's stack maps;
+- **`extern.rust` code holds handles** to Plainly values, not plain pointers.
 
-It may first be built as a simple mark-and-sweep with the same never-moving promise (D48).
+**Not decided:** how handles work on the Rust side; the order of building it.
 
 ## Build modes
 

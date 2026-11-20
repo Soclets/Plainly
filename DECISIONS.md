@@ -2130,3 +2130,32 @@ wait, isn't Ownership just GC with no perf tradeoff? So, can't GC do good too?",
 that not cover", "What about A?", "Okay, let's say we're in a classroom. 60 mins of class: Cranelift ✅, grade more.
 Let's go.", then, asked "Real threads as workers that send messages, with values that never change readable by all of
 them?", the owner chose: "yea".
+
+## D69. PlainGC is ZGC-style: it moves objects while the program runs
+
+2026-11-20.
+
+**Chosen.** PlainGC is in the style of Java's ZGC:
+- one physical heap for every worker's thread (D68), collected while they all keep running, with pauses that stay
+  tiny at any heap size;
+- it moves objects as it collects, compacting memory so it never fragments, however long a game runs;
+- every read of a reference gets a small check, a load barrier, emitted by PlainCompiler, so a moved object is found;
+- it's precise, finding references through the stack maps Cranelift records (D45);
+- `extern.rust` code (D36) holds handles to Plainly values rather than plain pointers, since objects can move.
+
+This replaces D48's Go-style collector. D49's `copy` and `share` are unchanged.
+
+(How handles work on the Rust side, how a moved object is found, and the order of building it aren't decided yet.)
+
+**Weighed.**
+- Go-style (D48): never moves objects, so Rust code keeps plain pointers, with only a write barrier, and roughly
+  5,000 to 12,000 lines of Rust by Plainly v1's estimate, against 10,000 to 25,000.
+- A simple mark-and-sweep. Easiest to build, with pauses that grow with memory.
+
+**Why this won.** Users never see the difference, so it's the builder's choice, and building a ZGC-style collector is
+one of the parts Tankun wants to make real: v1 was abandoned before its compiler and ZGC were built (D67's words). With
+workers on many threads sharing one heap (D68), it has real work to do: compacting, and short pauses under many
+threads. The cost lands on PlainCompiler's load barriers and on Rust code holding handles.
+
+**Tankun's words.** "Does ZGC-style GC help?" and "ZGC-style GC + A seems very fun" (D67), then, asked "ZGC-style
+PlainGC, replacing D48's Go-style?", the owner chose: "yea".
