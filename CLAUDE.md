@@ -124,6 +124,10 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
 8. **Downloads are free.** A dependency or tool is chosen on maturity, safety, maintenance and speed. A less mature or
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
+9. **Language.** PlainCompiler, PlainGC, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
+   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is C (D52); each
+   test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12); one-line commands
+   in config; and scratch work that's never committed. (From Cyborg's rule 1.)
 
 ## Prompting
 
