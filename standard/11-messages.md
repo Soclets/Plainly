@@ -64,7 +64,7 @@ beyond plain English letters.
 | 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
 | 4 | a check failed at runtime, or the program ran out of memory (D115) |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
-| 6 | the command itself was written wrong, like a missing mode or an unknown command (D82) |
+| 6 | the command itself was written wrong, like a missing mode or an unknown command, with every mistake shown, one line each (D82, D116) |
 | 7 | code below the program's Plainly went wrong: PlainCompiler, PlainGC or PlainOracle itself, with a message naming it and saying how to report it, or an `extern.rust` procedure's Rust code, with a message naming the procedure (D82, D103, D111) |
 
 `NotBuiltYet` is for something decided but not built, and `NotDesignedYet` for something no decision covers. They use

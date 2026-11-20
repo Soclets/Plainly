@@ -3583,3 +3583,29 @@ reads and exits the same way.
 
 **Tankun's words.** Asked "Should running out of memory stop the program as a `check failed:` with status 4, at the
 line that needed the memory, with the numbers in `when:`?", the owner chose: "yea".
+
+## D116. A command with several mistakes shows all of them, one line each, before the usage
+
+2026-11-20.
+
+**Chosen.** When a command has more than one mistake, each gets its own `plainly:` line (D103's wordings), and the usage
+follows once:
+
+```
+plainly: `run` takes one file, but this gives 2
+plainly: `--fast` isn't a mode; the modes are `--working` and `--final`
+usage:
+  ...
+```
+
+The lines follow the order of the command as written, with anything missing, like a mode, last.
+
+**Weighed.**
+- Only the first mistake, as PlainCompiler showed until now, checking in an order it chose. A second mistake shows only
+  after the first is fixed and the command run again.
+
+**Why this won.** It's D54's rule for programs, every error shown, applied to the command, and it leaves no order for
+an implementation to choose.
+
+**Tankun's words.** Asked "Should a command with several mistakes show all of them, one line each, before the usage?",
+the owner chose: "yea".
