@@ -2237,3 +2237,33 @@ nothing new to learn.
 
 **Tankun's words.** "What does it do?", then, asked "`rem.floor` and `rem.trunc`, matching `div`?", the owner chose:
 "yea".
+
+## D72. Maths order, with brackets required where maths doesn't say
+
+2026-11-20.
+
+**Chosen.** Without brackets, operators go in school maths' order, from first to last:
+1. a `-` negating, as in `-7` or `-speed` (D27);
+2. `*`, `/`, `div` and `rem`, left to right;
+3. `+` and `-`, left to right;
+4. comparisons, then `not`, `and` and `or` (D34).
+
+So `2 + 3 * 4` is 14, and `10 - 4 - 3` is 3. Where maths doesn't say which goes first, brackets are required: `&` next
+to an unbracketed `+`, `-`, `*`, `/`, `div` or `rem` is refused, so `"Total: " & a + b` needs `( )` to show what's
+meant (D3).
+
+Dividing by zero, with `/`, `div` or `rem`, is a failed check that stops the program in both modes, as D46 already
+lists.
+
+(Where `|>` sits in this order, and the messages' wording, aren't decided yet.)
+
+**Weighed.**
+- An order for `&` against `+`, as most languages pick. A reader would have to remember it, and `"5" & 3 + 4` could be
+  read either way.
+- Brackets wherever two different operators meet. More brackets than school maths ever needed.
+
+**Why this won.** Where maths has an order, everyone already knows it; where it has none, `( )` shows it rather than a
+rule nobody remembers. This is Plainly v1's D83.
+
+**Tankun's words.** Asked "Maths order like that, with brackets required wherever maths doesn't say?", the owner
+chose: "yea".

@@ -58,7 +58,20 @@ Both give 1. With -7, `rem.floor` gives 1, with the sign of the number divided b
 `rem.trunc` gives -1, with the sign of the number divided. A bare `rem` is refused (D71). `rem` is short for remainder
 (D2).
 
-**Not decided:** dividing by zero; going past the range; maths order; how whole numbers are written; other
+### Maths order
+
+Without brackets, operators go in school maths' order (D72):
+1. a `-` negating, as in `-7`;
+2. `*`, `/`, `div` and `rem`, left to right;
+3. `+` and `-`, left to right;
+4. comparisons, then `not`, `and` and `or`.
+
+So `2 + 3 * 4` is 14. Where maths doesn't say, brackets are required: `&` next to an unbracketed `+`, `-`, `*`, `/`,
+`div` or `rem` is refused (D72).
+
+Dividing by zero is a failed check that stops the program (D46, D72).
+
+**Not decided:** where `|>` sits in this order; going past the range; maths order; how whole numbers are written; other
 number types.
 
 ## `Bool`
