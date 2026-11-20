@@ -44,6 +44,22 @@ is 4 spaces. Any other indentation, a tab included, is refused at compile time, 
 
 Since every block ends with its closer, indentation never decides where a block ends (D8, D10).
 
+## Spacing
+
+Spacing is fixed, and anything else is refused with the corrected line as the fix (D17, D18, D27, D59, D98):
+
+| Where | Rule | Right |
+|---|---|---|
+| around `=`, `==`, `!=`, `<`, `>`, `+`, `-`, `*`, `/`, `&`, `\|>`, `??` and word operators | one space each side | `a == b` |
+| a narrowing's `.` | none | `show_msg.same_line` |
+| a negating `-` | none after it | `-speed` |
+| after `,` and `:` | one space | `add(1, 2)` |
+| inside `( )` and `[ ]`, and before a call's `(` | none | `roll()`, `[1, 2]` |
+| anywhere but indentation | never two spaces in a row | |
+| at the end of a line, and on a blank line | no spaces | |
+
+Spacing inside text is the program's own.
+
 ## Comments
 
 - **`//` comments to the end of the line** (D74).

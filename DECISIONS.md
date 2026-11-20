@@ -3011,3 +3011,29 @@ where `...` stands for the loop's body.
 keeps every program looking the same. The compiler session asked (its Q7).
 
 **Tankun's words.** Asked "Blank lines allowed anywhere, at most one in a row?", the owner chose: "yea".
+
+## D98. All spacing is fixed, and anything else is refused
+
+2026-11-20.
+
+**Chosen.** Beyond D10's indentation and the spacing D17, D18, D27 and D59 already fix, spacing follows one rule,
+the spacing every example uses, and anything else is refused with the corrected line as the fix (D84):
+
+| Where | Rule | Right | Refused |
+|---|---|---|---|
+| around `=`, `==`, `!=`, `&`, `\|>`, `??` | one space each side | `a == b` | `a==b` |
+| after `,` and `:` | one space | `add(1, 2)`, `x: Whole` | `add(1,2)` |
+| inside `( )` and `[ ]` | none | `(a + b)`, `[1, 2]` | `( a + b )` |
+| before a call's `(` | none | `roll()` | `roll ()` |
+| anywhere but indentation | never two spaces in a row | | `let  x` |
+| at the end of a line, and on a blank line | no spaces | | a space after `;` |
+
+(Spacing inside text is the program's own. The messages' wording isn't decided yet.)
+
+**Weighed.**
+- Free spacing, with a formatter to tidy it. A beginner has to know to run it, and diffs fill with spacing changes.
+
+**Why this won.** Every program looks the same (D10), so reading anyone's code feels like reading your own. It's what
+Go gets from `gofmt`, built into the checker, with the fix in every refusal. The compiler session asked (its Q8).
+
+**Tankun's words.** Asked "All spacing fixed as above, with anything else refused?", the owner chose: "yea".
