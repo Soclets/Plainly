@@ -1623,3 +1623,50 @@ gets wrong and what it takes to catch it.
 
 **Tankun's words.** Asked "Careful modern C (C23, Clang, all warnings, sanitizers on every test run), with everything
 the guard rails catch still logged?", the owner chose: "yea. We have naming rules already, right?"
+
+## D54. The layout of a message
+
+2026-11-20.
+
+**Chosen.**
+
+```
+refused: game.plainly:5:5, line 5 column 5
+ 5 |     $lives = $lives - 1;
+   |     ^^^^^^
+ what:    `$lives` can't be given a new value
+ because: line 2 declares it with `let`
+ 2 |     let $lives: Whole = 3;
+   |     ^^^
+ why:     only a `var` can be given a new value.
+```
+
+- **The first word is the kind:** `refused:` while building, `check failed:` while running.
+- **The place is written twice:** `file:line:column` for editors and tools, then `line N column M` for people.
+- **The source line is shown,** with `^` under exactly the part in question.
+- **Then labelled lines, each only when known, in this order:**
+  1. `fix:`, in place of `what:`, when there's exactly one fix; otherwise `what:`, what's wrong;
+  2. `when:`, the values that broke a check while running;
+  3. `because:`, the earlier place the error comes from, such as a declaration or an earlier error, as a sentence,
+     followed by that line with `^` under the part that causes it; in another file, the sentence names the file;
+  4. `why:`, the rule, as a plain sentence a beginner can read.
+- **No error codes, and no "did you mean" guesses:** only what's certain.
+- **Every error is shown,** and a broken line doesn't set off false errors after it: a refused declaration still
+  creates its variable with its written type.
+
+(Each message's wording, how columns are counted in text that isn't plain English letters, and the exit statuses
+aren't decided yet.)
+
+**Weighed.**
+- `because:` as a sentence alone, as first proposed. Tankun asked for the code too: a beginner shouldn't have to
+  scroll to find the line that causes the error.
+- Showing every line between the two places. A long gap would make a long message.
+- Error codes, as C compilers and Rust have. They're for looking up, where Plainly's messages say it all.
+- "Did you mean" guesses. A wrong guess is worse than none.
+
+**Why this won.** Each message says where, what, why, and where it came from, in words and in code, with nothing
+uncertain. This is Plainly v1's D58 to D60 and Cyborg's format, with `because:` showing its line, as Rust's "declared
+here" notes do.
+
+**Tankun's words.** "Where's because? That msg seems like it should have because", "Should we have because show code
+too?", then, asked "That message layout, with `because:` showing its line?", the owner chose: "yea".

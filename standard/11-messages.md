@@ -1,0 +1,26 @@
+# 11. Messages
+
+```
+refused: game.plainly:5:5, line 5 column 5
+ 5 |     $lives = $lives - 1;
+   |     ^^^^^^
+ what:    `$lives` can't be given a new value
+ because: line 2 declares it with `let`
+ 2 |     let $lives: Whole = 3;
+   |     ^^^
+ why:     only a `var` can be given a new value.
+```
+
+- **The first word is the kind:** `refused:` while building, `check failed:` while running (D54).
+- **The place is written twice:** `file:line:column` for tools, then `line N column M` for people (D54).
+- **The source line is shown,** with `^` under exactly the part in question (D54).
+- **Then labelled lines, each only when known, in this order** (D54):
+  1. `fix:` when there's exactly one fix, otherwise `what:`;
+  2. `when:`, the values that broke a check while running;
+  3. `because:`, the earlier place the error comes from, as a sentence, then that line with `^` under the cause;
+  4. `why:`, the rule, as a plain sentence.
+- **No error codes, and no "did you mean" guesses** (D54).
+- **Every error is shown,** and a refused declaration still creates its variable, so later lines aren't refused
+  because of it (D54).
+
+**Not decided:** each message's wording; how columns are counted in text beyond plain English letters; exit statuses.
