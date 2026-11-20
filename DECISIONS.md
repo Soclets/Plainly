@@ -3650,3 +3650,34 @@ as soon as their Plainly code calls the procedure, which is refused as unknown.
 
 **Tankun's words.** Asked "Should a `rust` folder be ignored, not built, when no `extern.rust` procedure uses it?", the
 owner chose: "yea".
+
+## D119. The wording of the seventh batch: `extern.rust`'s refusals and its macro's messages
+
+2026-11-20.
+
+**Chosen.** These refusals, at compile time with status 1, in D54's layout with the `^` under the procedure's header,
+from `proc` to its name:
+
+| When refused | `what:` | `why:` |
+|---|---|---|
+| no `rust` folder (D107) | `` `beep` is `extern.rust`, but there's no `rust` folder beside the program ``, or `` ..., but the `rust` folder has no Cargo.toml `` | `` an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's `.plainly` files. `` |
+| a Cargo.toml with no package name (D107) | `` the `rust` folder's Cargo.toml has no package name `` | `` PlainCompiler links the package the `rust` folder's Cargo.toml names, under `[package]`. `` |
+| Cargo isn't installed (D107, D118) | `` building the `rust` folder needs Cargo, Rust's build tool, which isn't installed `` | `` Rust is needed for a program with `extern.rust` procedures; it's installed from https://rustup.rs. `` |
+| the Rust doesn't build, after Cargo's own messages (D107) | `` the Rust code in the `rust` folder doesn't build `` | Cargo's messages above say what's wrong in the Rust code. |
+| no Rust function for a procedure (D108) | `` no Rust function in the `rust` folder is marked `#[plainly::procedure("beep")]` `` | `` an `extern.rust` procedure's body is the Rust function marked with its name. `` |
+| a Rust function of another shape (D109, D110) | `` the Rust function for `count_words` takes a `Text` and a `Whole` and gives back a `Whole`, but this header takes a `Text` and gives back a `Whole` ``, with failures as `` and can fail with `empty` or `too_long` `` | `` a Rust function takes and gives what its header says, with `Handle<Text>` for `Text`, `i64` for `Whole` and `bool` for `Bool`, and names the same failures. `` |
+| `?? value` after a call that gives nothing (D38) | `` this call gives nothing back, so `??` has no value to carry on with `` | `` `?? value` carries on with a value in place of the one a call that failed would give. `` |
+
+The macro's own messages, shown by Rust while it builds the `rust` folder:
+- "`` a Plainly procedure's first parameter is its call: `call: &mut Call` ``"
+- "`` a Plainly procedure's parameter is a `Handle<Text>`, an `i64` or a `bool` ``"
+- "`` a Plainly procedure gives back a `Handle<Text>`, an `i64`, a `bool`, or nothing ``"
+- "`` a Plainly procedure that can fail gives back `Result<..., Failure>` ``"
+- "these aren't the names of failures, separated by commas"
+
+**Weighed.**
+- "Rust is needed for a program with a `rust` folder", as drafted. Since D118, a `rust` folder no procedure uses isn't
+  built, so it's the `extern.rust` procedures that need Rust.
+- `.plainly` without backticks, as drafted. It's text typed in a file's name, like other code in messages.
+
+**Tankun's words.** Asked "Do all of these read right, with my two changes?", the owner chose: "yea".
