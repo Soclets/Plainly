@@ -1984,7 +1984,7 @@ Every name in a program shares one space, so two of its files can't both declare
 **Weighed.**
 - Import lines at the top of each file, as Python has. More to write in every file, and "which file is this from?"
   puzzles.
-- Paths, like Rust's `std::io::stdin`. Tankun refused paths in Plainly v1 ("I don't agree with paths, though").
+- Paths, like Rust's `std::io::stdin`. Tankun refused paths in Plainly v1 (its D39).
 - A space of names per file. Two files could both have `helper`, at the cost of imports between them.
 
 **Why this won.** It's Go's shape: a folder is a program, so a beginner never writes an import, and the rare clash is
