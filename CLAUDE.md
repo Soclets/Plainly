@@ -128,10 +128,11 @@ Owner, 2026-11-20, carrying over Plainly v1's IMPLEMENTATION.md rule 4 (itself f
 
 Before prompting a subagent or a new session, a session downloads the current prompting guide for that AI as Markdown
 and reads the file itself, in full, and again after every compaction. Never through a fetch tool's summary, which can
-drop parts. Prompts for other sessions are written in `design/` as one copiable block, checked against the guide before
-they're handed over, including how a long-running session keeps going and when it stops. A prompt that's already been
-pasted is never the fix: changes go to that session as a message. Messaging another session isn't prompting, and is
-written like one colleague talking to another.
+drop parts. Delete the downloaded guide once you've read it, so a stale copy is never read in its place. Prompts for
+other sessions are written in `design/` as one copiable block, checked against the guide before they're handed over,
+including how a long-running session keeps going and when it stops. A prompt that's already been pasted is never the
+fix: changes go to that session as a message. Messaging another session isn't prompting, and is written like one
+colleague talking to another.
 
 ## PlainOracle's C problems
 
