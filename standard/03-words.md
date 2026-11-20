@@ -19,6 +19,7 @@ message".
 | `while` | | D19 |
 | `break` | | D32 |
 | `true`, `false` | | D33 |
+| `and`, `or`, `not` | | D34 |
 | `be` | | D22 |
 | `ignore`, `crash`, `otherwise`, `case` | | D23 |
 | `labels`, `as` | | D25 |

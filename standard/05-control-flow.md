@@ -42,7 +42,26 @@ $hp at_most 100
 - **`at_least` and `at_most`:** instead of `>=` and `<=` (D17).
 - **A lone `=` in a condition is refused** (D14).
 
-**Not decided:** comparing two pieces of text; combining conditions; what else a condition may be.
+**Not decided:** comparing two pieces of text; what else a condition may be.
+
+## `and`, `or` and `not`
+
+Conditions combine with `and`, `or` and `not`: `not` first, then `and`, then `or`, with comparisons before all three
+(D34):
+
+```
+if not $won:
+    show_msg.fmt("Out of tries! It was {$secret}.");
+end if
+
+if $hp at_least 1 and $lives > 0 or $cheat == true:
+```
+
+The second means `($hp at_least 1 and $lives > 0) or $cheat == true`.
+
+`and` and `or` stop early: the right side runs only if it can still change the answer (D34).
+
+**Not decided:** a form that always works out both sides.
 
 ## `while`
 

@@ -1002,3 +1002,36 @@ yet.)
 learner keeps meeting it.
 
 **Tankun's words.** Asked "`Bool`, with `true` and `false`?", the owner chose: "yea".
+
+## D34. `and`, `or` and `not` combine conditions, in that order, and stop early
+
+2026-11-20.
+
+**Chosen.**
+
+```
+if not $won:
+    show_msg.fmt("Out of tries! It was {$secret}.");
+end if
+
+if $hp at_least 1 and $lives > 0 or $cheat == true:
+```
+
+- `and`, `or` and `not` are words.
+- `not` is worked out first, then `and`, then `or`, so the second example means
+  `($hp at_least 1 and $lives > 0) or $cheat == true`, with no brackets needed. Comparisons come before all three.
+- `and` and `or` stop early: the right side runs only if it can still change the answer, so a guard like
+  `$i at_most $count and $items[pos: $i] == 0` never reaches past the end of a list.
+
+(A form that always works out both sides, and lists and positions, aren't decided yet.)
+
+**Weighed.**
+- C's `&&`, `||` and `!`. Symbols to memorise where Python and plain English use words.
+- Requiring brackets wherever `and` meets `or`. More to write, for an order nearly every language shares.
+- Always working out both sides, as Ada's plain `and` does. Its users end up writing `and then` everywhere to stay
+  safe.
+
+**Why this won.** Plain words, Python's own, in the order most languages use, with the safe behaviour as the default.
+This is Plainly v1's D36, D37 and D92.
+
+**Tankun's words.** Asked "`and`, `or` and `not` like that?", the owner chose: "yea".

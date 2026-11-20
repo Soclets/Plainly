@@ -38,7 +38,7 @@ $won = $guess == $secret;
 
 A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool` is short for Boolean (D2).
 
-**Not decided:** combining conditions; whether a condition must be a `Bool`.
+**Not decided:** whether a condition must be a `Bool`.
 
 ## `Text`
 
