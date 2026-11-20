@@ -63,7 +63,6 @@ PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69
 - **Running out of memory** stops the program with `check failed:` and status 4, at the line that needed the memory
   (D115).
 
-
 ## Build modes
 
 Every build names one of two modes, `--working` or `--final`. There's no default (D46).
