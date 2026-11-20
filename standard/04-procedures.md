@@ -77,7 +77,11 @@ fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
 A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned directly; a `Text` crosses as a handle
 (D105, D109).
 
-**Not decided:** what an extern procedure does when it fails.
+An `extern.rust` procedure that can fail lists its failures in its header as any procedure does; its Rust function
+returns Rust's `Result`, with the failures named in the macro, as in `fails = "not_found, unreadable"`, and PlainCompiler
+refuses a program whose macro and header disagree (D110).
+
+**Not decided:** what happens when an extern procedure's Rust code itself goes wrong.
 
 ## Families
 

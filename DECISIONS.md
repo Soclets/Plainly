@@ -3397,3 +3397,36 @@ D92) and its `Bool` values Rust's `bool`, as parameters and as what it returns, 
 
 **Tankun's words.** Asked "Should `Whole` cross into Rust as `i64` and `Bool` as `bool`, both passed and returned
 directly?", the owner chose: "yea".
+
+## D110. A failing `extern.rust` procedure returns Rust's `Result`, its failures named in the macro and checked against the header
+
+2026-11-20.
+
+**Chosen.** An `extern.rust` procedure that can fail lists its failures in its Plainly header as any procedure does
+(D38, D39). Its Rust function returns Rust's `Result`: `Ok` with the value, or `Err` with one of the failures. The
+failures are named in D108's macro with the header's own words, and spelled in Rust's casing inside Rust (the Code
+rules):
+
+```rust
+#[plainly::procedure("load_text", fails = "not_found, unreadable")]
+fn load_text(call: &mut Call, name: Handle<Text>) -> Result<Handle<Text>, Failure> {
+    ...
+    Err(Failure::NotFound)
+}
+```
+
+PlainCompiler checks that the macro's failures match the Plainly header when it builds the program, and refuses a
+mismatch. The message's wording isn't decided yet.
+
+What happens when the Rust code itself goes wrong, rather than failing on purpose, isn't decided yet.
+
+**Weighed.**
+- Naming the failure as text, as in `Err("not_found")`. A typo would only show when that failure happens.
+- `extern.rust` procedures that never fail, with Plainly code checking their results. Too limiting: reading a file
+  can really fail, and that's one of the main things Rust is there for.
+
+**Why this won.** `Result` is how Rust code already says "a value or an error", and checking the names against the
+header at build time means a failure the Plainly code doesn't expect can't happen.
+
+**Tankun's words.** Asked "Should a failing `extern.rust` procedure return Rust's `Result`, with its failures named in
+the macro and checked against the Plainly header when PlainCompiler builds the program?", the owner chose: "yea".
