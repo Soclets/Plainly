@@ -120,8 +120,8 @@ It can come later for one small, critical piece if a bug there ever gets through
    `// SAFETY:` comment is checked. `clippy::nursery` stays off, for its false alarms. Every crate
    also has `#![forbid(unsafe_code)]`, except the runtime, PlainGC and the `plainly` crate's glue (D108), where each
    `unsafe` block has a comment saying why it's safe. A bad program never crashes PlainCompiler: if PlainCompiler
-   itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle, in C, builds with Clang,
-   with warnings as errors and sanitizers on (D52, D53). (From Cyborg's rules 6 and 7.)
+   itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle's OCaml builds with every
+   warning as an error, and its Rocq core has no unproven `Admitted` (D129). (From Cyborg's rules 6 and 7.)
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
    the design session first. (From Cyborg's rule 18.)
@@ -142,7 +142,7 @@ It can come later for one small, critical piece if a bug there ever gets through
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
 9. **Language.** PlainCompiler, PlainGC, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
-   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is C (D52); each
+   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is OCaml and Rocq (D129); each
    test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12); one-line commands
    in config; and scratch work that's never committed. (From Cyborg's rule 1.)
 10. **No design in code.** Code follows `standard/`. Nothing undecided is guessed: anything the standard leaves open,
@@ -181,12 +181,6 @@ other sessions are written in `design/` as one copiable block, checked against t
 including how a long-running session keeps going and when it stops. A prompt that's already been pasted is never the
 fix: changes go to that session as a message. Messaging another session isn't prompting, and is written like one
 colleague talking to another.
-
-## PlainOracle's C problems
-
-PlainOracle is written in C as an experiment, to see how many problems C causes (D52). Any session working on it
-records every problem C causes in `design/c-problems.md` as it happens, in that file's format, including ones caught
-before they did harm. Never skip one for being small.
 
 ## Git
 

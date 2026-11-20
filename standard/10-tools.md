@@ -17,10 +17,10 @@ Refusals happen at the typed tree, so `plainly check` stops there. Plainly IR is
 own, where every check, allocation, label, default and handler case is written out, and where `final` mode's own
 optimizations run. Both modes take the same path (D62).
 
-PlainOracle, the reference implementation, is written in C (D52).
+PlainOracle, the reference implementation, is an OCaml shell around a checker and an evaluator written and proven in
+Rocq, then extracted to OCaml, as CompCert is built (D129).
 
-It's C23, compiled with Clang with every warning on, and every test run is under AddressSanitizer and
-UndefinedBehaviorSanitizer (D53).
+**Not decided:** what is proven, and in what order.
 
 ## The command
 

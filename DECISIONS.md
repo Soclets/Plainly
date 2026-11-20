@@ -1603,6 +1603,8 @@ SPARK, though", "C or C++ for PlainOracle, if there's two options only", "C for 
 then, asked for the reason, "My reason for C is that I wanted to see how much problems C would cause, so make sure to
 record them."
 
+(Replaced by D129: PlainOracle is an OCaml shell around a core proven in Rocq.)
+
 ## D53. PlainOracle is careful modern C: C23, Clang, every warning, and sanitizers on every test run
 
 2026-11-20.
@@ -1623,6 +1625,8 @@ gets wrong and what it takes to catch it.
 
 **Tankun's words.** Asked "Careful modern C (C23, Clang, all warnings, sanitizers on every test run), with everything
 the guard rails catch still logged?", the owner chose: "yea. We have naming rules already, right?"
+
+(Replaced by D129: PlainOracle is an OCaml shell around a core proven in Rocq.)
 
 ## D54. The layout of a message
 
@@ -3968,3 +3972,40 @@ being.
 **Tankun's words.** "What if pipes replaced?", "slides", "I meant what if they replaced ()", "Yeah, they seem both
 useful. But should we enforce a rule on when to use `|>`?", "Show me three-deep with no slide", then, shown them after
 being asked "Should calls be one or two deep, and three or more always be a slide?", the owner chose: "yea".
+
+## D129. PlainOracle is an OCaml shell around a checker and evaluator proven in Rocq
+
+2026-11-20.
+
+**Chosen.** PlainOracle follows CompCert's pattern, replacing D52's C and D53's guard rails:
+- **Rocq** (formerly Coq), a proof assistant, holds the parts that are Plainly's meaning: the checker (types, names,
+  every refusal) and the evaluator (statements, procedures, slides, failures, `Whole` arithmetic with D46's checks,
+  and `share` and `copy` as abstract values). They're extracted to OCaml to run.
+- **OCaml** holds a thin shell around them: reading and decoding the file, the parser, the wording and layout of
+  messages (D54), the command, exit statuses, and the real printing, reading and random numbers, which the evaluator
+  only asks for.
+- What gets proven, and in what order, isn't decided yet: type safety (a program that passes the checker never gets
+  stuck), `Whole` arithmetic giving the exact answer or stopping with its check, and determinism are the candidates.
+  So is checking the parser with Menhir's Rocq-proven validator, as CompCert does.
+
+The experiment of D52, recording the problems C causes, ends with it; `design/c-problems.md` stays as its record.
+
+**Weighed.**
+- C (D52). The oracle decides who's right when it and the compiler disagree (Building rule 12), so it has to be the
+  safe one; Tankun: "If we do that, the oracle genuinely has to be safe. So, I think we fuck C off the oracle".
+- Plain OCaml, as Plainly v1's oracle was. The plainest and quickest, with nothing proven.
+- OCaml with a small pure core, ready to move to Rocq later, as the design claude recommended.
+- Rust with some Verus. Proofs where the oracle should be simplest, showing it can't crash but not that it matches the
+  standard.
+- OCaml with a SPARK bytecode machine. Two toolchains, a bytecode format, and an unproven step between them.
+- SPARK alone. Trees and recursion are SPARK's hardest ground.
+
+**Why this won.** With the core in Rocq, the oracle stops being a program that reads the standard and becomes the
+standard written as mathematics, so facts about Plainly itself can be proven, and a proof Rocq accepts can't be wrong,
+whoever wrote it. Rocq is built for exactly this, as CompCert shows, where SPARK's Platinum level would fight it.
+
+**Tankun's words.** "If we do that, the oracle genuinely has to be safe. So, I think we fuck C off the oracle", "I
+wonder if oracle should be [Rust + some Verus], [OCaml + SPARK], or [OCaml], or [SPARK]", "What would OCaml + SPARK
+work?", "CompCert ahh situation, C Logic Pro Max garunteed", "Wait, what? Cock is related to OCaml?", "So... Can we use
+that?", "How is Rocq harder than SPARK?", "Is it harder than SPARK Plat?", "So, what parts would be Cock?", "So, the
+options now", then the owner chose: "Oracle is 3, decided. I can change tmr, dw. And months? You sure?"
