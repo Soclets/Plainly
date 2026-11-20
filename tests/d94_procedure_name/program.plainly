@@ -1,7 +1,0 @@
-proc roll returns Whole:
-    return 4;
-end proc roll
-
-proc.main:
-    let roll: Whole = 6;
-end proc.main

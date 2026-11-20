@@ -1,8 +1,0 @@
-refused: program.plainly:6:9, line 6 column 9
- 6 |     let roll: Whole = 6;
-   |         ^^^^
- what:    `roll` is already a procedure's name
- because: the procedure `roll` is declared here
- 1 | proc roll returns Whole:
-   |      ^^^^
- why:     a variable can't take a procedure's name, since `roll` and `roll()` would look alike.

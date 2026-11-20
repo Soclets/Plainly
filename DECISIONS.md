@@ -2917,6 +2917,8 @@ means. The compiler session asked (its Q12).
 **Tankun's words.** Asked "Names in use can't be declared again, and a variable can't take a procedure's name?" with
 `shadow` as the alternative, the owner chose: "yea"; then, asked to confirm it was the first, the owner chose: "yea".
 
+(The second half, a variable can't take a procedure's name, is replaced by D127.)
+
 ## D95. Which text `be.Whole` reads
 
 2026-11-20.
@@ -3907,3 +3909,21 @@ when many parameters share a type.
 
 **Tankun's words.** "yea. Mf, yk? I'm missing `$`, and `$a: Whole, $b: Whole`" (quoted in D125), then, asked "Should
 every parameter write its own type after its name, `$a: Whole, $b: Whole`, replacing D61?", the owner chose: "yea".
+
+## D127. A variable may share a procedure's name, since `$` keeps them apart
+
+2026-11-20.
+
+**Chosen.** A variable or parameter may have the same name as a procedure, as in `let $roll: Whole = roll();`,
+replacing D94's second half. D94's first half stands: a name in use can't be declared again. D102's message for a
+variable with a procedure's name goes.
+
+**Weighed.**
+- Keeping D94's refusal. Its reason was that `roll` and `roll()` would look alike, which `$roll` no longer does
+  (D125).
+
+**Why this won.** With `$`, a variable and a call never look alike, and naming a variable after the procedure that
+gives its value reads naturally.
+
+**Tankun's words.** Asked "Should a variable be allowed to share a procedure's name, now that `$` keeps them apart?",
+the owner chose: "yea".
