@@ -36,7 +36,8 @@ refused: game.plainly:5:5, line 5 column 5
 ## Wording
 
 Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables, and D87 for
-declarations, comparing, converting, unhandled failures, joining text and keywords used as names.
+declarations, comparing, converting, unhandled failures, joining text and keywords used as names, and D88 for
+procedures, calls and `return`.
 
 The text after every label starts at the same column, one space after the longest label, `because:`, in every message
 (D86).

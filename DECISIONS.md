@@ -2696,3 +2696,30 @@ line (D84) and the label column of D86. Names and types in them are filled in fr
 | a keyword used as a name (D58) | `` `if` is a keyword, so it can't be a name `` | | a name can't be one of Plainly's own words. |
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
+
+## D88. The wording of the third batch of refusals: procedures, calls and `return`
+
+2026-11-20.
+
+**Chosen.** These messages, drafted by the compiler session in D54's layout, with D84's `fix:` and D86's label column.
+Names, types and numbers in them are filled in from the program:
+
+| Refused | `what:` | `because:` | `why:` |
+|---|---|---|---|
+| `( )` on a definition with no parameters (D4) | (a `fix:`) | | a definition writes `( )` only when it has parameters. |
+| parameters on `proc.main` (D4) | `` `proc.main` takes nothing `` | | only the program's start runs `proc.main`, so it's never given anything. |
+| `()` on a slide step with nothing else to pass (D5) | (a `fix:`) | | a step with nothing else to pass is written bare, since the slide gives it its value. |
+| a missing label (D24) | (a `fix:`) | | every call writes the labels its procedure chose. |
+| a label where there's none (D24) | (a `fix:`) | | a call writes only the labels its procedure chose. |
+| a wrong label (D24) | `` this argument's label is `to`, not `upto` `` | | every call writes the labels its procedure chose. |
+| too few or too many arguments (D24) | `` `pick` takes 2 values, and this call gives 1 value `` | `` `pick` is declared here `` | a call gives every parameter a value, with its label if it has one. |
+| using what a procedure with no `returns` gives (D38) | this call gives nothing back, so it can't be used as a value | | a procedure with no `returns` gives nothing back. |
+| `return value;` with no `returns` (D38, D57) | `` `greet` has no `returns`, so it gives nothing back `` | | only a procedure with `returns` gives back a value. |
+| a bare `return;` with `returns` (D57) | `` `pick` gives back a `Whole`, so `return` needs one `` | | in a procedure with `returns`, `return` gives back a value of that type. |
+| a way through with no `return` (D57) | `` some way through `pick` reaches its end without `return` giving back a `Whole` `` | | every way through a procedure with `returns` ends in `return` and a value. |
+| a line after `return` (D57) | this line comes after a `return` in the same block, so it can never run | `` the `return` is here `` | nothing may follow `return` in the same block. |
+| a bare `return;` as the last line (D57) | a bare `return;` as a procedure's last line does nothing | | a procedure ends there anyway; `return;` is for leaving early. |
+| a line after an `if` that can leave (D9) | this line follows an `if` that can leave | `` the `if` on line 4 can leave `` | when any way through an `if` leaves, nothing may follow its `end if`; code that should run afterwards goes in the ways that don't leave. |
+| `break` outside a loop (D32) | this `break` isn't inside a loop | | `break` leaves the innermost loop it's in. |
+
+**Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
