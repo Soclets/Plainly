@@ -11,9 +11,10 @@
 //! - colored references (`color.rs`): [`address`] gives the object a reference points to;
 //! - the object layout in `object.rs`: an object's address is its header word, and its payload starts one word after.
 //!
-//! Steps 1 to 3 are built: a collection pauses the program to take its stack's roots; PlainGC's marker thread marks
-//! while the program runs; then a pause compacts by evacuating sparse pages, and the load barrier finds moved objects
-//! through forwarding. The steps still to come are in `compiler/PROGRESS.md`.
+//! Steps 1 to 4 are built: a collection pauses the program briefly to take its stack's roots; PlainGC's own thread
+//! marks while the program runs; a brief pause chooses the pages to evacuate; PlainGC's thread moves their live
+//! objects while the program runs, and the load barrier finds moved objects through forwarding, moving any it reaches
+//! first. The step still to come is in `compiler/PROGRESS.md`.
 
 mod color;
 mod heap;
@@ -62,14 +63,16 @@ struct Collector {
     stress: bool,
     /// Where the collection under way is.
     phase: Phase,
-    /// Whether PlainGC's marker thread has been started.
-    marker_started: bool,
-    /// A bug the marker thread found, which the program's next allocation reports.
-    marker_failure: Option<String>,
-    /// Counts for `PLAINGC_REPORT=1`: collections run, objects moved, and batches the marker thread marked.
+    /// Whether PlainGC's own thread has been started.
+    worker_started: bool,
+    /// A bug PlainGC's thread found, which the program's next allocation reports.
+    worker_failure: Option<String>,
+    /// Counts for `PLAINGC_REPORT=1`: collections run, objects moved, and batches PlainGC's thread did.
     collections: usize,
     moved_objects: usize,
-    marker_batches: usize,
+    worker_batches: usize,
+    /// The longest the program has been paused for a collection, in microseconds.
+    longest_pause_microseconds: u128,
 }
 
 /// Where a collection is (D69).
@@ -77,14 +80,19 @@ struct Collector {
 enum Phase {
     /// No collection under way.
     Idle,
-    /// The marker thread is marking while the program runs.
+    /// PlainGC's thread is marking while the program runs.
     Marking,
-    /// Marking's work ran out; the program's next allocation finishes the collection.
+    /// Marking's work ran out; the program's next allocation ends the marking.
     MarkingDone,
+    /// PlainGC's thread is moving live objects out of the pages being evacuated while the program runs.
+    Relocating,
+    /// Every object has moved; the program's next allocation frees the evacuated pages.
+    RelocationDone,
 }
 
-/// How many objects the marker thread marks each time it holds the lock, so the program never waits long for it.
-const MARKING_BATCH: usize = 256;
+/// How many objects PlainGC's thread marks or moves each time it holds the lock, so the program never waits long
+/// for it.
+const BATCH: usize = 256;
 
 /// What PlainGC has done so far, for its own tests.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -92,7 +100,9 @@ pub struct Report {
     pub collections: usize,
     pub moved_objects: usize,
     pub healed_references: usize,
-    pub marker_batches: usize,
+    pub relocated_by_barrier: usize,
+    pub worker_batches: usize,
+    pub longest_pause_microseconds: u128,
 }
 
 /// The colors a reference mustn't have to pass the load barrier's fast path: every color but the good one. Compiled
@@ -104,7 +114,7 @@ pub static plainly_gc_bad_mask: AtomicU64 = AtomicU64::new(color::COLOR_BITS & !
 /// The one heap, shared by every thread of the program and PlainGC's own (D69), behind one lock.
 static COLLECTOR: Mutex<Option<Collector>> = Mutex::new(None);
 
-/// Wakes the marker thread when a marking starts, and the program when marking's work runs out.
+/// Wakes PlainGC's thread when a phase it works in starts, and the program when that work runs out.
 static PHASE_CHANGED: Condvar = Condvar::new();
 
 fn broken_lock<T>(_: T) -> AllocationError {
@@ -118,11 +128,12 @@ fn new_collector() -> Collector {
         main_frame: 0,
         stress: false,
         phase: Phase::Idle,
-        marker_started: false,
-        marker_failure: None,
+        worker_started: false,
+        worker_failure: None,
         collections: 0,
         moved_objects: 0,
-        marker_batches: 0,
+        worker_batches: 0,
+        longest_pause_microseconds: 0,
     }
 }
 
@@ -178,9 +189,9 @@ pub fn allocate(kind: ObjectKind, length: usize) -> Result<u64, AllocationError>
     Ok(collector.heap.reference_to(object))
 }
 
-/// Moves the collection along at an allocation, on the program's thread: finishes one whose marking is done, and
-/// starts one when it's due. In collect-often mode, it waits for the marker thread first, so allocations take turns
-/// finishing one collection and starting the next.
+/// Moves the collection along at an allocation, on the program's thread, with the program paused only briefly: ends
+/// a marking that's done, frees the pages a finished relocation emptied, and starts a collection when one is due. In
+/// collect-often mode, it waits for PlainGC's thread first, so every allocation moves the collection one phase on.
 fn run_collection(
     guard: MutexGuard<'static, Option<Collector>>,
 ) -> Result<MutexGuard<'static, Option<Collector>>, AllocationError> {
@@ -188,49 +199,58 @@ fn run_collection(
     let mut guard = if stress {
         PHASE_CHANGED
             .wait_while(guard, |collector| {
-                collector
-                    .as_ref()
-                    .is_some_and(|collector| collector.phase == Phase::Marking)
+                collector.as_ref().is_some_and(|collector| {
+                    matches!(collector.phase, Phase::Marking | Phase::Relocating)
+                })
             })
             .map_err(broken_lock)?
     } else {
         guard
     };
     let collector = guard.get_or_insert_with(new_collector);
-    if let Some(failure) = collector.marker_failure.take() {
+    if let Some(failure) = collector.worker_failure.take() {
         return Err(AllocationError::Internal(failure));
     }
-    let finishing = collector.phase == Phase::MarkingDone;
-    if finishing {
-        // trace: D69
-        let report = collector.heap.finish(collector.stress)?;
-        collector.phase = Phase::Idle;
-        collector.collections += 1;
-        collector.moved_objects += report.moved_objects;
-        plainly_gc_bad_mask.store(
-            color::bad_mask(collector.heap.good_color()),
-            Ordering::SeqCst,
-        );
-    }
+    let pause_start = std::time::Instant::now();
+    // trace: D69
+    let moved_on = match collector.phase {
+        Phase::MarkingDone => {
+            collector.heap.end_marking(collector.stress)?;
+            collector.phase = Phase::Relocating;
+            plainly_gc_bad_mask.store(
+                color::bad_mask(collector.heap.good_color()),
+                Ordering::SeqCst,
+            );
+            PHASE_CHANGED.notify_all();
+            true
+        }
+        Phase::RelocationDone => {
+            collector.moved_objects += collector.heap.end_relocation();
+            collector.collections += 1;
+            collector.phase = Phase::Idle;
+            true
+        }
+        _ => false,
+    };
     let due = collector.heap.allocated_since_collection
         >= LEAST_BYTES_BETWEEN_COLLECTIONS.max(collector.heap.live_after_collection);
-    // An allocation that finishes a collection doesn't start the next, so the program always runs a while between
-    // them: with references the barrier has to heal, then with marking under way.
-    if collector.phase == Phase::Idle && !finishing && (collector.stress || due) {
+    // An allocation that moves a collection on doesn't also start the next, so the program always runs a while in
+    // every phase.
+    if collector.phase == Phase::Idle && !moved_on && (collector.stress || due) {
         begin_marking(collector)?;
-        if !collector.marker_started {
+        if !collector.worker_started {
             std::thread::Builder::new()
-                .name("PlainGC marker".to_string())
-                .spawn(marker)
+                .name("PlainGC".to_string())
+                .spawn(worker)
                 .map_err(|error| {
-                    AllocationError::Internal(format!(
-                        "PlainGC's marker thread couldn't start: {error}"
-                    ))
+                    AllocationError::Internal(format!("PlainGC's thread couldn't start: {error}"))
                 })?;
-            collector.marker_started = true;
+            collector.worker_started = true;
         }
         PHASE_CHANGED.notify_all();
     }
+    let pause = pause_start.elapsed().as_micros();
+    collector.longest_pause_microseconds = collector.longest_pause_microseconds.max(pause);
     Ok(guard)
 }
 
@@ -254,35 +274,40 @@ fn begin_marking(collector: &mut Collector) -> Result<(), AllocationError> {
     Ok(())
 }
 
-/// PlainGC's marker thread: marks while the program runs (D69), a batch at a time, and says when marking's work
-/// has run out.
-fn marker() {
+/// PlainGC's own thread: marks, then moves objects, while the program runs (D69), a batch at a time, and says when
+/// each phase's work has run out.
+fn worker() {
     loop {
         let Ok(guard) = COLLECTOR.lock() else {
             return;
         };
         let Ok(mut guard) = PHASE_CHANGED.wait_while(guard, |collector| {
-            !collector
-                .as_ref()
-                .is_some_and(|collector| collector.phase == Phase::Marking)
+            !collector.as_ref().is_some_and(|collector| {
+                matches!(collector.phase, Phase::Marking | Phase::Relocating)
+            })
         }) else {
             return;
         };
         let Some(collector) = guard.as_mut() else {
             continue;
         };
-        collector.marker_batches += 1;
-        let failure = match collector.heap.mark_some(MARKING_BATCH) {
+        collector.worker_batches += 1;
+        let (result, next) = if collector.phase == Phase::Marking {
+            (collector.heap.mark_some(BATCH), Phase::MarkingDone)
+        } else {
+            (collector.heap.relocate_some(BATCH), Phase::RelocationDone)
+        };
+        let failure = match result {
             Ok(false) => None,
             Ok(true) => Some(None),
             Err(HeapError::Internal(what)) => Some(Some(what)),
             Err(HeapError::OutOfMemory) => {
-                Some(Some("PlainGC's marker ran out of memory".to_string()))
+                Some(Some("PlainGC's thread ran out of memory".to_string()))
             }
         };
         if let Some(failure) = failure {
-            collector.marker_failure = failure;
-            collector.phase = Phase::MarkingDone;
+            collector.worker_failure = failure;
+            collector.phase = next;
             PHASE_CHANGED.notify_all();
         }
         drop(guard);
@@ -293,7 +318,7 @@ fn marker() {
 /// The load barrier's slow path (D69): brings a reference of a bad color up to date, finding a moved object through
 /// the forwarding table.
 pub fn heal(reference: u64) -> Result<u64, AllocationError> {
-    with_collector(|collector| Ok(collector.heap.heal(reference)))
+    with_collector(|collector| Ok(collector.heap.heal(reference)?))
 }
 
 /// The address of the object a reference points to, whatever its color. Only an up-to-date reference, one that has
@@ -310,7 +335,9 @@ pub fn report() -> Option<Report> {
             collections: collector.collections,
             moved_objects: collector.moved_objects,
             healed_references: collector.heap.healed,
-            marker_batches: collector.marker_batches,
+            relocated_by_barrier: collector.heap.relocated_by_barrier,
+            worker_batches: collector.worker_batches,
+            longest_pause_microseconds: collector.longest_pause_microseconds,
         })
     })
     .ok()

@@ -62,19 +62,39 @@ and the compiler depends on nothing but that interface.
 1. ~~**Stop-the-world mark and compact.**~~ Done (2026-11-20). In detail below.
 2. ~~**Moving with a load barrier:**~~ Done (2026-11-20). In detail below.
 3. ~~**Marking while the program runs.**~~ Done (2026-11-20). In detail below.
-4. **Moving while the program runs.**
-5. **Handles for `extern.rust` code,** once the design session says how they work.
+4. ~~**Moving while the program runs.**~~ Done (2026-11-20). In detail below.
+5. **Handles for `extern.rust` code,** once the design session says how they work. Waiting on that decision.
 
 ### Status
 
+- **Steps 1 to 4 work;** step 5 waits on how handles work. The details of each step are below, newest first.
 - **Step 1 works.** Every `Text` is a PlainGC object. Collections find their roots precisely through Cranelift's
   stack maps, mark, and compact by evacuating sparse pages; texts held in variables, parameters and deep recursion
   survive being moved, with every value right afterwards.
-- **Every run passes:** each of the 21 tests in `tests/` and the 6 stress programs in `compiler/gc_tests/`, run both as
-  they are and in collect-often mode: 54 runs. In collect-often mode the stress programs make up to 100,000
+- **Every run passes:** each of the 21 tests in `tests/` and the 7 stress programs in `compiler/gc_tests/`, run both as
+  they are and in collect-often mode: 56 runs. In collect-often mode the stress programs make up to 100,000
   collections and move up to 240,000 objects each.
 - PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
   freeing, moving, forwarding, and reading the stack map table.
+
+### Step 4 in detail
+
+- **A collection now pauses the program three times, each briefly:** to take its stack's roots and start marking;
+  to end marking (mark what the barrier added, choose the pages to evacuate, free the empty ones, and change the
+  good color); and, once every object has moved, to free the evacuated pages. Each happens at an allocation on the
+  program's own thread. Everything else, marking and moving, is done by **PlainGC's own thread** in batches of 256
+  while the program runs.
+- **Moving while the program runs:** PlainGC's thread walks the evacuated pages and copies each live object out,
+  recording where it went. If the program reaches an object first, the barrier's slow path moves it itself, there and
+  then, so the program only ever sees an object in its new place, and PlainGC's thread skips it.
+- **Pauses that don't grow with the heap (D69):** starting a marking no longer clears every page's mark bits (each
+  page records which marking its bits belong to), and ending one only chooses pages, leaving PlainGC's thread to find
+  their objects. The runtime's report now includes the longest pause: 138 microseconds for `big_heap` as it is, and
+  323 microseconds in collect-often mode with 500-deep recursion.
+- **Checked:** 25 PlainGC unit tests, among them the barrier moving an object PlainGC's thread hasn't reached, with
+  the thread then skipping it, and a real second thread moving 5,000 objects while the first allocates and reads.
+  A seventh stress program, `big_heap`, keeps deep recursion's texts live across 40 rounds of garbage. Every run
+  passes, 56 in all, and the full suite passed eight times in a row.
 
 ### Step 3 in detail
 

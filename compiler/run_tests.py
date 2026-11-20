@@ -13,7 +13,7 @@ which must exit with status 0.
 Every test runs twice: as it is, and with PLAINGC_STRESS=1, which makes PlainGC collect
 and move every object at every allocation. A stress program in compiler/gc_tests also
 asks for PLAINGC_REPORT=1 there, and must show that collections happened, objects moved,
-the load barrier healed references, and the marker thread marked while the program ran.
+the load barrier healed references, and PlainGC's own thread worked while the program ran.
 
 Usage: python3 compiler/run_tests.py [NAME ...]
 """
@@ -31,7 +31,7 @@ PLAINLY = os.path.join(COMPILER_FOLDER, "target", "debug", "plainly")
 TIME_LIMIT_SECONDS = 120
 REPORT = re.compile(
     rb"PlainGC: (\d+) collections, (\d+) objects moved, (\d+) references healed, "
-    rb"(\d+) marking batches on its own thread\n$"
+    rb"(\d+) objects moved by the barrier, (\d+) batches on its own thread, longest pause (\d+) microseconds\n$"
 )
 
 
@@ -84,12 +84,13 @@ def run_test(folder, stress, gc_test):
             problems.append(("PlainGC's report", "a report", standard_error))
         else:
             standard_error = standard_error[: report.start()]
-            counts = [int(report.group(number)) for number in (1, 2, 3, 4)]
+            # Whether the barrier moves an object itself depends on timing, so it isn't required.
+            counts = [int(report.group(number)) for number in (1, 2, 3, 5)]
             if 0 in counts:
                 problems.append(
                     (
                         "PlainGC's work",
-                        "collections, moved objects, healed references and marking on its own thread",
+                        "collections, moved objects, healed references and work on PlainGC's own thread",
                         report.group(0),
                     )
                 )

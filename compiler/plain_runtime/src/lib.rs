@@ -446,11 +446,14 @@ pub extern "C" fn plainly_runtime_end() {
     {
         let _ = writeln!(
             std::io::stderr(),
-            "PlainGC: {} collections, {} objects moved, {} references healed, {} marking batches on its own thread",
+            "PlainGC: {} collections, {} objects moved, {} references healed, {} objects moved by the barrier, \
+             {} batches on its own thread, longest pause {} microseconds",
             report.collections,
             report.moved_objects,
             report.healed_references,
-            report.marker_batches
+            report.relocated_by_barrier,
+            report.worker_batches,
+            report.longest_pause_microseconds
         );
     }
     if std::io::stdout().flush().is_err() {

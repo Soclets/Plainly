@@ -10,7 +10,7 @@
 //! every reference it reaches, and then that forwarding table is dropped.
 
 use std::alloc::{Layout, alloc_zeroed, dealloc};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::color::{FIRST_COLOR, address, colored, next_color};
 use crate::object::{MAX_LENGTH, ObjectKind, WORD, header, object_size, read_header};
@@ -46,9 +46,12 @@ struct Page {
     /// How many bytes from the start are allocated.
     top: usize,
     large: bool,
-    /// One mark bit per word, set on the word where a live object starts.
+    /// One mark bit per word, set on the word where a live object starts, for the marking numbered `cycle`.
     marks: Vec<u64>,
     live_bytes: usize,
+    /// Which marking `marks` and `live_bytes` belong to. Older ones count as nothing marked, so starting a marking
+    /// never has to clear every page, and its pause stays the same at any heap size (D69).
+    cycle: u64,
 }
 
 impl Page {
@@ -67,6 +70,7 @@ impl Page {
             large,
             marks: vec![0; (size / WORD).div_ceil(64)],
             live_bytes: 0,
+            cycle: 0,
         })
     }
 
@@ -75,7 +79,12 @@ impl Page {
     }
 
     /// Sets the mark bit for the object at `address`, giving whether it was newly set.
-    fn mark(&mut self, address: usize) -> bool {
+    fn mark(&mut self, address: usize, cycle: u64) -> bool {
+        if self.cycle != cycle {
+            self.marks.iter_mut().for_each(|cell| *cell = 0);
+            self.live_bytes = 0;
+            self.cycle = cycle;
+        }
         let word = (address - self.start) / WORD;
         let bit = 1u64 << (word % 64);
         let cell = &mut self.marks[word / 64];
@@ -84,22 +93,18 @@ impl Page {
         newly
     }
 
-    fn is_marked(&self, address: usize) -> bool {
+    fn is_marked(&self, address: usize, cycle: u64) -> bool {
         let word = (address - self.start) / WORD;
-        self.marks[word / 64] & (1u64 << (word % 64)) != 0
+        self.cycle == cycle && self.marks[word / 64] & (1u64 << (word % 64)) != 0
     }
 
-    /// The address of every object in the page, in order.
-    fn objects(&self) -> Result<Vec<usize>, HeapError> {
-        let mut objects = Vec::new();
-        let mut offset = 0;
-        while offset < self.top {
-            let address = self.start + offset;
-            let (_, length) = object_at(address)?;
-            objects.push(address);
-            offset += object_size(length);
+    /// The bytes marked live in the marking numbered `cycle`.
+    fn live(&self, cycle: u64) -> usize {
+        if self.cycle == cycle {
+            self.live_bytes
+        } else {
+            0
         }
-        Ok(objects)
     }
 }
 
@@ -180,12 +185,21 @@ pub struct Heap {
     forwarding: HashMap<usize, usize>,
     /// How many references the barrier's slow path has healed.
     pub healed: usize,
+    /// How many objects the barrier moved itself, reaching them before PlainGC's thread did.
+    pub relocated_by_barrier: usize,
     /// Whether a marking is under way, between [`Heap::begin_marking`] and [`Heap::finish`].
     marking: bool,
     /// Objects reached but not yet marked and traced: marking's work.
     work: Vec<usize>,
     /// What the collection under way has found so far.
     report: CollectionReport,
+    /// The pages being evacuated, by their start, until every live object in them has moved.
+    relocation_set: HashSet<usize>,
+    /// The pages still to walk for objects to move, and how far into the last of them the walk has got.
+    relocating: Vec<usize>,
+    relocation_cursor: usize,
+    /// The number of the marking under way or last finished, which tells current mark bits from stale ones.
+    cycle: u64,
 }
 
 // SAFETY: a `Heap` owns its pages' memory outright, and is only ever reached through the one lock in `lib.rs`, so
@@ -208,9 +222,14 @@ impl Heap {
             good: FIRST_COLOR,
             forwarding: HashMap::new(),
             healed: 0,
+            relocated_by_barrier: 0,
             marking: false,
             work: Vec::new(),
             report: CollectionReport::default(),
+            relocation_set: HashSet::new(),
+            relocating: Vec::new(),
+            relocation_cursor: 0,
+            cycle: 0,
         }
     }
 
@@ -225,18 +244,31 @@ impl Heap {
     }
 
     /// The load barrier's slow path: heals a reference of a bad color (D69). While marking, the object it points to
-    /// joins marking's work, so the program never holds a reference marking hasn't reached.
-    pub fn heal(&mut self, reference: u64) -> u64 {
+    /// joins marking's work, so the program never holds a reference marking hasn't reached. While objects are moving,
+    /// one the program reaches before PlainGC's thread has moved it is moved here and now, so the program only ever
+    /// sees an object in its new place.
+    pub fn heal(&mut self, reference: u64) -> Result<u64, HeapError> {
         self.healed += 1;
+        let old = address(reference);
+        if reference != 0
+            && reference & self.good == 0
+            && !self.forwarding.contains_key(&old)
+            && self
+                .page_of(old)
+                .is_some_and(|page| self.relocation_set.contains(&page.start))
+        {
+            // trace: D69
+            self.relocated_by_barrier += 1;
+            return Ok(colored(self.relocate(old)?, self.good));
+        }
         let healed = heal_with(&self.forwarding, self.good, reference);
         if self.marking && healed != 0 {
             self.work.push(address(healed));
         }
-        healed
+        Ok(healed)
     }
 
     /// The page holding the object at `address`, if it's in the heap.
-    #[cfg(test)]
     fn page_of(&self, address: usize) -> Option<&Page> {
         self.pages
             .range(..=address)
@@ -280,8 +312,9 @@ impl Heap {
         if self.marking {
             // An object made while marking is live: it's marked at birth, and needs no tracing, since every
             // reference stored in it has already passed the barrier.
+            let cycle = self.cycle;
             if let Some(page) = self.page_of_mut(address) {
-                page.mark(address);
+                page.mark(address, cycle);
                 page.live_bytes += size;
             }
             self.report.live_objects += 1;
@@ -324,10 +357,7 @@ impl Heap {
     /// The roots are the only thing marking needs the program paused for.
     pub fn begin_marking(&mut self, roots: &mut RootVisitor<'_>) -> Result<(), HeapError> {
         // trace: D69
-        for page in self.pages.values_mut() {
-            page.marks.iter_mut().for_each(|cell| *cell = 0);
-            page.live_bytes = 0;
-        }
+        self.cycle += 1;
         self.report = CollectionReport::default();
         self.good = next_color(self.good);
         self.marking = true;
@@ -351,12 +381,13 @@ impl Heap {
                 return Ok(true);
             };
             done += 1;
+            let cycle = self.cycle;
             let Some(page) = self.page_of_mut(object) else {
                 return Err(HeapError::Internal(format!(
                     "a reference to {object:#x} points outside PlainGC's heap"
                 )));
             };
-            if !page.mark(object) {
+            if !page.mark(object, cycle) {
                 continue;
             }
             let (_, length) = object_at(object)?;
@@ -374,66 +405,106 @@ impl Heap {
         Ok(self.work.is_empty())
     }
 
-    /// Ends the collection, with the program paused: marks what the barrier added since marking's work last ran
-    /// out, then evacuates sparse pages and changes the good color. With `evacuate_everything`, every small page with
-    /// a live object is evacuated, so tests reach the moving path.
+    /// The end of a collection, all at once, for tests: the end of marking, every move, and freeing the pages.
+    #[cfg(test)]
     pub fn finish(&mut self, evacuate_everything: bool) -> Result<CollectionReport, HeapError> {
+        let mut report = self.end_marking(evacuate_everything)?;
+        while !self.relocate_some(usize::MAX)? {}
+        report.moved_objects = self.end_relocation();
+        Ok(report)
+    }
+
+    /// Ends marking, with the program paused: marks what the barrier added since marking's work last ran out,
+    /// chooses the sparse pages to evacuate, frees the empty ones, and changes the good color. Nothing moves yet:
+    /// [`Heap::relocate_some`] moves the live objects while the program runs, and the barrier moves any the program
+    /// reaches first. With `evacuate_everything`, every small page with a live object is evacuated, so tests reach
+    /// the moving path.
+    pub fn end_marking(
+        &mut self,
+        evacuate_everything: bool,
+    ) -> Result<CollectionReport, HeapError> {
         while !self.mark_some(usize::MAX)? {}
         self.marking = false;
-        let mut report = std::mem::take(&mut self.report);
+        let report = std::mem::take(&mut self.report);
         // Every reachable reference is healed by now, so the last collection's forwarding is no longer needed.
         self.forwarding.clear();
 
-        // Which pages to evacuate, and which to free outright.
-        let mut evacuated = Vec::new();
+        // Only pages are chosen here; PlainGC's thread finds their live objects as it moves them, so this pause stays
+        // short at any heap size (D69).
         let mut freed = Vec::new();
+        self.relocation_set.clear();
+        self.relocating.clear();
+        self.relocation_cursor = 0;
         for (&start, page) in &self.pages {
-            if page.live_bytes == 0 {
+            let live = page.live(self.cycle);
+            if live == 0 {
                 freed.push(start);
             } else if !page.large
-                && (evacuate_everything
-                    || page.live_bytes * 100 < page.top * EVACUATE_BELOW_LIVE_PERCENT)
+                && (evacuate_everything || live * 100 < page.top * EVACUATE_BELOW_LIVE_PERCENT)
             {
-                evacuated.push(start);
+                self.relocation_set.insert(start);
+                self.relocating.push(start);
             }
         }
-
-        // Survivors go into fresh pages, never into a page being evacuated.
-        self.current = None;
-        let mut forwarding: HashMap<usize, usize> = HashMap::new();
-        for &start in &evacuated {
-            let objects = match self.pages.get(&start) {
-                Some(page) => page
-                    .objects()?
-                    .into_iter()
-                    .filter(|&address| page.is_marked(address))
-                    .collect::<Vec<_>>(),
-                None => Vec::new(),
-            };
-            for old in objects {
-                let (_, length) = object_at(old)?;
-                let size = object_size(length);
-                let new = self.bump(size)?;
-                // SAFETY: `old` is a live object of `size` bytes in a page being evacuated, and `new` is `size`
-                // fresh bytes in another page, so the two can't overlap.
-                unsafe { std::ptr::copy_nonoverlapping(old as *const u8, new as *mut u8, size) };
-                forwarding.insert(old, new);
-            }
-        }
-        report.moved_objects = forwarding.len();
-
-        // No reference is rewritten: a new good color sends every older one through the barrier's slow path, and
-        // the forwarding table finds each moved object from its old address.
-        // trace: D69
-        for start in evacuated.iter().chain(&freed) {
+        for start in &freed {
             self.pages.remove(start);
         }
-        self.forwarding = forwarding;
+        // Moved objects go into fresh pages, never into a page being evacuated.
+        self.current = None;
+        // trace: D69
         self.good = next_color(self.good);
-        report.freed_pages = evacuated.len() + freed.len();
         self.allocated_since_collection = 0;
         self.live_after_collection = report.live_bytes;
         Ok(report)
+    }
+
+    /// Moves the live objects out of the pages being evacuated while the program runs, looking at up to `budget`
+    /// objects. Gives whether every one has moved.
+    pub fn relocate_some(&mut self, budget: usize) -> Result<bool, HeapError> {
+        for _ in 0..budget {
+            let Some(&start) = self.relocating.last() else {
+                return Ok(true);
+            };
+            let Some(page) = self.pages.get(&start) else {
+                return Err(HeapError::Internal(
+                    "a page being evacuated went missing".to_string(),
+                ));
+            };
+            if self.relocation_cursor >= page.top {
+                self.relocating.pop();
+                self.relocation_cursor = 0;
+                continue;
+            }
+            let object = page.start + self.relocation_cursor;
+            let live = page.is_marked(object, self.cycle);
+            let (_, length) = object_at(object)?;
+            self.relocation_cursor += object_size(length);
+            if live && !self.forwarding.contains_key(&object) {
+                self.relocate(object)?;
+            }
+        }
+        Ok(self.relocating.is_empty())
+    }
+
+    /// Moves one object, records where it went, and gives its new address.
+    fn relocate(&mut self, old: usize) -> Result<usize, HeapError> {
+        let (_, length) = object_at(old)?;
+        let size = object_size(length);
+        let new = self.bump(size)?;
+        // SAFETY: `old` is a live object of `size` bytes in a page being evacuated, which stays until every object in
+        // it has moved, and `new` is `size` fresh bytes in another page, so the two can't overlap.
+        unsafe { std::ptr::copy_nonoverlapping(old as *const u8, new as *mut u8, size) };
+        self.forwarding.insert(old, new);
+        Ok(new)
+    }
+
+    /// Ends the moving, once every object has moved: frees the evacuated pages. Gives how many objects moved. The
+    /// forwarding table stays until the next marking has healed every reference to their old places.
+    pub fn end_relocation(&mut self) -> usize {
+        for start in std::mem::take(&mut self.relocation_set) {
+            self.pages.remove(&start);
+        }
+        self.forwarding.len()
     }
 
     /// Whether `address` is an object in the heap, for tests.
@@ -471,7 +542,7 @@ mod tests {
     /// Reads through a reference as compiled code does: the barrier first, healing a bad-colored reference.
     fn read(heap: &mut Heap, reference: &mut u64) -> usize {
         if *reference & bad_mask(heap.good_color()) != 0 {
-            *reference = heap.heal(*reference);
+            *reference = heap.heal(*reference).unwrap_or(0);
         }
         address(*reference)
     }
@@ -604,7 +675,7 @@ mod tests {
         let good = heap.good_color();
         let object = address(list);
         // The second collection changed the color again, so heal once more through the empty forwarding table.
-        let healed = heap.heal(list);
+        let healed = heap.heal(list).unwrap_or(0);
         assert_eq!(address(healed), object);
         assert!(heap.forwarding.is_empty());
         let mut inside = item(&mut heap, &mut list, 0);
@@ -768,6 +839,76 @@ mod tests {
         let report = heap.finish(true).unwrap_or_default();
         assert!(report.live_objects > 5_000);
         for number in (0..5_000).step_by(7) {
+            let mut item = item(&mut heap, &mut roots[0], number);
+            assert_eq!(text_at(&mut heap, &mut item), number.to_string());
+        }
+    }
+
+    #[test]
+    fn the_barrier_moves_an_object_the_program_reaches_first() {
+        let mut heap = Heap::new();
+        let mut roots = [text(&mut heap, "first"), text(&mut heap, "second")];
+        heap.begin_marking(&mut *visit(&mut roots)).ok();
+        while !heap.mark_some(usize::MAX).unwrap_or(true) {}
+        heap.end_marking(true).ok();
+        let before = address(roots[1]);
+        // The program reads `second` before PlainGC's thread moves anything: the barrier moves it.
+        assert_eq!(text_at(&mut heap, &mut roots[1]), "second");
+        assert_ne!(address(roots[1]), before);
+        assert_eq!(heap.relocated_by_barrier, 1);
+        // Then the thread moves the rest, skipping what the barrier already moved.
+        while !heap.relocate_some(1).unwrap_or(true) {}
+        assert_eq!(heap.end_relocation(), 2);
+        let moved_second = address(roots[1]);
+        assert_eq!(text_at(&mut heap, &mut roots[0]), "first");
+        assert_eq!(text_at(&mut heap, &mut roots[1]), "second");
+        assert_eq!(address(roots[1]), moved_second);
+    }
+
+    #[test]
+    fn moving_on_another_thread_while_the_program_allocates_and_reads() {
+        use std::sync::{Arc, Mutex};
+        let mut heap = Heap::new();
+        let items: Vec<u64> = (0..5_000)
+            .map(|number| text(&mut heap, &number.to_string()))
+            .collect();
+        let mut roots = [list(&mut heap, &items)];
+        heap.begin_marking(&mut *visit(&mut roots)).ok();
+        while !heap.mark_some(usize::MAX).unwrap_or(true) {}
+        heap.end_marking(true).ok();
+        let heap = Arc::new(Mutex::new(heap));
+        let mover = {
+            let heap = Arc::clone(&heap);
+            std::thread::spawn(move || {
+                loop {
+                    let done = match heap.lock() {
+                        Ok(mut heap) => heap.relocate_some(64).unwrap_or(true),
+                        Err(_) => true,
+                    };
+                    if done {
+                        break;
+                    }
+                    std::thread::yield_now();
+                }
+            })
+        };
+        // Meanwhile the program allocates and reads items, moving any the thread hasn't reached yet.
+        for number in 0..5_000 {
+            if let Ok(mut heap) = heap.lock() {
+                text(&mut heap, "garbage");
+                if number % 25 == 0 {
+                    let mut item = item(&mut heap, &mut roots[0], number);
+                    assert_eq!(text_at(&mut heap, &mut item), number.to_string());
+                }
+            }
+        }
+        assert!(mover.join().is_ok());
+        let Ok(mut heap) = heap.lock() else {
+            panic!("the heap's lock broke");
+        };
+        // Every text moved; the list itself is a large object, which stays where it is.
+        assert_eq!(heap.end_relocation(), 5_000);
+        for number in (0..5_000).step_by(3) {
             let mut item = item(&mut heap, &mut roots[0], number);
             assert_eq!(text_at(&mut heap, &mut item), number.to_string());
         }
