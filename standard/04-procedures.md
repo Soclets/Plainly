@@ -65,7 +65,12 @@ end proc beep
 
 Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
 
-**Not decided:** how values cross into Rust; what an extern procedure does when it fails.
+Its Rust code lives in a folder named `rust` in the program's folder, holding an ordinary Cargo project, which
+PlainCompiler builds and links into the program. Each `extern.rust proc` matches the Rust function with the same name,
+which holds Plainly values through handles (D105, D107).
+
+**Not decided:** how values other than PlainGC's cross into Rust; what an extern procedure does when it fails; how a
+name with a narrowing is written in Rust.
 
 ## Families
 

@@ -3309,3 +3309,38 @@ before it in both cases. Tests feed their input from files, so they keep the lin
 
 **Tankun's words.** Asked "After `ask`, should the line count as ended when the answer was typed at a terminal, and as
 still open when it came from a file?", the owner chose: "yea".
+
+## D107. `extern.rust` code lives in a `rust` folder holding a Cargo project, built and linked by PlainCompiler
+
+2026-11-20.
+
+**Chosen.** The Rust code for a program's `extern.rust` procedures (D36) lives in a folder named `rust` in the
+program's folder, beside its `.plainly` files (D64), holding an ordinary Cargo project:
+
+```
+my_game/
+    game.plainly
+    board.plainly
+    rust/
+        Cargo.toml
+        src/lib.rs
+```
+
+- PlainCompiler builds it with Cargo and links it into the program.
+- Each `extern.rust proc` matches the Rust function with the same name, which takes the call and its handles (D105).
+- Since it's a Cargo project, the Rust code can use other crates, like `crossterm` for the terminal.
+- Rust needs to be installed only for a program with a `rust` folder.
+
+(How a procedure name with a narrowing, like `show_msg.same_line`, is written as a Rust function's name isn't decided
+yet.)
+
+**Weighed.**
+- Loose `.rs` files beside the `.plainly` files. Simpler, but a lone Rust file can't use other crates, which is the
+  main reason to write Rust at all.
+- A separate tool to build the Rust part. One more command, and two builds that can fall out of step.
+
+**Why this won.** It mirrors D64, where a program is what's in its folder, and as an ordinary Cargo project it can reach
+the crates games need for the terminal, with one command still building everything.
+
+**Tankun's words.** Asked "Should `extern.rust` code live in a `rust` folder holding a Cargo project, beside the
+program's `.plainly` files, built and linked by PlainCompiler?", the owner chose: "yea".
