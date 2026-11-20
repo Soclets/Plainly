@@ -386,8 +386,7 @@ contract, and a compiler that may never edit them can't lock a wrong expectation
 another language catches a wrong expected value before any compiler exists, and the oracle later checks everything
 twice.
 
-**Tankun's words.** Tankun set the order ("Compiler before oracle, right? But with tests. And also a standard before
-compiler", in D11's answer), then added "Before that, I think there should be a definition inside the standard about
+**Tankun's words.** Tankun set the order in their answer to D11, quoted whole there, then added "Before that, I think there should be a definition inside the standard about
 the terms it uses, and also if you write `let $placeholder: Placeholder = placeholder;`, you should say before or after
 what `placeholder` in that context means", asked has code, suggested "What about a separate language's opinion on
 result too? When possible, maybe C, Python, Rust, or SPARK Platinum", then "Holy shit, bro. Do you know how diabolical
