@@ -203,9 +203,21 @@ fn declare_runtime(
     Ok(RuntimeFunctions {
         start: declare("plainly_runtime_start", &[pointer, pointer], &[])?,
         end: declare("plainly_runtime_end", &[], &[])?,
-        text_from_bytes: declare("plainly_text_from_bytes", &[pointer, whole], &[pointer])?,
-        text_join: declare("plainly_text_join", &[pointer, pointer], &[pointer])?,
-        whole_to_text: declare("plainly_whole_to_text", &[whole], &[pointer])?,
+        text_from_bytes: declare(
+            "plainly_text_from_bytes",
+            &[pointer, whole, pointer, whole],
+            &[pointer],
+        )?,
+        text_join: declare(
+            "plainly_text_join",
+            &[pointer, pointer, pointer, whole],
+            &[pointer],
+        )?,
+        whole_to_text: declare(
+            "plainly_whole_to_text",
+            &[whole, pointer, whole],
+            &[pointer],
+        )?,
         text_to_whole: declare("plainly_text_to_whole", &[pointer, pointer], &[bool_type])?,
         show_msg: declare("plainly_show_msg", &[pointer], &[])?,
         show_msg_same_line: declare("plainly_show_msg_same_line", &[pointer], &[])?,
@@ -631,7 +643,7 @@ impl Emitter<'_, '_> {
                 let value = self.builder.ins().iconst(types::I8, i64::from(*value));
                 self.set(*to, value)?;
             }
-            IrStep::AllocateText { to, bytes } => {
+            IrStep::AllocateText { to, bytes, site } => {
                 // Empty text has no bytes to point at (D76).
                 let address = if bytes.is_empty() {
                     self.builder.ins().iconst(self.generator.pointer, 0)
@@ -640,7 +652,10 @@ impl Emitter<'_, '_> {
                     self.address_of(id)
                 };
                 let length = self.builder.ins().iconst(types::I64, bytes.len() as i64);
-                let text = self.call_value(text_from_bytes, &[address, length])?;
+                // trace: D115
+                let (site, site_length) = self.site(*site)?;
+                let text =
+                    self.call_value(text_from_bytes, &[address, length, site, site_length])?;
                 self.set(*to, text)?;
             }
             IrStep::Copy { to, from } => {
@@ -728,15 +743,22 @@ impl Emitter<'_, '_> {
                 let result = self.builder.ins().bxor_imm_s(value, 1);
                 self.set(*to, result)?;
             }
-            IrStep::JoinText { to, left, right } => {
+            IrStep::JoinText {
+                to,
+                left,
+                right,
+                site,
+            } => {
                 let left = self.get(*left)?;
                 let right = self.get(*right)?;
-                let text = self.call_value(text_join, &[left, right])?;
+                let (site, site_length) = self.site(*site)?;
+                let text = self.call_value(text_join, &[left, right, site, site_length])?;
                 self.set(*to, text)?;
             }
-            IrStep::WholeToText { to, value } => {
+            IrStep::WholeToText { to, value, site } => {
                 let value = self.get(*value)?;
-                let text = self.call_value(whole_to_text, &[value])?;
+                let (site, site_length) = self.site(*site)?;
+                let text = self.call_value(whole_to_text, &[value, site, site_length])?;
                 self.set(*to, text)?;
             }
             IrStep::TextToWhole {

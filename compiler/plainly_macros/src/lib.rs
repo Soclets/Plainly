@@ -448,6 +448,8 @@ pub fn procedure(attribute: TokenStream, item: TokenStream) -> TokenStream {
             plainly_site: *const u8,
             plainly_site_length: i64
         ) #raw_result {
+            // The call's site, for the message if memory runs out while the Rust code runs (D115).
+            ::plainly::glue::note_site(plainly_site, plainly_site_length);
             ::plainly::glue::with_call(|plainly_call| {
                 #(#conversions)*
                 // A panic is caught here, at the edge, since unwinding into Cranelift's code would be undefined (D111).

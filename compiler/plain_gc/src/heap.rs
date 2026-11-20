@@ -178,6 +178,10 @@ pub struct Heap {
     pub allocated_since_collection: usize,
     /// Bytes live after the last collection.
     pub live_after_collection: usize,
+    /// Bytes the heap's pages take: what counts against its limits (D114).
+    pub used: usize,
+    /// Every byte ever allocated, for the pacer's allocation rate (D113).
+    pub allocated_total: u64,
     /// The good color: references of any other color go through the barrier's slow path.
     good: u64,
     /// Where each object the last collection moved went, by its old address, kept until the next collection's
@@ -195,6 +199,10 @@ pub struct Heap {
     report: CollectionReport,
     /// The pages being evacuated, by their start, until every live object in them has moved.
     relocation_set: HashSet<usize>,
+    /// Evacuated pages, emptied but still holding their memory while the forwarding table has entries for their
+    /// addresses: if the system gave an address back for a new page, a new object there would be mistaken for one
+    /// that moved away. They're freed when the forwarding table is dropped, as in ZGC.
+    retired: Vec<Page>,
     /// The pages still to walk for objects to move, and how far into the last of them the walk has got.
     relocating: Vec<usize>,
     relocation_cursor: usize,
@@ -219,6 +227,8 @@ impl Heap {
             current: None,
             allocated_since_collection: 0,
             live_after_collection: 0,
+            used: 0,
+            allocated_total: 0,
             good: FIRST_COLOR,
             forwarding: HashMap::new(),
             healed: 0,
@@ -227,6 +237,7 @@ impl Heap {
             work: Vec::new(),
             report: CollectionReport::default(),
             relocation_set: HashSet::new(),
+            retired: Vec::new(),
             relocating: Vec::new(),
             relocation_cursor: 0,
             cycle: 0,
@@ -301,6 +312,7 @@ impl Heap {
             let mut page = Page::new(size, true)?;
             page.top = size;
             let start = page.start;
+            self.used += page.size;
             self.pages.insert(start, page);
             start
         } else {
@@ -309,6 +321,7 @@ impl Heap {
         // SAFETY: `address` is the start of `size` freshly allocated, zeroed bytes in one of the heap's pages.
         unsafe { (address as *mut u64).write(header(kind, length)) };
         self.allocated_since_collection += size;
+        self.allocated_total += size as u64;
         if self.marking {
             // An object made while marking is live: it's marked at birth, and needs no tracing, since every
             // reference stored in it has already passed the barrier.
@@ -336,6 +349,7 @@ impl Heap {
         let mut page = Page::new(PAGE_SIZE, false)?;
         let address = page.start;
         page.top = size;
+        self.used += page.size;
         self.current = Some(page.start);
         self.pages.insert(page.start, page);
         Ok(address)
@@ -428,6 +442,10 @@ impl Heap {
         let report = std::mem::take(&mut self.report);
         // Every reachable reference is healed by now, so the last collection's forwarding is no longer needed.
         self.forwarding.clear();
+        // trace: D69
+        for page in std::mem::take(&mut self.retired) {
+            self.used -= page.size;
+        }
 
         // Only pages are chosen here; PlainGC's thread finds their live objects as it moves them, so this pause stays
         // short at any heap size (D69).
@@ -447,7 +465,9 @@ impl Heap {
             }
         }
         for start in &freed {
-            self.pages.remove(start);
+            if let Some(page) = self.pages.remove(start) {
+                self.used -= page.size;
+            }
         }
         // Moved objects go into fresh pages, never into a page being evacuated.
         self.current = None;
@@ -498,11 +518,14 @@ impl Heap {
         Ok(new)
     }
 
-    /// Ends the moving, once every object has moved: frees the evacuated pages. Gives how many objects moved. The
-    /// forwarding table stays until the next marking has healed every reference to their old places.
+    /// Ends the moving, once every object has moved: takes the evacuated pages out of the heap. Gives how many
+    /// objects moved. The forwarding table stays until the next marking has healed every reference to their old
+    /// places, and so do the pages' memory, so no new page can take their addresses meanwhile.
     pub fn end_relocation(&mut self) -> usize {
         for start in std::mem::take(&mut self.relocation_set) {
-            self.pages.remove(&start);
+            if let Some(page) = self.pages.remove(&start) {
+                self.retired.push(page);
+            }
         }
         self.forwarding.len()
     }
@@ -842,6 +865,25 @@ mod tests {
             let mut item = item(&mut heap, &mut roots[0], number);
             assert_eq!(text_at(&mut heap, &mut item), number.to_string());
         }
+    }
+
+    #[test]
+    fn an_evacuated_page_keeps_its_memory_while_its_forwarding_lasts() {
+        let mut heap = Heap::new();
+        let mut kept = text(&mut heap, "kept");
+        let old = address(kept);
+        collect(&mut heap, &mut [kept], true);
+        // The old place is still forwarded, so the page there keeps its memory: no new page can take its address
+        // and have its objects mistaken for ones that moved away.
+        assert!(heap.retired.iter().any(|page| page.contains(old)));
+        let used_while_forwarding = heap.used;
+        assert_eq!(text_at(&mut heap, &mut kept), "kept");
+        // The next marking heals every reference and drops the forwarding, and the page's memory goes with it.
+        let mut roots = [kept];
+        collect(&mut heap, &mut roots, false);
+        assert!(heap.retired.is_empty());
+        assert!(heap.used < used_while_forwarding);
+        assert_eq!(text_at(&mut heap, &mut roots[0]), "kept");
     }
 
     #[test]

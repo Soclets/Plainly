@@ -129,20 +129,41 @@ fn rust_went_wrong(went_wrong: plainly::glue::RustWentWrong) -> ! {
     std::process::exit(STATUS_INTERNAL_ERROR);
 }
 
+/// An amount of memory as people read it: `14.4 GiB`, or `48.0 MiB` when under a GiB.
+fn amount_of_memory(bytes: usize) -> String {
+    const MIB: f64 = 1024.0 * 1024.0;
+    let mebibytes = bytes as f64 / MIB;
+    if mebibytes >= 1024.0 {
+        format!("{:.1} GiB", mebibytes / 1024.0)
+    } else {
+        format!("{mebibytes:.1} MiB")
+    }
+}
+
 /// Stops the program when PlainGC can't go on: out of memory, or a bug in PlainGC itself.
 fn gc_failed(error: plain_gc::AllocationError) -> ! {
     match error {
-        plain_gc::AllocationError::OutOfMemory => {
-            let message = format!(
-                "NotDesignedYet: the program ran out of memory\n{}",
-                labelled_line(
-                    "what",
-                    "what a program does when memory runs out isn't decided yet"
-                )
-            );
-            before_message();
-            let _ = std::io::stderr().write_all(message.as_bytes());
-            std::process::exit(STATUS_NOT_YET);
+        plain_gc::AllocationError::OutOfMemory { in_use } => {
+            let (site, site_length) = plain_gc::noted_site();
+            // SAFETY: every site noted is one PlainCompiler wrote into the program, which lives as long as it.
+            let site = unsafe { site_text(site, site_length) };
+            // trace: D115
+            stop(
+                "check failed",
+                STATUS_CHECK_FAILED,
+                site,
+                &[
+                    ("what", "the program ran out of memory".to_string()),
+                    (
+                        "when",
+                        format!("{} in use, the most it may use on this computer", amount_of_memory(in_use)),
+                    ),
+                    (
+                        "why",
+                        "everything the program keeps is still in use, so PlainGC can't free any of it.".to_string(),
+                    ),
+                ],
+            )
         }
         plain_gc::AllocationError::Internal(what) => internal_error(&what),
     }
@@ -186,7 +207,14 @@ pub extern "C" fn plainly_gc_heal(reference: *const u8) -> *const u8 {
 ///
 /// `bytes` must point to `length` readable bytes.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn plainly_text_from_bytes(bytes: *const u8, length: i64) -> *const u8 {
+pub unsafe extern "C" fn plainly_text_from_bytes(
+    bytes: *const u8,
+    length: i64,
+    site: *const u8,
+    site_length: i64,
+) -> *const u8 {
+    // trace: D115
+    plain_gc::note_site(site, site_length);
     let length = usize::try_from(length).unwrap_or(0);
     if bytes.is_null() || length == 0 {
         return new_text("");
@@ -205,7 +233,13 @@ pub unsafe extern "C" fn plainly_text_from_bytes(bytes: *const u8, length: i64) 
 ///
 /// Both must be `Text`s made by this runtime.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn plainly_text_join(left: *const u8, right: *const u8) -> *const u8 {
+pub unsafe extern "C" fn plainly_text_join(
+    left: *const u8,
+    right: *const u8,
+    site: *const u8,
+    site_length: i64,
+) -> *const u8 {
+    plain_gc::note_site(site, site_length);
     with_handles(|call| {
         // SAFETY: the caller promises both are live texts, as compiled code passes them.
         let (left, right) = unsafe { (adopt(call, left), adopt(call, right)) };
@@ -217,7 +251,12 @@ pub unsafe extern "C" fn plainly_text_join(left: *const u8, right: *const u8) ->
 
 /// `be.Text` of a `Whole`: its digits, with `-` in front when it's negative (D22).
 #[unsafe(no_mangle)]
-pub extern "C" fn plainly_whole_to_text(value: i64) -> *const u8 {
+pub extern "C" fn plainly_whole_to_text(
+    value: i64,
+    site: *const u8,
+    site_length: i64,
+) -> *const u8 {
+    plain_gc::note_site(site, site_length);
     new_text(&value.to_string())
 }
 
@@ -317,7 +356,7 @@ pub unsafe extern "C" fn plainly_ask(
     site: *const u8,
     site_length: i64,
 ) -> *const u8 {
-    // SAFETY: the caller promises `question` is a text from this runtime and `site` is valid.
+    plain_gc::note_site(site, site_length);
     // SAFETY: the caller promises `site` is valid.
     let site = unsafe { site_text(site, site_length) };
     with_handles(|call| {
@@ -481,7 +520,7 @@ pub unsafe extern "C" fn plainly_runtime_start(stack_maps: *const u64, main_fram
     if let Err(error) = unsafe { plain_gc::start(stack_maps, main_frame) } {
         match error {
             plain_gc::AllocationError::Internal(what) => internal_error(&what),
-            plain_gc::AllocationError::OutOfMemory => {
+            plain_gc::AllocationError::OutOfMemory { .. } => {
                 internal_error("PlainGC ran out of memory while starting")
             }
         }
@@ -576,8 +615,8 @@ mod tests {
     fn d28_joins_text() {
         let left = new_text("Hello, ");
         let right = new_text("Mia");
-        // SAFETY: both texts come from `new_text`.
-        let joined = unsafe { plainly_text_join(left, right) };
+        // SAFETY: both texts come from `new_text`, and a null site is only noted, never read, unless memory runs out.
+        let joined = unsafe { plainly_text_join(left, right, std::ptr::null(), 0) };
         // SAFETY: as above.
         let read = with_handles(|call| unsafe { adopt(call, joined) }.read(call).to_string());
         assert_eq!(read, "Hello, Mia");

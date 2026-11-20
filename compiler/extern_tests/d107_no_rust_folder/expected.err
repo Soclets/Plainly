@@ -2,4 +2,4 @@ refused: program.plainly:1:13, line 1 column 13
  1 | extern.rust proc beep returns Bool:
    |             ^^^^^^^^^
  what:    `beep` is `extern.rust`, but there's no `rust` folder beside the program
- why:     an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's .plainly files.
+ why:     an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's `.plainly` files.

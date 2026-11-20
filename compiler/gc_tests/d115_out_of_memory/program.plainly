@@ -1,0 +1,9 @@
+proc.main:
+    var kept: Text = "ab";
+    var doublings: Whole = 0;
+    while true:
+        kept = kept & kept;
+        doublings = doublings + 1;
+        show_msg.same_line(be.Text(doublings) & " ");
+    end while
+end proc.main

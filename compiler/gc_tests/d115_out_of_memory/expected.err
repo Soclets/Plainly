@@ -1,0 +1,6 @@
+check failed: program.plainly:5:16, line 5 column 16
+ 5 |         kept = kept & kept;
+   |                ^^^^^^^^^^^
+ what:    the program ran out of memory
+ when:    64.0 MiB in use, the most it may use on this computer
+ why:     everything the program keeps is still in use, so PlainGC can't free any of it.

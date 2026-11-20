@@ -96,7 +96,7 @@ pub fn build(program_file: &Path, externals: &[ExternalProcedure]) -> Result<Bui
         };
         return Ok(Built::Refused(vec![Message::refused(first.header_place, what).why(
             "an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the \
-             program's .plainly files.",
+             program's `.plainly` files.",
         )]));
     };
     let Some(package) = package_name(&manifest) else {
@@ -177,7 +177,7 @@ pub fn build(program_file: &Path, externals: &[ExternalProcedure]) -> Result<Bui
                 first.header_place,
                 "building the `rust` folder needs Cargo, Rust's build tool, which isn't installed",
             )
-            .why("Rust is needed for a program with a `rust` folder; it's installed from https://rustup.rs.")]));
+            .why("Rust is needed for a program with `extern.rust` procedures; it's installed from https://rustup.rs.")]));
         }
     };
     if !result.status.success() {

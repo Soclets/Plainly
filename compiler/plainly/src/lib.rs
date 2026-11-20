@@ -50,6 +50,7 @@ pub use plainly_macros::procedure;
 #[doc(hidden)]
 pub mod glue {
     pub use plain_gc::handles::with_call;
+    pub use plain_gc::note_site;
 
     use std::any::Any;
     use std::cell::{Cell, RefCell};

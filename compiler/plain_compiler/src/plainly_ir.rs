@@ -53,10 +53,12 @@ pub enum IrStep {
         to: LocalId,
         value: bool,
     },
-    /// Allocates text through PlainGC, holding these bytes.
+    /// Allocates text through PlainGC, holding these bytes. Every allocating step has the site that needs the
+    /// memory, for the message if it runs out (D115).
     AllocateText {
         to: LocalId,
         bytes: Vec<u8>,
+        site: SiteId,
     },
     Copy {
         to: LocalId,
@@ -91,11 +93,13 @@ pub enum IrStep {
         to: LocalId,
         left: LocalId,
         right: LocalId,
+        site: SiteId,
     },
     /// Allocates text writing a `Whole` in digits (D22).
     WholeToText {
         to: LocalId,
         value: LocalId,
+        site: SiteId,
     },
     /// Reads a `Whole` from text (D22, D95). `succeeded` says whether it could; when it couldn't, `to` holds
     /// nothing.

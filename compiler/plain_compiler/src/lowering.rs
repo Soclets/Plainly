@@ -1,5 +1,7 @@
 //! Lowering: the typed tree to Plainly IR (D62), writing out every check, allocation and failure handling.
 
+use std::collections::HashMap;
+
 use crate::internal_error::InternalError;
 use crate::message::{place_heading, source_snippet};
 use crate::plainly_ir::{
@@ -65,6 +67,7 @@ fn lower_procedure(
     let mut lowering = Lowering {
         sources,
         sites,
+        site_of_place: HashMap::new(),
         externals,
         locals: procedure
             .variables
@@ -111,6 +114,8 @@ struct BuildingBlock {
 struct Lowering<'a> {
     sources: &'a [SourceFile],
     sites: &'a mut Vec<String>,
+    /// The site already made for each place, so a place's message is written out once.
+    site_of_place: HashMap<Place, SiteId>,
     /// Which procedures are `extern.rust`, by id.
     externals: &'a [bool],
     locals: Vec<IrType>,
@@ -149,12 +154,16 @@ impl Lowering<'_> {
 
     /// A place the program can stop, with the start of its message written out now (D54).
     fn site(&mut self, place: Place) -> SiteId {
+        if let Some(&site) = self.site_of_place.get(&place) {
+            return site;
+        }
         let text = format!(
             "{}\n{}",
             place_heading(self.sources, place),
             source_snippet(self.sources, place, &[], place.line.to_string().len())
         );
         self.sites.push(text);
+        self.site_of_place.insert(place, self.sites.len() - 1);
         self.sites.len() - 1
     }
 
@@ -272,7 +281,7 @@ impl Lowering<'_> {
                 self.push(IrStep::SetBool { to, value: *value });
                 to
             }
-            TypedExpressionKind::Text(text) => self.allocate_text(text),
+            TypedExpressionKind::Text(text) => self.allocate_text(text, expression.place),
             TypedExpressionKind::Variable(variable) => *variable,
             TypedExpressionKind::Arithmetic {
                 operator,
@@ -305,7 +314,13 @@ impl Lowering<'_> {
                 let left = self.lower_value(left)?;
                 let right = self.lower_value(right)?;
                 let to = self.new_local(IrType::Text);
-                self.push(IrStep::JoinText { to, left, right });
+                let site = self.site(expression.place);
+                self.push(IrStep::JoinText {
+                    to,
+                    left,
+                    right,
+                    site,
+                });
                 to
             }
             TypedExpressionKind::Compare {
@@ -377,7 +392,7 @@ impl Lowering<'_> {
                 procedure,
                 arguments,
             } => return self.lower_library(*procedure, arguments, expression),
-            TypedExpressionKind::Format(pieces) => self.lower_format(pieces)?,
+            TypedExpressionKind::Format(pieces) => self.lower_format(pieces, expression.place)?,
             TypedExpressionKind::Fallback { call, fallback } => {
                 // trace: D23
                 let to = self.new_local_for(call)?;
@@ -466,11 +481,13 @@ impl Lowering<'_> {
             .collect()
     }
 
-    fn allocate_text(&mut self, text: &str) -> LocalId {
+    fn allocate_text(&mut self, text: &str, place: Place) -> LocalId {
         let to = self.new_local(IrType::Text);
+        let site = self.site(place);
         self.push(IrStep::AllocateText {
             to,
             bytes: text.as_bytes().to_vec(),
+            site,
         });
         to
     }
@@ -507,9 +524,11 @@ impl Lowering<'_> {
             }
             LibraryProcedure::WholeToText => {
                 let to = self.new_local(IrType::Text);
+                let site = self.site(expression.place);
                 self.push(IrStep::WholeToText {
                     to,
                     value: argument(0)?,
+                    site,
                 });
                 to
             }
@@ -533,17 +552,23 @@ impl Lowering<'_> {
     }
 
     /// `.fmt` text: each piece becomes text, and the pieces are joined (D29).
-    fn lower_format(&mut self, pieces: &[FormatPiece]) -> Result<LocalId, InternalError> {
+    fn lower_format(
+        &mut self,
+        pieces: &[FormatPiece],
+        place: Place,
+    ) -> Result<LocalId, InternalError> {
+        let site = self.site(place);
         let mut joined: Option<LocalId> = None;
         for piece in pieces {
             let text = match piece {
-                FormatPiece::Text(text) => self.allocate_text(text),
+                FormatPiece::Text(text) => self.allocate_text(text, place),
                 FormatPiece::Variable(variable, Type::Text) => *variable,
                 FormatPiece::Variable(variable, Type::Whole) => {
                     let to = self.new_local(IrType::Text);
                     self.push(IrStep::WholeToText {
                         to,
                         value: *variable,
+                        site,
                     });
                     to
                 }
@@ -561,11 +586,12 @@ impl Lowering<'_> {
                         to,
                         left,
                         right: text,
+                        site,
                     });
                     to
                 }
             });
         }
-        Ok(joined.unwrap_or_else(|| self.allocate_text("")))
+        Ok(joined.unwrap_or_else(|| self.allocate_text("", place)))
     }
 }

@@ -29,6 +29,34 @@ the test results (`python3 compiler/run_tests.py`).
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
+## PlainGC's pacer and limits (D113 to D115)
+
+**Done (2026-11-20).**
+
+- **The pacer (D113)** is ZGC's, in `plain_gc/src/pacer.rs`. It measures the allocation rate (every 10 ms at the
+  most, at allocations) and each collection's duration, as decaying averages with their spread, and starts a
+  collection when the heap would reach its soft target in less time than a collection takes, predicting both
+  cautiously (average plus one spread). It warms up with collections at 10%, 20% and 30% of the soft target, and
+  collects after five minutes without one if anything was allocated.
+- **The limits (D114):** the hard limit is the machine's physical memory less 10% or 1 GiB, whichever is bigger
+  (read with `sysctl` on macOS and `sysconf` on Linux; with no way to read it, no limit but the system's). The soft
+  target is twice what was live after the last collection, at least 32 MiB, never past the hard limit.
+- **Running out (D115):** an allocation that would pass the hard limit, or that the system refuses, waits while
+  PlainGC finishes the collection under way and one more (ZGC's allocation stall); if there's still no room, the
+  program stops with D115's `check failed:`, status 4, at the line that needed the memory. Every allocating step now
+  carries its site: the runtime notes it before making a value, and an `extern.rust` call's glue before its Rust code
+  runs. The `when:` shows the hard limit when that's what stopped it, and otherwise the bytes in use, as `64.0 MiB`,
+  or `14.4 GiB` from a GiB up.
+- **A bug fixed on the way:** an evacuated page's memory went back to the system as soon as its objects had moved,
+  while the forwarding table still had entries for its addresses. When the system gave the same address back for a
+  new page, a new object there was taken for one that had moved away, and the barrier "healed" it to the old one.
+  Collect-often mode lost one doubling of a text this way. Evacuated pages now keep their memory until the next
+  marking drops the forwarding table, as in ZGC, with a unit test for it.
+- **Tests:** five pacer unit tests (warm-up, starting just early enough, quiet time, the soft target, the hard
+  limit's reserve), and `gc_tests/d115_out_of_memory`, which doubles a text until it can't, under a 64 MiB limit
+  set through `PLAINGC_TEST_HARD_LIMIT_MIB` in the test's `environment` file: a test knob like `PLAINGC_STRESS`,
+  which no Plainly program can read. 80 of 80 runs pass.
+
 ## Milestone 3: `extern.rust` (D36, D105 to D112)
 
 **Done (2026-11-20).** A program's `extern.rust` procedures run Rust code from its `rust` folder.
@@ -218,10 +246,7 @@ and the compiler depends on nothing but that interface.
 
 ### Placeholders until the design session decides (never something a program can rely on)
 
-- **When a collection starts (the pacer):** after allocating as many bytes as were live after the last collection,
-  and at least 4 MiB.
-- **How much memory the heap may use:** no limit beyond the system's.
-- **When memory runs out:** the existing `NotDesignedYet` message, status 3.
+- **The pacer, the limits and running out of memory:** decided by D113 to D115, and built.
 - **Which pages are compacted:** pages less than 75% live.
 - **A bug in PlainGC itself:** `internal error:` with status 7 (D82), its wording a draft: "PlainGC itself went
   wrong, not your program", and why: "this is a bug in PlainGC. Please report it at ..., with the program that
@@ -394,15 +419,15 @@ file or a pipe.
 | (any) | something the parser can't read | what: `` `;` should be here, not `x` `` / the line ends where `` `)` `` should be / the file ends where a value should be | (none) |
 | (any) | a value of the wrong type | what: `` `x` is a `Whole`, but this value is a `Text` `` (fix: `be.Text(...)` when a `Whole` is given for `Text`) | a value's type has to match where it's used. / a number becomes text only where `be.Text` says so. |
 
-### `extern.rust` (D107 to D110), all refusals with status 1
+### `extern.rust` (D107 to D110), all refusals with status 1, approved by D119
 
 The `^` is under the header, from `proc` to the end of the name.
 
 | Decision | Refused | `what:` | `why:` |
 |---|---|---|---|
-| D107 | no `rust` folder | `` `beep` is `extern.rust`, but there's no `rust` folder beside the program `` (or `` ..., but the `rust` folder has no Cargo.toml ``) | an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's .plainly files. |
+| D107 | no `rust` folder | `` `beep` is `extern.rust`, but there's no `rust` folder beside the program `` (or `` ..., but the `rust` folder has no Cargo.toml ``) | an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's `.plainly` files. |
 | D107 | a Cargo.toml with no `[package]` name | the `rust` folder's Cargo.toml has no package name | PlainCompiler links the package the `rust` folder's Cargo.toml names, under `[package]`. |
-| D107 | Cargo isn't installed | building the `rust` folder needs Cargo, Rust's build tool, which isn't installed | Rust is needed for a program with a `rust` folder; it's installed from https://rustup.rs. |
+| D107 | Cargo isn't installed | building the `rust` folder needs Cargo, Rust's build tool, which isn't installed | Rust is needed for a program with `extern.rust` procedures; it's installed from https://rustup.rs. |
 | D107 | the Rust doesn't build (Cargo's own messages come first) | the Rust code in the `rust` folder doesn't build | Cargo's messages above say what's wrong in the Rust code. |
 | D108 | no Rust function for a procedure | `` no Rust function in the `rust` folder is marked `#[plainly::procedure("missing")]` `` | an `extern.rust` procedure's body is the Rust function marked with its name. |
 | D110 | a Rust function of another shape | `` the Rust function for `count_words` takes a `Text` and a `Whole` and gives back a `Whole`, but this header takes a `Text` and gives back a `Whole` `` (failures as "and can fail with `empty` or `too_long`") | a Rust function takes and gives what its header says, with `Handle<Text>` for `Text`, `i64` for `Whole` and `bool` for `Bool`, and names the same failures. |
@@ -488,8 +513,8 @@ uses a placeholder until it's decided.
 - **Q31. Answered by D107 to D111:** a `rust` folder holding a Cargo project; functions marked with
   `#[plainly::procedure("...")]`; `Whole` as `i64`, `Bool` as `bool`, `Text` as a handle; failures as Rust's
   `Result`; a panic stops the program as an internal error. Built as milestone 3.
-- **Q32. A `rust` folder in a program with no `extern.rust` procedure.** For now it's ignored, not built. Should it be
-  built anyway (catching Rust errors early, but slower), refused, or ignored?
+- **Q32. Answered by D118:** a `rust` folder in a program with no `extern.rust` procedure is ignored, not built.
 - **Q33. Where `plainly` finds its own crates** (`plainly`, the runtime, PlainGC) to build a `rust` folder against.
   How Plainly is installed isn't decided, so for now it uses the folder PlainCompiler was built from. A placeholder.
-- **Q34. The wordings of the `extern.rust` refusals** in "Messages waiting for wording".
+- **Q34. Answered by D119:** the `extern.rust` wordings are approved, with `.plainly` in backticks and the Cargo
+  message saying "a program with `extern.rust` procedures".

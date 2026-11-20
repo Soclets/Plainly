@@ -64,6 +64,13 @@ def run_test(folder, stress, gc_test):
     environment.pop("PLAINGC_REPORT", None)
     # A `rust` folder is built offline, from crates already in Cargo's cache.
     environment["CARGO_NET_OFFLINE"] = "true"
+    # A test's `environment` file sets more variables, one `NAME=value` a line, like a smaller hard limit for PlainGC.
+    environment_path = os.path.join(folder, "environment")
+    if os.path.exists(environment_path):
+        for line in read_bytes(environment_path).decode().splitlines():
+            name, _, value = line.partition("=")
+            if name:
+                environment[name] = value
     if stress:
         environment["PLAINGC_STRESS"] = "1"
         if gc_test:
@@ -82,7 +89,10 @@ def run_test(folder, stress, gc_test):
         return [("time", f"under {TIME_LIMIT_SECONDS} seconds", "still running")]
 
     standard_error = result.stderr
-    if stress and gc_test:
+    status_path = os.path.join(folder, "expected.status")
+    expected_status = int(read_bytes(status_path).decode().strip()) if os.path.exists(status_path) else 0
+    # A program that stops early, as one that runs out of memory, ends before PlainGC's report.
+    if stress and gc_test and expected_status == 0:
         report = REPORT.search(standard_error)
         if report is None:
             problems.append(("PlainGC's report", "a report", standard_error))
@@ -108,8 +118,6 @@ def run_test(folder, stress, gc_test):
     if standard_error != expected_error:
         problems.append(("standard error", expected_error, standard_error))
 
-    status_path = os.path.join(folder, "expected.status")
-    expected_status = int(read_bytes(status_path).decode().strip()) if os.path.exists(status_path) else 0
     if result.returncode != expected_status:
         problems.append(("exit status", expected_status, result.returncode))
 

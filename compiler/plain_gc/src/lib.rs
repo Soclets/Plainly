@@ -20,36 +20,50 @@ mod color;
 pub mod handles;
 mod heap;
 mod object;
+mod pacer;
 mod stack_roots;
 
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Condvar, Mutex, MutexGuard};
+use std::time::Instant;
 
 use heap::{Heap, HeapError};
+use object::object_size;
 pub use object::{ObjectKind, WORD};
+use pacer::Pacer;
 use stack_roots::SafepointTable;
 
 /// Where an object's payload starts, from its address.
 pub const PAYLOAD_OFFSET: usize = WORD;
 
-/// A collection starts once this many bytes have been allocated since the last one, or as many as were live after
-/// it, whichever is more. A placeholder until the design session decides the pacer (`compiler/PROGRESS.md`).
-const LEAST_BYTES_BETWEEN_COLLECTIONS: usize = 4 * 1024 * 1024;
-
 /// Why an allocation failed.
 #[derive(Debug, PartialEq, Eq)]
 pub enum AllocationError {
-    /// The system has no more memory to give.
-    OutOfMemory,
+    /// The heap can't grow past its hard limit, or the system has no more memory to give, and collecting freed too
+    /// little (D115). `in_use` is the hard limit when that's what stopped it, and otherwise how many bytes the heap
+    /// holds.
+    OutOfMemory { in_use: usize },
     /// A bug in PlainGC or PlainCompiler, described for the report.
     Internal(String),
+}
+
+impl AllocationError {
+    /// The error, with how many bytes the heap holds when it ran out.
+    fn in_heap(self, heap: &Heap) -> AllocationError {
+        match self {
+            AllocationError::OutOfMemory { .. } => {
+                AllocationError::OutOfMemory { in_use: heap.used }
+            }
+            other => other,
+        }
+    }
 }
 
 impl From<HeapError> for AllocationError {
     fn from(error: HeapError) -> AllocationError {
         match error {
-            HeapError::OutOfMemory => AllocationError::OutOfMemory,
+            HeapError::OutOfMemory => AllocationError::OutOfMemory { in_use: 0 },
             HeapError::Internal(what) => AllocationError::Internal(what),
         }
     }
@@ -77,6 +91,10 @@ struct Collector {
     longest_pause_microseconds: u128,
     /// Kept handles' references (D105), roots shared by every thread, by slot; `None` is a free slot.
     kept: Vec<Option<u64>>,
+    /// When collections start (D113).
+    pacer: Pacer,
+    /// The most bytes the heap may hold (D114).
+    hard_limit: usize,
 }
 
 /// Where a collection is (D69).
@@ -139,6 +157,8 @@ fn new_collector() -> Collector {
         worker_batches: 0,
         longest_pause_microseconds: 0,
         kept: Vec::new(),
+        pacer: Pacer::new(Instant::now()),
+        hard_limit: pacer::hard_limit(),
     }
 }
 
@@ -150,7 +170,8 @@ fn with_collector<T>(
     work: impl FnOnce(&mut Collector) -> Result<T, AllocationError>,
 ) -> Result<T, AllocationError> {
     let mut guard = lock()?;
-    work(guard.get_or_insert_with(new_collector))
+    let collector = guard.get_or_insert_with(new_collector);
+    work(collector).map_err(|error| error.in_heap(&collector.heap))
 }
 
 /// Starts PlainGC for a compiled program.
@@ -163,10 +184,18 @@ pub unsafe fn start(stack_maps: *const u64, main_frame: usize) -> Result<(), All
     // SAFETY: passed on from this function's own promise.
     let table = unsafe { SafepointTable::read(stack_maps) }.map_err(AllocationError::Internal)?;
     let stress = std::env::var_os("PLAINGC_STRESS").is_some_and(|value| value == "1");
+    // A smaller hard limit, for tests of running out of memory, which no Plainly program can read.
+    let test_limit = std::env::var("PLAINGC_TEST_HARD_LIMIT_MIB")
+        .ok()
+        .and_then(|mebibytes| mebibytes.parse::<usize>().ok())
+        .map(|mebibytes| mebibytes.saturating_mul(1024 * 1024));
     with_collector(|collector| {
         collector.table = table;
         collector.main_frame = main_frame;
         collector.stress = stress;
+        if let Some(limit) = test_limit {
+            collector.hard_limit = limit;
+        }
         Ok(())
     })
 }
@@ -187,20 +216,117 @@ pub(crate) fn allocate_with_roots(
     roots: &mut [Cell<u64>],
 ) -> Result<u64, AllocationError> {
     let mut guard = lock()?;
-    if guard
+    let started = guard
         .as_ref()
-        .is_some_and(|collector| collector.main_frame != 0)
-    {
+        .is_some_and(|collector| collector.main_frame != 0);
+    if started {
         guard = run_collection(guard, roots)?;
     }
-    let collector = guard.get_or_insert_with(new_collector);
-    let object = collector.heap.allocate(kind, length)?;
-    if object == 0 {
-        return Err(AllocationError::Internal(
-            "PlainGC allocated at address 0".to_string(),
-        ));
+    let mut collected = false;
+    loop {
+        let collector = guard.get_or_insert_with(new_collector);
+        if collector.heap.used.saturating_add(object_size(length)) <= collector.hard_limit {
+            match collector.heap.allocate(kind, length) {
+                Ok(0) => {
+                    return Err(AllocationError::Internal(
+                        "PlainGC allocated at address 0".to_string(),
+                    ));
+                }
+                Ok(object) => return Ok(collector.heap.reference_to(object)),
+                // The system refused memory before the hard limit: collect, as at the limit.
+                Err(HeapError::OutOfMemory) => {}
+                Err(HeapError::Internal(what)) => return Err(AllocationError::Internal(what)),
+            }
+        }
+        // trace: D115
+        if collected || !started {
+            let needed = collector.heap.used.saturating_add(object_size(length));
+            return Err(AllocationError::OutOfMemory {
+                in_use: if needed > collector.hard_limit {
+                    collector.hard_limit
+                } else {
+                    collector.heap.used
+                },
+            });
+        }
+        // The program waits while PlainGC collects everything it can, as ZGC's allocation stall does.
+        guard = collect_fully(guard, roots)?;
+        collected = true;
     }
-    Ok(collector.heap.reference_to(object))
+}
+
+/// Runs collections until one that started after now has finished, so everything unreachable now is freed. The
+/// program waits meanwhile; PlainGC's thread does the marking and moving.
+fn collect_fully(
+    mut guard: MutexGuard<'static, Option<Collector>>,
+    roots: &mut [Cell<u64>],
+) -> Result<MutexGuard<'static, Option<Collector>>, AllocationError> {
+    let target = {
+        let collector = guard.get_or_insert_with(new_collector);
+        collector.collections + if collector.phase == Phase::Idle { 1 } else { 2 }
+    };
+    loop {
+        guard = PHASE_CHANGED
+            .wait_while(guard, |collector| {
+                collector.as_ref().is_some_and(|collector| {
+                    matches!(collector.phase, Phase::Marking | Phase::Relocating)
+                })
+            })
+            .map_err(broken_lock)?;
+        let collector = guard.get_or_insert_with(new_collector);
+        if let Some(failure) = collector.worker_failure.take() {
+            return Err(AllocationError::Internal(failure));
+        }
+        if collector.collections >= target {
+            return Ok(guard);
+        }
+        match collector.phase {
+            Phase::MarkingDone => end_marking(collector)?,
+            Phase::RelocationDone => end_relocation(collector),
+            Phase::Idle => start_collection(collector, roots)?,
+            Phase::Marking | Phase::Relocating => {}
+        }
+    }
+}
+
+/// Ends a marking, with the program paused: chooses the pages to evacuate and changes the good color.
+fn end_marking(collector: &mut Collector) -> Result<(), AllocationError> {
+    collector.heap.end_marking(collector.stress)?;
+    collector.phase = Phase::Relocating;
+    plainly_gc_bad_mask.store(
+        color::bad_mask(collector.heap.good_color()),
+        Ordering::SeqCst,
+    );
+    PHASE_CHANGED.notify_all();
+    Ok(())
+}
+
+/// Ends a relocation: frees the evacuated pages, and the collection is over.
+fn end_relocation(collector: &mut Collector) {
+    collector.moved_objects += collector.heap.end_relocation();
+    collector.collections += 1;
+    collector.phase = Phase::Idle;
+    collector.pacer.collection_ended(Instant::now());
+}
+
+/// Starts a collection: takes the roots, and wakes PlainGC's thread to mark, starting it the first time.
+fn start_collection(
+    collector: &mut Collector,
+    roots: &mut [Cell<u64>],
+) -> Result<(), AllocationError> {
+    collector.pacer.collection_started(Instant::now());
+    begin_marking(collector, roots)?;
+    if !collector.worker_started {
+        std::thread::Builder::new()
+            .name("PlainGC".to_string())
+            .spawn(worker)
+            .map_err(|error| {
+                AllocationError::Internal(format!("PlainGC's thread couldn't start: {error}"))
+            })?;
+        collector.worker_started = true;
+    }
+    PHASE_CHANGED.notify_all();
+    Ok(())
 }
 
 /// Moves the collection along at an allocation, on the program's thread, with the program paused only briefly: ends
@@ -230,39 +356,35 @@ fn run_collection(
     // trace: D69
     let moved_on = match collector.phase {
         Phase::MarkingDone => {
-            collector.heap.end_marking(collector.stress)?;
-            collector.phase = Phase::Relocating;
-            plainly_gc_bad_mask.store(
-                color::bad_mask(collector.heap.good_color()),
-                Ordering::SeqCst,
-            );
-            PHASE_CHANGED.notify_all();
+            end_marking(collector)?;
             true
         }
         Phase::RelocationDone => {
-            collector.moved_objects += collector.heap.end_relocation();
-            collector.collections += 1;
-            collector.phase = Phase::Idle;
+            end_relocation(collector);
             true
         }
         _ => false,
     };
-    let due = collector.heap.allocated_since_collection
-        >= LEAST_BYTES_BETWEEN_COLLECTIONS.max(collector.heap.live_after_collection);
+    // trace: D113
+    let now = Instant::now();
+    collector.pacer.sample(now, collector.heap.allocated_total);
+    let due = || {
+        let soft_target =
+            pacer::soft_target(collector.heap.live_after_collection, collector.hard_limit);
+        collector
+            .pacer
+            .should_start(
+                now,
+                collector.heap.used,
+                collector.heap.allocated_since_collection,
+                soft_target,
+            )
+            .is_some()
+    };
     // An allocation that moves a collection on doesn't also start the next, so the program always runs a while in
     // every phase.
-    if collector.phase == Phase::Idle && !moved_on && (collector.stress || due) {
-        begin_marking(collector, roots)?;
-        if !collector.worker_started {
-            std::thread::Builder::new()
-                .name("PlainGC".to_string())
-                .spawn(worker)
-                .map_err(|error| {
-                    AllocationError::Internal(format!("PlainGC's thread couldn't start: {error}"))
-                })?;
-            collector.worker_started = true;
-        }
-        PHASE_CHANGED.notify_all();
+    if collector.phase == Phase::Idle && !moved_on && (collector.stress || due()) {
+        start_collection(collector, roots)?;
     }
     let pause = pause_start.elapsed().as_micros();
     collector.longest_pause_microseconds = collector.longest_pause_microseconds.max(pause);
@@ -333,9 +455,9 @@ fn worker() {
             Ok(false) => None,
             Ok(true) => Some(None),
             Err(HeapError::Internal(what)) => Some(Some(what)),
-            Err(HeapError::OutOfMemory) => {
-                Some(Some("PlainGC's thread ran out of memory".to_string()))
-            }
+            Err(HeapError::OutOfMemory) => Some(Some(
+                "PlainGC's thread ran out of memory while moving objects".to_string(),
+            )),
         };
         if let Some(failure) = failure {
             collector.worker_failure = failure;
@@ -351,6 +473,22 @@ fn worker() {
 /// the forwarding table.
 pub fn heal(reference: u64) -> Result<u64, AllocationError> {
     with_collector(|collector| Ok(collector.heap.heal(reference)?))
+}
+
+thread_local! {
+    /// Where the program is, as the site of the code about to allocate, for the message if memory runs out (D115).
+    static SITE: Cell<(*const u8, i64)> = const { Cell::new((std::ptr::null(), 0)) };
+}
+
+/// Notes the site of the code about to allocate on this thread: the runtime does before making a value, and an
+/// `extern.rust` procedure's glue before its Rust code runs.
+pub fn note_site(site: *const u8, length: i64) {
+    SITE.with(|noted| noted.set((site, length)));
+}
+
+/// The site noted last on this thread.
+pub fn noted_site() -> (*const u8, i64) {
+    SITE.with(Cell::get)
 }
 
 /// What stops the program when PlainGC can't go on inside an `extern.rust` call; the runtime installs its own.
