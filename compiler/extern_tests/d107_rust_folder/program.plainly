@@ -1,0 +1,33 @@
+extern.rust proc shout(text: Text) returns Text:
+end proc shout
+
+extern.rust proc add_bonus(score: Whole, doubled: Bool) returns Whole:
+end proc add_bonus
+
+extern.rust proc first_word(text: Text) returns Text or fails empty, too_long:
+end proc first_word
+
+extern.rust proc remember(text: Text):
+end proc remember
+
+extern.rust proc remembered returns Text:
+end proc remembered
+
+proc.main:
+    show_msg(shout("hello there world"));
+    show_msg(be.Text(add_bonus(10, true)));
+    show_msg(be.Text(add_bonus(10, false)));
+    show_msg(first_word("  plainly rocks") ?? "none");
+    show_msg(first_word("   ") ?? "none");
+    show_msg(first_word("abcdefghijklmnopqrstuvwxyz") ?? "too long");
+    remember("kept across calls");
+    var last: Text = "start";
+    var n: Whole = 0;
+    while n < 2000:
+        last = shout(be.Text(n) & " garbage " & last);
+        last = be.Text(n);
+        n = n + 1;
+    end while
+    show_msg(last);
+    show_msg(remembered());
+end proc.main

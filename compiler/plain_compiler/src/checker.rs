@@ -399,6 +399,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     .map(|failure| failure.text.clone())
                     .collect()
             }),
+            header_place: procedure.header_place,
             parameters,
             returns: match gives {
                 Gives::Value(value_type) => value_type,

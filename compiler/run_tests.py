@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Runs Plainly's tests (tests/README.md) and PlainGC's stress programs (compiler/gc_tests/README.md).
+"""Runs Plainly's tests (tests/README.md), PlainGC's stress programs (compiler/gc_tests/README.md) and the
+extern.rust tests (compiler/extern_tests/README.md).
 
 Builds the compiler's workspace, then runs each test from inside its own folder as
 
@@ -27,6 +28,7 @@ COMPILER_FOLDER = os.path.dirname(os.path.abspath(__file__))
 REPOSITORY = os.path.dirname(COMPILER_FOLDER)
 TESTS_FOLDER = os.path.join(REPOSITORY, "tests")
 GC_TESTS_FOLDER = os.path.join(COMPILER_FOLDER, "gc_tests")
+EXTERN_TESTS_FOLDER = os.path.join(COMPILER_FOLDER, "extern_tests")
 PLAINLY = os.path.join(COMPILER_FOLDER, "target", "debug", "plainly")
 TIME_LIMIT_SECONDS = 120
 REPORT = re.compile(
@@ -60,6 +62,8 @@ def run_test(folder, stress, gc_test):
     environment = dict(os.environ)
     environment.pop("PLAINGC_STRESS", None)
     environment.pop("PLAINGC_REPORT", None)
+    # A `rust` folder is built offline, from crates already in Cargo's cache.
+    environment["CARGO_NET_OFFLINE"] = "true"
     if stress:
         environment["PLAINGC_STRESS"] = "1"
         if gc_test:
@@ -118,7 +122,7 @@ def run_test(folder, stress, gc_test):
 
 def test_folders(names):
     folders = []
-    for base, gc_test in [(TESTS_FOLDER, False), (GC_TESTS_FOLDER, True)]:
+    for base, gc_test in [(TESTS_FOLDER, False), (GC_TESTS_FOLDER, True), (EXTERN_TESTS_FOLDER, False)]:
         for entry in sorted(os.listdir(base)):
             folder = os.path.join(base, entry)
             if os.path.isdir(folder) and (not names or entry in names):

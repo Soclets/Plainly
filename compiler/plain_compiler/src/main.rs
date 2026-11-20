@@ -18,6 +18,7 @@ mod lowering;
 mod message;
 mod parser;
 mod plainly_ir;
+mod rust_folder;
 mod source;
 mod syntax_tree;
 #[cfg(test)]
@@ -259,20 +260,42 @@ fn compile_and_go(action: Action, file: &Path) -> Result<u8, InternalError> {
         typed.ok_or_else(|| InternalError::new("checking gave no typed tree, and no message"))?;
     let program: IrProgram = lowering::lower_program(&typed, &sources)?;
     let object = code_generation::generate(&program)?;
+    // A program with `extern.rust` procedures links its `rust` folder's library in place of the runtime's (D107).
+    let externals: Vec<rust_folder::ExternalProcedure> = program
+        .procedures
+        .iter()
+        .zip(&typed.procedures)
+        .filter(|(procedure, _)| procedure.external.is_some())
+        .map(|(procedure, typed)| rust_folder::ExternalProcedure {
+            name: procedure.name.clone(),
+            symbol: code_generation::extern_symbol(procedure),
+            header_place: typed.header_place,
+        })
+        .collect();
+    let library = if externals.is_empty() {
+        None
+    } else {
+        match rust_folder::build(file, &externals)? {
+            rust_folder::Built::Library(library) => Some(library),
+            rust_folder::Built::Refused(mut messages) => {
+                return Ok(show_messages(&mut messages, &sources));
+            }
+        }
+    };
     match action {
         Action::Compile => {
             let name = file
                 .file_stem()
                 .ok_or_else(|| InternalError::new("the file has no name"))?;
-            linking::link(&object, Path::new(name))?;
+            linking::link(&object, Path::new(name), library.as_deref())?;
             Ok(STATUS_RAN)
         }
-        _ => run_in_temporary_file(&object),
+        _ => run_in_temporary_file(&object, library.as_deref()),
     }
 }
 
 /// `plainly run`: compiles to a temporary file, runs it, and gives its exit status (D45, D50, D91).
-fn run_in_temporary_file(object: &[u8]) -> Result<u8, InternalError> {
+fn run_in_temporary_file(object: &[u8], library: Option<&Path>) -> Result<u8, InternalError> {
     let nanoseconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
@@ -281,7 +304,7 @@ fn run_in_temporary_file(object: &[u8]) -> Result<u8, InternalError> {
     fs::create_dir_all(&folder)
         .map_err(|error| InternalError::new(format!("making a temporary folder: {error}")))?;
     let program = folder.join("program");
-    let result = linking::link(object, &program).and_then(|()| {
+    let result = linking::link(object, &program, library).and_then(|()| {
         Command::new(&program)
             .status()
             .map_err(|error| InternalError::new(format!("starting the built program: {error}")))

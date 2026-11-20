@@ -65,7 +65,15 @@ pub fn extern_symbol(procedure: &IrProcedure) -> String {
     let takes: Vec<&str> = procedure
         .parameters
         .iter()
-        .map(|&parameter| kind(procedure.locals.get(parameter).copied().unwrap_or(IrType::Whole)))
+        .map(|&parameter| {
+            kind(
+                procedure
+                    .locals
+                    .get(parameter)
+                    .copied()
+                    .unwrap_or(IrType::Whole),
+            )
+        })
         .collect();
     let takes = if takes.is_empty() {
         "nothing".to_string()
@@ -787,7 +795,10 @@ impl Emitter<'_, '_> {
                             8,
                             3,
                         ));
-                        let address = self.builder.ins().stack_addr(self.generator.pointer, slot, 0);
+                        let address =
+                            self.builder
+                                .ins()
+                                .stack_addr(self.generator.pointer, slot, 0);
                         values.push(address);
                         Some(address)
                     }
@@ -799,18 +810,26 @@ impl Emitter<'_, '_> {
                 values.push(site_length);
                 let result = self.call(id, &values);
                 if can_fail {
-                    let code = result.ok_or_else(|| InternalError::new("a call to Rust gave no failure number"))?;
+                    let code = result.ok_or_else(|| {
+                        InternalError::new("a call to Rust gave no failure number")
+                    })?;
                     let has_failed = self.builder.ins().icmp_imm_s(IntCC::NotEqual, code, 0);
                     if let Some(failed) = failed {
                         self.set(*failed, has_failed)?;
                     }
                     if let (Some(to), Some(address), Some(gives)) = (to, result_slot, gives) {
                         let value_type = self.generator.cranelift_type(gives);
-                        let value = self.builder.ins().load(value_type, MemFlagsData::trusted(), address, 0);
+                        let value = self.builder.ins().load(
+                            value_type,
+                            MemFlagsData::trusted(),
+                            address,
+                            0,
+                        );
                         self.set(*to, value)?;
                     }
                 } else if let Some(to) = to {
-                    let result = result.ok_or_else(|| InternalError::new("a call to Rust gave no value"))?;
+                    let result =
+                        result.ok_or_else(|| InternalError::new("a call to Rust gave no value"))?;
                     self.set(*to, result)?;
                 }
             }

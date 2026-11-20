@@ -12,8 +12,8 @@ use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::visit_mut::VisitMut;
 use syn::{
-    FnArg, GenericArgument, GenericParam, Ident, ItemFn, Lifetime, LifetimeParam, LitStr, PathArguments, ReturnType,
-    Token, Type, parse_macro_input,
+    FnArg, GenericArgument, GenericParam, Ident, ItemFn, Lifetime, LifetimeParam, LitStr,
+    PathArguments, ReturnType, Token, Type, parse_macro_input,
 };
 
 /// The attribute's words: the Plainly procedure's name, then `fails = "..."` for one that can fail (D110).
@@ -30,7 +30,10 @@ impl Parse for Attribute {
             input.parse::<Token![,]>()?;
             let key: Ident = input.parse()?;
             if key != "fails" {
-                return Err(syn::Error::new_spanned(key, "the only setting after the name is `fails = \"...\"`"));
+                return Err(syn::Error::new_spanned(
+                    key,
+                    "the only setting after the name is `fails = \"...\"`",
+                ));
             }
             input.parse::<Token![=]>()?;
             fails = Some(input.parse()?);
@@ -59,7 +62,10 @@ struct FailurePath {
 
 impl VisitMut for FailurePath {
     fn visit_type_path_mut(&mut self, path: &mut syn::TypePath) {
-        if path.qself.is_none() && path.path.segments.len() == 1 && path.path.segments[0].ident == "Failure" {
+        if path.qself.is_none()
+            && path.path.segments.len() == 1
+            && path.path.segments[0].ident == "Failure"
+        {
             let module = &self.module;
             *path = syn::parse_quote!(#module::Failure);
         }
@@ -207,11 +213,17 @@ pub fn procedure(attribute: TokenStream, item: TokenStream) -> TokenStream {
         })
         .unwrap_or_default();
     if let Some(list) = &fails
-        && (failures.is_empty() || failures.iter().any(|failure| failure.contains('.') || !is_procedure_name(failure)))
+        && (failures.is_empty()
+            || failures
+                .iter()
+                .any(|failure| failure.contains('.') || !is_procedure_name(failure)))
     {
-        return syn::Error::new_spanned(list, "these aren't the names of failures, separated by commas")
-            .to_compile_error()
-            .into();
+        return syn::Error::new_spanned(
+            list,
+            "these aren't the names of failures, separated by commas",
+        )
+        .to_compile_error()
+        .into();
     }
 
     let mut inputs = function.sig.inputs.iter();
@@ -245,14 +257,19 @@ pub fn procedure(attribute: TokenStream, item: TokenStream) -> TokenStream {
         (ReturnType::Default, true) => None,
         (ReturnType::Type(_, ty), true) => Some((**ty).clone()),
         (ReturnType::Type(_, ty), false) => match result_parts(ty) {
-            Some((value, failure)) if last_name(&failure).as_deref() == Some("Failure") => match value {
-                Type::Tuple(tuple) if tuple.elems.is_empty() => None,
-                other => Some(other),
-            },
+            Some((value, failure)) if last_name(&failure).as_deref() == Some("Failure") => {
+                match value {
+                    Type::Tuple(tuple) if tuple.elems.is_empty() => None,
+                    other => Some(other),
+                }
+            }
             _ => {
-                return syn::Error::new_spanned(ty, "a Plainly procedure that can fail gives back `Result<..., Failure>`")
-                    .to_compile_error()
-                    .into();
+                return syn::Error::new_spanned(
+                    ty,
+                    "a Plainly procedure that can fail gives back `Result<..., Failure>`",
+                )
+                .to_compile_error()
+                .into();
             }
         },
         (ReturnType::Default, false) => {
@@ -303,9 +320,15 @@ pub fn procedure(attribute: TokenStream, item: TokenStream) -> TokenStream {
     let failure_type = if failures.is_empty() {
         quote!()
     } else {
-        let variants: Vec<Ident> = failures.iter().map(|failure| format_ident!("{}", rust_casing(failure))).collect();
+        let variants: Vec<Ident> = failures
+            .iter()
+            .map(|failure| format_ident!("{}", rust_casing(failure)))
+            .collect();
         let numbers = (1..=variants.len() as u32).collect::<Vec<_>>();
-        FailurePath { module: module.clone() }.visit_return_type_mut(&mut function.sig.output);
+        FailurePath {
+            module: module.clone(),
+        }
+        .visit_return_type_mut(&mut function.sig.output);
         let body = &function.block;
         function.block = syn::parse_quote!({
             #[allow(unused_imports)]

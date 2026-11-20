@@ -29,6 +29,36 @@ the test results (`python3 compiler/run_tests.py`).
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
+## Milestone 3: `extern.rust` (D36, D105 to D112)
+
+**Done (2026-11-20).** A program's `extern.rust` procedures run Rust code from its `rust` folder.
+
+- **The header:** `extern.rust proc name(...) returns T or fails a, b:` with an empty body, or only a `labels` line
+  (D36). `extern` alone is refused; `extern.` anything but `rust` is `NotDesignedYet`. Failures in a header are
+  read only for `extern.rust` procedures so far; a Plainly procedure's `fails` stays `NotBuiltYet`.
+- **The `plainly` crate** (`compiler/plainly`) is what a `rust` folder depends on, as `plainly = "0.1"`: it gives
+  `Call`, `Handle`, `Kept` and `Text` from PlainGC's handles (D105), and the `#[plainly::procedure("name")]`
+  attribute (D108) from `compiler/plainly_macros`. The attribute checks the function's shape while Rust builds it:
+  `&mut Call` first, then `Handle<Text>`, `i64` or `bool` (D109), giving back one of those or nothing. With
+  `fails = "a, b"` it makes the procedure's own `Failure` type (`Failure::A`, `Failure::B`, in Rust's casing) and
+  takes `Result<..., Failure>` (D110).
+- **The glue:** the attribute writes a C-callable function whose symbol spells out the procedure's shape, as in
+  `plainly_procedure_first_word_takes_text_gives_text_fails_empty__too_long`. Cranelift's code calls it with the raw
+  values, a slot for the result and a failure number when it can fail, and the call's site for messages.
+- **Building:** for a program with `extern.rust` procedures, `plainly` writes a small Cargo project of its own in
+  `rust/target/plainly_program`, which depends on the runtime and the program's crate and patches `plainly` to
+  PlainCompiler's own copy. Cargo builds it into one static library, with frame pointers kept for PlainGC, which is
+  linked in place of the runtime's own. Cargo's own cache makes later builds quick.
+- **Checking the Rust against the headers (D110):** before linking, each procedure's symbol is looked for in the
+  library. A missing function, or one whose parameters, result or failures differ from the header, is refused with a
+  message saying both shapes, rather than a linker error.
+- **Panics (D111, D112):** the glue catches a panic at the edge, quiets Rust's own report, and stops the program with
+  D111's message: the Plainly call's snippet, Rust's panic message, and where in the Rust it happened, as
+  `rust/src/lib.rs line 7`, with status 7.
+- **Tests:** `compiler/extern_tests`, four programs with real `rust` folders, one using the `heck` crate from
+  crates.io; the runner builds them offline. Every run passes, 78 in all, collect-often mode included, where a kept
+  handle survives 4,000 collections. Doc tests show the attribute with and without failures, and refuse an `f64`.
+
 ## Milestone 1: every test and the guessing game, in `working` mode
 
 ### Plan
@@ -98,11 +128,7 @@ and the compiler depends on nothing but that interface.
 - **Handles never hand Rust code an error:** `read` gives a `&str` and `new_text` a handle, exactly as D105's example
   writes them. If PlainGC can't go on inside a call, a failure handler the runtime installs at start stops the
   program with D103's message.
-- **Not built:** `extern.rust` procedures themselves (still `NotBuiltYet`). D107 to D111 decide them fully, but they're
-  a milestone of their own, waiting for Tankun's go-ahead. Work already started on them (the parser's
-  `extern.rust proc`, and the `plainly` and `plainly_macros` crates with D108's `#[plainly::procedure(...)]`) is set
-  aside, uncommitted, in this folder's git stash, "extern.rust work in progress (D107-D111)"; `git stash list` shows
-  it.
+- **`extern.rust` procedures** came after, as milestone 3.
 
 ### Step 4 in detail
 
@@ -237,7 +263,7 @@ than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
 
 ## What `NotBuiltYet` covers
 
-Decided, but not in this milestone: `--final` mode, `plainly oracle`, families (`fam`), `extern.rust`, failures in a
+Decided, but not built yet: `--final` mode, `plainly oracle`, families (`fam`), failures in a Plainly procedure's
 header (`fails`), `?`, `?? ignore`, `?? crash`, `otherwise:`, `case`, `instead`, `include`, handlers and `.*`; `/`,
 `div` and `rem` (D70, D71); comments (D74); lists (D75), their facts like `.len` (D79) and items (D80); methods (D77); `copy` and `share` (D49).
 
@@ -368,6 +394,27 @@ file or a pipe.
 | (any) | something the parser can't read | what: `` `;` should be here, not `x` `` / the line ends where `` `)` `` should be / the file ends where a value should be | (none) |
 | (any) | a value of the wrong type | what: `` `x` is a `Whole`, but this value is a `Text` `` (fix: `be.Text(...)` when a `Whole` is given for `Text`) | a value's type has to match where it's used. / a number becomes text only where `be.Text` says so. |
 
+### `extern.rust` (D107 to D110), all refusals with status 1
+
+The `^` is under the header, from `proc` to the end of the name.
+
+| Decision | Refused | `what:` | `why:` |
+|---|---|---|---|
+| D107 | no `rust` folder | `` `beep` is `extern.rust`, but there's no `rust` folder beside the program `` (or `` ..., but the `rust` folder has no Cargo.toml ``) | an `extern.rust` procedure's body is Rust code, in a Cargo project in a folder named `rust` beside the program's .plainly files. |
+| D107 | a Cargo.toml with no `[package]` name | the `rust` folder's Cargo.toml has no package name | PlainCompiler links the package the `rust` folder's Cargo.toml names, under `[package]`. |
+| D107 | Cargo isn't installed | building the `rust` folder needs Cargo, Rust's build tool, which isn't installed | Rust is needed for a program with a `rust` folder; it's installed from https://rustup.rs. |
+| D107 | the Rust doesn't build (Cargo's own messages come first) | the Rust code in the `rust` folder doesn't build | Cargo's messages above say what's wrong in the Rust code. |
+| D108 | no Rust function for a procedure | `` no Rust function in the `rust` folder is marked `#[plainly::procedure("missing")]` `` | an `extern.rust` procedure's body is the Rust function marked with its name. |
+| D110 | a Rust function of another shape | `` the Rust function for `count_words` takes a `Text` and a `Whole` and gives back a `Whole`, but this header takes a `Text` and gives back a `Whole` `` (failures as "and can fail with `empty` or `too_long`") | a Rust function takes and gives what its header says, with `Handle<Text>` for `Text`, `i64` for `Whole` and `bool` for `Bool`, and names the same failures. |
+| D38 | `?? value` after a call that gives nothing | this call gives nothing back, so `??` has no value to carry on with | `?? value` carries on with a value in place of the one a call that failed would give. |
+
+The attribute's own errors, shown by Rust while it builds the `rust` folder, are drafts too: "a Plainly procedure's
+first parameter is its call: `call: &mut Call`", "a Plainly procedure's parameter is a `Handle<Text>`, an `i64` or a
+`bool`", "a Plainly procedure gives back a `Handle<Text>`, an `i64`, a `bool`, or nothing", "a Plainly procedure that
+can fail gives back `Result<..., Failure>`", and "these aren't the names of failures, separated by commas".
+
+D111 and D112 give the panic message's wording, built as written.
+
 ### Checks at runtime (`check failed:`, exit status 4)
 
 | Decision | Check | `what:` | `when:` | `why:` |
@@ -440,4 +487,9 @@ uses a placeholder until it's decided.
 - **Q30. Answered by D86:** the text after every label starts one space after `because:`, in every message.
 - **Q31. Answered by D107 to D111:** a `rust` folder holding a Cargo project; functions marked with
   `#[plainly::procedure("...")]`; `Whole` as `i64`, `Bool` as `bool`, `Text` as a handle; failures as Rust's
-  `Result`; a panic stops the program as an internal error. Building it waits for Tankun.
+  `Result`; a panic stops the program as an internal error. Built as milestone 3.
+- **Q32. A `rust` folder in a program with no `extern.rust` procedure.** For now it's ignored, not built. Should it be
+  built anyway (catching Rust errors early, but slower), refused, or ignored?
+- **Q33. Where `plainly` finds its own crates** (`plainly`, the runtime, PlainGC) to build a `rust` folder against.
+  How Plainly is installed isn't decided, so for now it uses the folder PlainCompiler was built from. A placeholder.
+- **Q34. The wordings of the `extern.rust` refusals** in "Messages waiting for wording".

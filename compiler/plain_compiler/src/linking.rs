@@ -26,8 +26,13 @@ fn runtime_library() -> Result<PathBuf, InternalError> {
     Ok(library)
 }
 
-pub fn link(object: &[u8], output: &Path) -> Result<(), InternalError> {
-    let runtime = runtime_library()?;
+/// Links `object` into the executable `output`, with `library` in place of the runtime's own when the program has a
+/// `rust` folder (D107).
+pub fn link(object: &[u8], output: &Path, library: Option<&Path>) -> Result<(), InternalError> {
+    let runtime = match library {
+        Some(library) => library.to_path_buf(),
+        None => runtime_library()?,
+    };
     let object_path = output.with_extension("o");
     fs::write(&object_path, object).map_err(|error| {
         InternalError::new(format!("writing {}: {error}", object_path.display()))
