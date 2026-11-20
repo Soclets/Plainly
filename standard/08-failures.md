@@ -49,7 +49,8 @@ load_level(name) ?? crash;
 ```
 
 - **`?? value`** carries on with that value.
-- **`?? ignore`** ignores the failure on purpose.
+- **`?? ignore`** ignores the failure on purpose, after a call that gives nothing; after one that gives a value it's
+  refused, since there'd be nothing to carry on with (D121).
 - **`?? crash`** stops the program on purpose.
 
 ## `otherwise:`

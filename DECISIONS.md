@@ -3710,3 +3710,30 @@ choice is between refusing and staying silent.
 
 **Tankun's words.** Asked "Should a call whose value isn't used be refused, with no way to throw a value away for
 now?", the owner chose: "yea".
+
+## D121. `?? ignore` only follows a call that gives nothing
+
+2026-11-20.
+
+**Chosen.** `?? ignore` is for a call that gives nothing, like `save_game() ?? ignore;`. After a call that gives a value
+it's refused, since a failure would leave nothing to carry on with:
+
+```
+let guess: Whole = be.Whole(typed) ?? ignore;
+```
+
+```
+ what:    `be.Whole` gives back a `Whole`, so `?? ignore` leaves `guess` with nothing if it fails
+ why:     `?? ignore` is for a call that gives nothing; after one that gives a value, `?? value` says what to carry on with.
+```
+
+(On a line of its own, `be.Whole(typed) ?? ignore;` is refused by D120 anyway, its value unused.)
+
+**Weighed.**
+- Allowing it, with some value standing in when the call fails. The value would be one nobody chose.
+
+**Why this won.** Ignoring a failure only makes sense when the call had nothing to give, and `?? value` already says
+what to carry on with otherwise.
+
+**Tankun's words.** Asked "Should `?? ignore` be refused after a call that gives a value, with the message pointing to
+`?? value`?", the owner chose: "yea".
