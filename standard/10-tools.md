@@ -7,7 +7,9 @@ Cranelift, with no bytecode and no JIT. Running a program compiles it to a tempo
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
-**Not decided:** the oracle's language.
+PlainOracle, the reference implementation, is written in C (D52).
+
+**Not decided:** PlainOracle's C standard, compiler and guard rails.
 
 ## The command
 

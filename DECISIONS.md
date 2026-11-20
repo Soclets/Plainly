@@ -1569,3 +1569,31 @@ garbage collector PlainGC (D48). The command stays `plainly` (D50).
 tools. Tankun named them, writing `_` for "Plain".
 
 **Tankun's words.** In their answer to D50, quoted whole there.
+
+## D52. PlainOracle is written in C
+
+2026-11-20.
+
+**Chosen.** PlainOracle, the reference implementation (D12, D50, D51), is written in C.
+
+(The C standard and compiler, how its memory, tagged values, overflow checks and Unicode are handled, and the guard
+rails that keep it obviously correct aren't decided yet.)
+
+**Weighed.** The design claude recommended OCaml throughout, and Tankun chose C.
+- OCaml, as Plainly v1's oracle was (its D17): pattern matching that reads like the standard's rules, a garbage
+  collector for free, and `wasm_of_ocaml` for the browser playground; a second toolchain, and `Int64` needed for every
+  `Whole`.
+- C++: `std::variant` and `std::visit` for checked tagged values, and `unique_ptr` and standard containers so memory
+  frees itself; a large language needing a strict subset to stay readable.
+- SPARK at Silver: checked arithmetic, checked variant records, and a proof that it never crashes, but not that its
+  answers are right; pointers only under ownership rules with no garbage collector, and an experimental path to
+  WebAssembly.
+- The case against C: a bare `union` lets the wrong field be read, memory is freed by hand, text is bytes with no
+  Unicode, and signed overflow is undefined behaviour unless every addition uses a checked form such as C23's
+  `ckd_add`.
+
+**Why this won.** Tankun's choice. C needs nothing beyond a C compiler, runs everywhere, compiles to WebAssembly
+through Emscripten, and is a different language from PlainCompiler's Rust, so the two can't share code or bugs (D12).
+
+**Tankun's words.** "You know what's fucking funny? Clang C", "Can I see C syntax?", "What about SPARK? Not hardcore
+SPARK, though", "C or C++ for PlainOracle, if there's two options only", then "C for PlainOracle, and I'm not kidding."
