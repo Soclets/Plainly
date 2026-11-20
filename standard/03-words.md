@@ -12,6 +12,8 @@ message".
 | `end` | | D8 |
 | `.main` | | D4 |
 | `.same_line` | | D6 |
+| `let` | | D13 |
+| `var` | variable | D2, D13 |
 
 **Not decided:** every other keyword.
 

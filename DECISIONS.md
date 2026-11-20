@@ -391,3 +391,35 @@ the terms it uses, and also if you write `let $placeholder: Placeholder = placeh
 what `placeholder` in that context means", asked has code, suggested "What about a separate language's opinion on
 result too? When possible, maybe C, Python, Rust, or SPARK Platinum", then "Holy shit, bro. Do you know how diabolical
 Plat is?". Asked "Go with that?", the owner chose: "yea".
+
+## D13. `let` makes a variable that can't change, `var` one that can, and the type is always written
+
+2026-11-20.
+
+**Chosen.** A new variable is declared with `let` or `var`, its name, its type and its first value:
+
+```
+let $secret: Whole = 42;
+var $tries: Whole = 0;
+```
+
+- `let`: its value never changes after this line.
+- `var`: its value can change. The docs teach "`var` is short for variable", a value that can vary (D2).
+- The type is always written, never worked out from the value.
+
+(`Whole`, numbers, and how a variable is changed aren't decided yet.)
+
+**Weighed.**
+- No word for a declaration, `$secret: Whole = 42;`, with a word only for one that can change, as in Plainly v1
+  (`mutable`). Creating and changing then look more alike.
+- `const` as well, for a value known while building that can sit outside any procedure, as in multifinity's notes
+  (`const $MAXTRIES: Whole = 5;`). It means nearly what `let` does, and only matters once anything outside a procedure
+  is decided, so it waits.
+- Working the type out from the value, as Python and most modern languages do. multifinity's reason against it: if
+  `let $name = "Tankun"` looked dynamic, a parameter refusing the wrong type later would surprise beginners.
+
+**Why this won.** A word in front says "a new variable starts here", so a declaration is never mistaken for a change.
+`let` and `var` are Nim's and Swift's words and close to JavaScript's, and both teach in one sentence. A written type
+shows from the first line that Plainly is static, and says which kind of number a variable holds.
+
+**Tankun's words.** Asked "`let` and `var`, with the type always written?", the owner chose: "yea".
