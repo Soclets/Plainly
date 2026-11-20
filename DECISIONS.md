@@ -1554,3 +1554,21 @@ with `run`, `build`, `check` and `oracle`, where `oracle` forwards to the separa
 PlainCompiler
 _Oracle
 _GC" (the names are D51).
+
+## D51. The parts are PlainCompiler, PlainOracle and PlainGC
+
+2026-11-20.
+
+**Chosen.** Plainly's compiler is PlainCompiler (D45), its reference implementation PlainOracle (D12, D50), and its
+garbage collector PlainGC (D48). The command stays `plainly` (D50).
+
+**Weighed.**
+- Plainly v1's AroundPy (AroundPython, APy) for the compiler, a joke about its speed. A name that has to be explained.
+
+**Why this won.** Each name says what the part is, with the language's name in front, so they read as one family of
+tools. Tankun named them, writing `_` for "Plain".
+
+**Tankun's words.** In D50's answer (quoted there): "Names:
+PlainCompiler
+_Oracle
+_GC".

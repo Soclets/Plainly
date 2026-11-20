@@ -2,7 +2,7 @@
 
 ## The compiler
 
-Plainly's compiler is written in Rust. It compiles a whole program ahead of time to one native executable, through
+Plainly's compiler, PlainCompiler (D51), is written in Rust. It compiles a whole program ahead of time to one native executable, through
 Cranelift, with no bytecode and no JIT. Running a program compiles it to a temporary file and starts it (D45).
 
 The web playground runs the oracle compiled to WebAssembly (D45).
@@ -20,12 +20,12 @@ plainly oracle game.plainly
 
 - **`run`** builds to a temporary file and runs it; **`build`** makes the file to ship. Both need a mode (D46, D50).
 - **`check`** reports what's refused without building, and needs no mode (D50).
-- **`oracle`** runs the file on the oracle, the separate reference implementation, printing exactly what the compiled
+- **`oracle`** runs the file on PlainOracle (D51), the separate reference implementation, printing exactly what the compiled
   program would. `plainly` forwards to the oracle's own program (D50).
 
 ## Memory
 
-A garbage collector in the style of Go's frees memory (D48):
+PlainGC (D51), a garbage collector in the style of Go's, frees memory (D48):
 - **it marks what's in use while the program keeps running,** so pauses stay well under a millisecond;
 - **it never moves objects,** so an `extern.rust` procedure can hold a plain pointer during a call;
 - **it needs only a write barrier,** a check when a reference is stored;
