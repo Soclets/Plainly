@@ -3,6 +3,35 @@
 The state of PlainCompiler, kept current as it's built. A fresh session starts by reading this file, `git log`, and
 the test results (`python3 compiler/run_tests.py`).
 
+## The first build ends here (2026-11-20)
+
+**Tankun decided to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21**, after Cyborg's implementation
+rules were brought over to Plainly (CLAUDE.md, 1141d8a); rule 10, optimizations from the start, is the main reason.
+The rewrite gets a new prompt under the new rules. This first build stops here, with nothing half-done: every step
+below is committed and pushed, and `final` mode was never started.
+
+Where it stopped:
+- Milestone 1 (every test and the guessing game, `working` mode), milestone 2 (PlainGC, ZGC-style, all five steps),
+  milestone 3 (`extern.rust`), PlainGC's pacer and limits, and every decision up to D123 are built. D124's
+  optimizations are only planned, below.
+- 47 compiler unit tests and 34 PlainGC unit tests pass, and `python3 compiler/run_tests.py` passes all 80 runs: the
+  28 tests in `tests/`, 8 stress programs in `compiler/gc_tests` and 4 `extern.rust` programs in
+  `compiler/extern_tests`, each normally and in collect-often mode.
+- Open questions at the stop: `5;` on a line of its own (a statement that's only a value), Q35 (D121's wording when
+  the value isn't going to a variable), Q33 (where `plainly` finds its own crates, until installation is designed),
+  and the older ones still listed under "Open questions".
+
+What may help the rewrite, learned the hard way:
+- **An evacuated page must keep its memory until its forwarding is dropped.** Freeing it as soon as its objects had
+  moved let the system hand the address back for a new page, and the barrier then "healed" a new object to an old
+  one. Only collect-often mode with a large object showed it.
+- **Collect-often mode finds what normal runs don't:** every bug PlainGC had today showed there first.
+- **Cranelift's user stack maps and a frame-pointer walk** give precise roots with pauses of a few hundred
+  microseconds; the stack map table's format is in `plain_gc/src/stack_roots.rs`.
+- **A Rust panic must be caught at the `extern "C"` edge**, with the panic hook quieted only inside that call.
+- **Cargo's `[patch.crates-io]` with a path** lets a program's `rust` folder depend on `plainly = "0.1"` offline,
+  before the crate is published; `CARGO_ENCODED_RUSTFLAGS` keeps a folder name with spaces whole.
+
 ## Status (2026-11-20)
 
 **Milestone 1 is done.**
