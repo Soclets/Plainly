@@ -11,21 +11,25 @@
 //! - **A [`Kept`] handle holds a value beyond one call.** PlainGC counts it as a root, shared by every thread, and
 //!   releases it when the Rust code drops it.
 //!
+//! If PlainGC can't go on inside a call (out of memory, or a bug in PlainGC), the handler the runtime installs stops
+//! the program with its message, so handles never hand Rust code an error to deal with.
+//!
+//! D105's example, as an `extern.rust` procedure's Rust function is written (D107):
+//!
 //! ```
-//! use plain_gc::AllocationError;
 //! use plain_gc::handles::{Call, Handle, Text, with_call};
 //!
-//! fn shout<'call>(call: &mut Call<'call>, text: Handle<'call, Text>) -> Result<Handle<'call, Text>, AllocationError> {
-//!     let loud = text.read(call)?.to_uppercase();
+//! pub fn shout<'call>(call: &mut Call<'call>, text: Handle<'call, Text>) -> Handle<'call, Text> {
+//!     let loud = text.read(call).to_uppercase();
 //!     call.new_text(&loud)
 //! }
 //!
 //! let shouted = with_call(|call| {
-//!     let text = call.new_text("hello")?;
-//!     let loud = shout(call, text)?;
-//!     Ok::<String, AllocationError>(loud.read(call)?.to_string())
+//!     let text = call.new_text("hello");
+//!     let loud = shout(call, text);
+//!     loud.read(call).to_string()
 //! });
-//! assert_eq!(shouted, Ok("HELLO".to_string()));
+//! assert_eq!(shouted, "HELLO");
 //! ```
 //!
 //! A handle can't outlive its call:
@@ -35,7 +39,7 @@
 //!
 //! let mut escaped = None;
 //! with_call(|call| {
-//!     escaped = call.new_text("hello").ok();
+//!     escaped = Some(call.new_text("hello"));
 //! });
 //! ```
 //!
@@ -45,12 +49,10 @@
 //! use plain_gc::handles::with_call;
 //!
 //! with_call(|call| {
-//!     if let Ok(text) = call.new_text("hello") {
-//!         if let Ok(look) = text.read(call) {
-//!             let _ = call.new_text("something new");
-//!             println!("{look}");
-//!         }
-//!     }
+//!     let text = call.new_text("hello");
+//!     let look = text.read(call);
+//!     call.new_text("something new");
+//!     println!("{look}");
 //! });
 //! ```
 
@@ -58,8 +60,8 @@ use std::cell::Cell;
 use std::marker::PhantomData;
 
 use crate::{
-    AllocationError, ObjectKind, PAYLOAD_OFFSET, address, allocate_with_roots, heal, keep_root,
-    kept_root, payload_length, plainly_gc_bad_mask, release_root,
+    AllocationError, ObjectKind, PAYLOAD_OFFSET, address, allocate_with_roots, fail, heal,
+    keep_root, kept_root, payload_length, plainly_gc_bad_mask, release_root,
 };
 
 /// The kind of value a handle holds: `Text` (D21).
@@ -121,32 +123,33 @@ impl<'call> Call<'call> {
     }
 
     /// A handle's reference, through the load barrier (D69): healed in its slot if it has a bad color.
-    fn current(&self, slot: usize) -> Result<u64, AllocationError> {
+    fn current(&self, slot: usize) -> u64 {
         let Some(cell) = self.roots.get(slot) else {
-            return Err(AllocationError::Internal(format!(
+            fail(AllocationError::Internal(format!(
                 "handle {slot} doesn't belong to this call"
             )));
         };
         let reference = cell.get();
         if reference & plainly_gc_bad_mask.load(std::sync::atomic::Ordering::SeqCst) == 0 {
-            return Ok(reference);
+            return reference;
         }
-        let healed = heal(reference)?;
+        let healed = heal(reference).unwrap_or_else(|error| fail(error));
         cell.set(healed);
-        Ok(healed)
+        healed
     }
 
     /// Makes new text holding `text`. It can start a collection, so it takes the call mutably: no look at a value
     /// can be held across it.
-    pub fn new_text(&mut self, text: &str) -> Result<Handle<'call, Text>, AllocationError> {
-        let reference = allocate_with_roots(ObjectKind::Bytes, text.len(), &mut self.roots)?;
+    pub fn new_text(&mut self, text: &str) -> Handle<'call, Text> {
+        let reference = allocate_with_roots(ObjectKind::Bytes, text.len(), &mut self.roots)
+            .unwrap_or_else(|error| fail(error));
         let object = address(reference);
         // SAFETY: `object` is a fresh object with a payload of `text.len()` bytes, starting `PAYLOAD_OFFSET` bytes
         // in, and nothing else uses it yet.
         unsafe {
             std::ptr::copy_nonoverlapping(text.as_ptr(), object.add(PAYLOAD_OFFSET), text.len())
         };
-        Ok(self.hold(reference))
+        self.hold(reference)
     }
 
     /// A handle to a text the compiled program passed in, as its colored reference.
@@ -161,8 +164,8 @@ impl<'call> Call<'call> {
 
 impl<'call> Handle<'call, Text> {
     /// A direct look at the text, with no copying, for as long as the call is borrowed.
-    pub fn read<'look>(self, call: &'look Call<'call>) -> Result<&'look str, AllocationError> {
-        let object = address(call.current(self.slot)?);
+    pub fn read<'look>(self, call: &'look Call<'call>) -> &'look str {
+        let object = address(call.current(self.slot));
         // SAFETY: the reference passed the load barrier, so `object` is the text's current place, and it stays
         // there while `call` is borrowed: only making a value, which needs `call` mutably, can start a collection
         // on this thread, and PlainGC's own thread only moves objects a collection's pause chose, whose references
@@ -170,34 +173,33 @@ impl<'call> Handle<'call, Text> {
         let bytes = unsafe {
             std::slice::from_raw_parts(object.add(PAYLOAD_OFFSET), payload_length(object))
         };
-        std::str::from_utf8(bytes).map_err(|_| {
-            AllocationError::Internal("a `Text` held bytes that aren't UTF-8".to_string())
+        std::str::from_utf8(bytes).unwrap_or_else(|_| {
+            fail(AllocationError::Internal(
+                "a `Text` held bytes that aren't UTF-8".to_string(),
+            ))
         })
     }
 
     /// The text's colored reference, up to date, to give back to the compiled program.
-    pub fn reference(self, call: &Call<'call>) -> Result<u64, AllocationError> {
+    pub fn reference(self, call: &Call<'call>) -> u64 {
         call.current(self.slot)
     }
 
     /// Keeps the text beyond this call.
-    pub fn keep(self, call: &Call<'call>) -> Result<Kept<Text>, AllocationError> {
-        let slot = keep_root(call.current(self.slot)?)?;
-        Ok(Kept {
+    pub fn keep(self, call: &Call<'call>) -> Kept<Text> {
+        let slot = keep_root(call.current(self.slot)).unwrap_or_else(|error| fail(error));
+        Kept {
             slot,
             _kind: PhantomData,
-        })
+        }
     }
 }
 
 impl Kept<Text> {
     /// A handle to the kept text, for the rest of `call`.
-    pub fn handle<'call>(
-        &self,
-        call: &mut Call<'call>,
-    ) -> Result<Handle<'call, Text>, AllocationError> {
-        let reference = kept_root(self.slot)?;
-        Ok(call.hold(reference))
+    pub fn handle<'call>(&self, call: &mut Call<'call>) -> Handle<'call, Text> {
+        let reference = kept_root(self.slot).unwrap_or_else(|error| fail(error));
+        call.hold(reference)
     }
 }
 
@@ -216,44 +218,34 @@ mod tests {
     fn d105_a_handle_finds_its_text_after_a_collection_moves_it() {
         let _alone = TEST_LOCK.lock();
         let read = with_call(|call| {
-            let text = call.new_text("before the collection")?;
-            let before = text.reference(call)?;
-            collect_everything(&mut call.roots)?;
-            let after = text.reference(call)?;
+            let text = call.new_text("before the collection");
+            let before = text.reference(call);
+            assert!(collect_everything(&mut call.roots).is_ok());
+            let after = text.reference(call);
             assert_ne!(address(before), address(after));
-            Ok::<String, AllocationError>(text.read(call)?.to_string())
+            text.read(call).to_string()
         });
-        assert_eq!(read, Ok("before the collection".to_string()));
+        assert_eq!(read, "before the collection");
     }
 
     #[test]
     fn d105_a_kept_handle_survives_collections_between_calls() {
         let _alone = TEST_LOCK.lock();
-        let kept = with_call(|call| call.new_text("kept")?.keep(call));
-        let Ok(kept) = kept else {
-            panic!("keeping the text failed");
-        };
+        let kept = with_call(|call| call.new_text("kept").keep(call));
         for _ in 0..3 {
             with_call(|call| {
-                let _ = call.new_text("garbage");
-                collect_everything(&mut call.roots)
-            })
-            .ok();
+                call.new_text("garbage");
+                assert!(collect_everything(&mut call.roots).is_ok());
+            });
         }
-        let read = with_call(|call| {
-            let text = kept.handle(call)?;
-            Ok::<String, AllocationError>(text.read(call)?.to_string())
-        });
-        assert_eq!(read, Ok("kept".to_string()));
+        let read = with_call(|call| kept.handle(call).read(call).to_string());
+        assert_eq!(read, "kept");
     }
 
     #[test]
     fn d105_a_dropped_kept_handle_is_no_longer_a_root() {
         let _alone = TEST_LOCK.lock();
-        let kept = with_call(|call| call.new_text("let go")?.keep(call));
-        let Ok(kept) = kept else {
-            panic!("keeping the text failed");
-        };
+        let kept = with_call(|call| call.new_text("let go").keep(call));
         let slot = kept.slot;
         drop(kept);
         let registered =

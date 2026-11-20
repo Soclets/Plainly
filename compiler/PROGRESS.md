@@ -95,8 +95,14 @@ and the compiler depends on nothing but that interface.
   and two `compile_fail` doc tests, a handle kept past its call and a look held while a value is made, which Rust
   refuses with "borrowed data escapes outside of closure" and "cannot borrow `*call` as mutable because it is also
   borrowed as immutable". Every run passes, 70 in all.
-- **Not built:** `extern.rust` procedures themselves, in the compiler (still `NotBuiltYet`). Where their Rust code
-  lives and how it's linked isn't decided (Q31).
+- **Handles never hand Rust code an error:** `read` gives a `&str` and `new_text` a handle, exactly as D105's example
+  writes them. If PlainGC can't go on inside a call, a failure handler the runtime installs at start stops the
+  program with D103's message.
+- **Not built:** `extern.rust` procedures themselves (still `NotBuiltYet`). D107 to D111 decide them fully, but they're
+  a milestone of their own, waiting for Tankun's go-ahead. Work already started on them (the parser's
+  `extern.rust proc`, and the `plainly` and `plainly_macros` crates with D108's `#[plainly::procedure(...)]`) is set
+  aside, uncommitted, in this folder's git stash, "extern.rust work in progress (D107-D111)"; `git stash list` shows
+  it.
 
 ### Step 4 in detail
 
@@ -432,5 +438,6 @@ uses a placeholder until it's decided.
 - **Q29. `??` after a slide's step,** as in `typed |> be.Whole ?? 0`. D81 gives `??` to the call right before it,
   and a step isn't written as a call. `NotDesignedYet`.
 - **Q30. Answered by D86:** the text after every label starts one space after `because:`, in every message.
-- **Q31. Where an `extern.rust` procedure's Rust code lives, and how it's built and linked** with the program (D36
-  says only that the body is written in Rust, outside the Plainly file). Handles (D105) are built and ready for it.
+- **Q31. Answered by D107 to D111:** a `rust` folder holding a Cargo project; functions marked with
+  `#[plainly::procedure("...")]`; `Whole` as `i64`, `Bool` as `bool`, `Text` as a handle; failures as Rust's
+  `Result`; a panic stops the program as an internal error. Building it waits for Tankun.

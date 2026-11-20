@@ -353,6 +353,25 @@ pub fn heal(reference: u64) -> Result<u64, AllocationError> {
     with_collector(|collector| Ok(collector.heap.heal(reference)?))
 }
 
+/// What stops the program when PlainGC can't go on inside an `extern.rust` call; the runtime installs its own.
+static FAILURE_HANDLER: std::sync::OnceLock<fn(AllocationError) -> !> = std::sync::OnceLock::new();
+
+/// Installs what stops the program when PlainGC fails inside a call that holds handles (D105), since how an
+/// `extern.rust` procedure fails isn't decided: the runtime stops with its message.
+pub fn set_failure_handler(handler: fn(AllocationError) -> !) {
+    let _ = FAILURE_HANDLER.set(handler);
+}
+
+/// Stops the program because PlainGC can't go on.
+pub(crate) fn fail(error: AllocationError) -> ! {
+    if let Some(handler) = FAILURE_HANDLER.get() {
+        handler(error);
+    }
+    // No runtime installed one, as in PlainGC's own tests: a bug in PlainGC, status 7 (D82).
+    eprintln!("internal error: PlainGC itself went wrong, not your program: {error:?}");
+    std::process::exit(7);
+}
+
 /// Registers a kept handle's reference as a root (D105), giving its slot.
 pub(crate) fn keep_root(reference: u64) -> Result<usize, AllocationError> {
     with_collector(|collector| {

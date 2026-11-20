@@ -6,7 +6,6 @@
 
 use std::io::{BufRead, IsTerminal, Write};
 
-use plain_gc::AllocationError;
 use plain_gc::handles::{Call, Handle, Text};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -121,13 +120,12 @@ fn gc_failed(error: plain_gc::AllocationError) -> ! {
     }
 }
 
-/// Runs `work` as one call holding PlainGC handles (D105), the way `extern.rust` code will: Rust's borrow checker
-/// makes sure no look at a text is held while one is made, since making one can move every object.
-fn with_handles<R>(
-    work: impl for<'call> FnOnce(&mut Call<'call>) -> Result<R, AllocationError>,
-) -> R {
+/// Runs `work` as one call holding PlainGC handles (D105), the way `extern.rust` code does: Rust's borrow checker
+/// makes sure no look at a text is held while one is made, since making one can move every object. If PlainGC fails,
+/// [`gc_failed`], installed at start, stops the program.
+fn with_handles<R>(work: impl for<'call> FnOnce(&mut Call<'call>) -> R) -> R {
     // trace: D105
-    plain_gc::handles::with_call(work).unwrap_or_else(|error| gc_failed(error))
+    plain_gc::handles::with_call(work)
 }
 
 /// A handle to a text compiled code passed in.
@@ -142,7 +140,7 @@ unsafe fn adopt<'call>(call: &mut Call<'call>, text: *const u8) -> Handle<'call,
 
 /// Makes new text, holding `text`, and gives the compiled program its colored reference (D69).
 fn new_text(text: &str) -> *const u8 {
-    with_handles(|call| call.new_text(text)?.reference(call)) as *const u8
+    with_handles(|call| call.new_text(text).reference(call)) as *const u8
 }
 
 /// The load barrier's slow path, which compiled code calls for a reference of a bad color (D69).
@@ -184,8 +182,8 @@ pub unsafe extern "C" fn plainly_text_join(left: *const u8, right: *const u8) ->
         // SAFETY: the caller promises both are live texts, as compiled code passes them.
         let (left, right) = unsafe { (adopt(call, left), adopt(call, right)) };
         // Both looks end here, before making the joined text can move anything.
-        let joined = format!("{}{}", left.read(call)?, right.read(call)?);
-        call.new_text(&joined)?.reference(call)
+        let joined = format!("{}{}", left.read(call), right.read(call));
+        call.new_text(&joined).reference(call)
     }) as *const u8
 }
 
@@ -203,13 +201,8 @@ pub extern "C" fn plainly_whole_to_text(value: i64) -> *const u8 {
 /// `text` must be a `Text` made by this runtime, and `result` must point to 8 writable bytes.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_text_to_whole(text: *const u8, result: *mut i64) -> u8 {
-    // SAFETY: the caller promises `text` is a text from this runtime.
     // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
-    let value = with_handles(|call| {
-        Ok(read_whole(
-            unsafe { adopt(call, text) }.read(call)?.as_bytes(),
-        ))
-    });
+    let value = with_handles(|call| read_whole(unsafe { adopt(call, text) }.read(call).as_bytes()));
     if !result.is_null() {
         // SAFETY: the caller promises `result` points to 8 writable bytes.
         unsafe { result.write(value.unwrap_or(0)) };
@@ -265,8 +258,7 @@ pub unsafe extern "C" fn plainly_show_msg(text: *const u8) {
     // SAFETY: the caller promises `text` is a text from this runtime.
     with_handles(|call| {
         // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
-        write_output(unsafe { adopt(call, text) }.read(call)?.as_bytes(), true);
-        Ok(())
+        write_output(unsafe { adopt(call, text) }.read(call).as_bytes(), true);
     });
 }
 
@@ -280,8 +272,7 @@ pub unsafe extern "C" fn plainly_show_msg_same_line(text: *const u8) {
     // SAFETY: the caller promises `text` is a text from this runtime.
     with_handles(|call| {
         // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
-        write_output(unsafe { adopt(call, text) }.read(call)?.as_bytes(), false);
-        Ok(())
+        write_output(unsafe { adopt(call, text) }.read(call).as_bytes(), false);
     });
 }
 
@@ -304,10 +295,9 @@ pub unsafe extern "C" fn plainly_ask(
     with_handles(|call| {
         // SAFETY: the caller promises `question` is a live text, as compiled code passes it.
         write_output(
-            unsafe { adopt(call, question) }.read(call)?.as_bytes(),
+            unsafe { adopt(call, question) }.read(call).as_bytes(),
             false,
         );
-        Ok(())
     });
     let mut line = Vec::new();
     let read = std::io::stdin().lock().read_until(b'\n', &mut line);
@@ -455,6 +445,8 @@ pub unsafe extern "C" fn plainly_overflow(
 /// the frame pointer of its `main`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_runtime_start(stack_maps: *const u64, main_frame: usize) {
+    // How a program stops when PlainGC fails inside a call that holds handles (D105).
+    plain_gc::set_failure_handler(gc_failed);
     // SAFETY: passed on from this function's own promise, which the `main` PlainCompiler writes keeps.
     if let Err(error) = unsafe { plain_gc::start(stack_maps, main_frame) } {
         match error {
@@ -557,7 +549,7 @@ mod tests {
         // SAFETY: both texts come from `new_text`.
         let joined = unsafe { plainly_text_join(left, right) };
         // SAFETY: as above.
-        let read = with_handles(|call| Ok(unsafe { adopt(call, joined) }.read(call)?.to_string()));
+        let read = with_handles(|call| unsafe { adopt(call, joined) }.read(call).to_string());
         assert_eq!(read, "Hello, Mia");
     }
 }
