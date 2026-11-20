@@ -1568,7 +1568,4 @@ garbage collector PlainGC (D48). The command stays `plainly` (D50).
 **Why this won.** Each name says what the part is, with the language's name in front, so they read as one family of
 tools. Tankun named them, writing `_` for "Plain".
 
-**Tankun's words.** In D50's answer (quoted there): "Names:
-PlainCompiler
-_Oracle
-_GC".
+**Tankun's words.** In their answer to D50, quoted whole there.
