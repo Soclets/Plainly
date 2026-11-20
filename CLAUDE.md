@@ -148,6 +148,10 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
     is silent; if both are silent, it's a question for Tankun. Findings about PlainCompiler go to the compiler session
     without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
     source, can write a second, independent generator. (From Cyborg's rule 3.)
+13. **Where.** Only the design session edits DECISIONS.md, `standard/`, `tests/`, `design/` and CLAUDE.md, the last only
+    with Tankun's OK. Each building session edits only its own folders: the compiler session `compiler/`, the oracle
+    session `oracle/` and `check/`. With several sessions in one folder, each commits only its own files by name, never
+    `git add -A` or `git add .`. (From Cyborg's rule 2.)
 
 ## Prompting
 
