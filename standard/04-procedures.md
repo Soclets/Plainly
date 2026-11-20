@@ -45,7 +45,26 @@ let $secret: Whole = random(from: 1, to: 100);
   (D24).
 - **By convention, the first argument has no label,** as in `show_msg("Hi")` (D24).
 
-**Not decided:** how a procedure declares its labels; defaults; label order; `random` itself.
+A procedure declares its labels on a `labels` line, the first line of its body, with no brackets (D25):
+
+```
+labels $parameter as label, $parameter as label;
+```
+
+where each `$parameter` is one of the procedure's parameters and `label` the word callers write for it. `labels`, `as`,
+the commas and the `;` are written as they are.
+
+```
+proc random($low: Whole, $high: Whole) returns Whole:
+    labels $low as from, $high as to;
+    ...
+end proc random
+```
+
+where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:` and
+`to:` (D25).
+
+**Not decided:** defaults; label order; `random` itself.
 
 ## `proc.main`
 

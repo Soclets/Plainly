@@ -19,6 +19,7 @@ message".
 | `while` | | D19 |
 | `be` | | D22 |
 | `ignore`, `crash`, `otherwise`, `case` | | D23 |
+| `labels`, `as` | | D25 |
 
 **Not decided:** every other keyword.
 

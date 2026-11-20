@@ -739,3 +739,41 @@ swapped by mistake. This is Cyborg's labels, and Plainly v1's D8.
 
 **Tankun's words.** "What the fuck is that label decl syntax", "What does `random` do?", then, asked "Labels at the
 call?", the owner chose: "yea".
+
+## D25. Labels are declared on a `labels` line at the top of the body
+
+2026-11-20.
+
+**Chosen.** A procedure declares its labels on a `labels` line, the first line of its body, pairing each labelled
+parameter with its label, with commas between and `;` at the end, and no brackets:
+
+```
+proc random($low: Whole, $high: Whole) returns Whole:
+    labels $low as from, $high as to;
+    ...
+end proc random
+
+let $secret: Whole = random(from: 1, to: 100);
+```
+
+where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`; callers write `from:` and
+`to:` (D24).
+
+(Defaults, label order, and `random` itself aren't decided yet.)
+
+**Weighed.**
+- The label as the parameter's own name, with a mark: `proc random(labeled $from: Whole, labeled $to: Whole)`. Each
+  parameter packs a mark, a name and a type into one item, the crowding Plainly v1's D9 turned down ("That's bad"),
+  and renaming a parameter breaks every call.
+- `labels [$low as from, $high as to];`, as in Plainly v1. Since D3, `[ ]` means a list, and these pairings aren't a
+  list the program works with. `( )` would look like a call.
+- Labels inside the parameter list, `proc random(from $low: Whole, to $high: Whole)`, the first sketch for D24, which
+  Tankun refused ("What the fuck is that label decl syntax").
+
+**Why this won.** The header keeps one name and one type per parameter, and the inside name stays apart from the
+outside label, so a procedure can rename its insides without breaking a call. The line runs nothing and gives back
+nothing, so it's neither a call nor a list, and takes no brackets. `range(from: 1, to: 5)`, by contrast, gives back a
+value, so it's a call (D3, D4).
+
+**Tankun's words.** "Why no `[]`?", "Wait, then `range()` is legal or not", then, asked "A `labels` line, with no
+brackets?", the owner chose: "yea".
