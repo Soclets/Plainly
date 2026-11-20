@@ -29,6 +29,25 @@ the test results (`python3 compiler/run_tests.py`).
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
+## Planned: `final` mode (D46, D124), not started
+
+Waiting for Tankun's go-ahead; until then `--final` stops with `NotBuiltYet`. D124 lists what `final` optimizes, every
+one keeping D46's rule that a program behaves exactly as in `working` mode, and no check is dropped unless it's proved
+unable to fail. The plan, in D124's numbering, and the order I'd build in:
+
+1. **Groundwork:** Cranelift's full optimizing (1), then removing checks that can't fail (2) with what an `if` proved
+   (8), and moving check-failure code out of the way (13). Each needs a test that runs the same program in both modes
+   and compares everything it shows, so "behaves exactly as `working`" is checked, not hoped.
+2. **Procedures:** inlining (3), recording what each procedure reads and changes (19), which pure-procedure detection
+   builds on, then gfortran's trick (6), recursion into loops (7), constants across procedures (9), merging
+   identical procedures (14), and passing only the parts a procedure uses (20).
+3. **PlainGC's side:** skipping load barriers where nothing can start a collection (4), using 19 across calls, and
+   keeping short-lived values off the heap (5).
+4. **Loops:** a calculation done once where some paths did it twice (18), unswitching (15), unrolling (11), and
+   reusing the last pass's value (17).
+5. **Once lists exist (D75):** fast fills and copies (10), vectorization (12), loop interchange (16), and last,
+   Graphite-style polyhedral loop nests (21).
+
 ## Since: D116, D117, D120 and D121 (2026-11-20)
 
 - **D116:** a command with several mistakes shows every one, a `plainly:` line each in the order written, then
