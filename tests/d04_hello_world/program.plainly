@@ -1,0 +1,3 @@
+proc.main:
+    show_msg("Hello, World!");
+end proc.main

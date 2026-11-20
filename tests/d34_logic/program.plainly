@@ -1,0 +1,19 @@
+proc noisy(value: Bool) returns Bool:
+    show_msg("ran");
+    return value;
+end proc noisy
+
+proc.main:
+    let a: Bool = false;
+    if a and noisy(true):
+        show_msg("yes");
+    else:
+        show_msg("no");
+    end if
+    if true or noisy(true):
+        show_msg("or stopped early");
+    end if
+    if not a and true or false:
+        show_msg("order ok");
+    end if
+end proc.main

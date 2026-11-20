@@ -1,0 +1,1 @@
+show_msg ends the line, and show_msg.same_line doesn't. D6; standard ch. 4.

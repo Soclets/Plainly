@@ -1,0 +1,22 @@
+proc.main:
+    let guess: Whole = 30;
+    let secret: Whole = 42;
+    if guess < secret:
+        show_msg("Too low");
+    else if guess > secret:
+        show_msg("Too high");
+    else:
+        show_msg("Correct!");
+    end if
+    if secret at_least 42:
+        show_msg("at least 42");
+    end if
+    if secret at_most 41:
+        show_msg("never shown");
+    else:
+        show_msg("not at most 41");
+    end if
+    if guess != secret:
+        show_msg("different");
+    end if
+end proc.main
