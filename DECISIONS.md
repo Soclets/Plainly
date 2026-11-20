@@ -777,3 +777,30 @@ value, so it's a call (D3, D4).
 
 **Tankun's words.** "Why no `[]`?", "Wait, then `range()` is legal or not", then, asked "A `labels` line, with no
 brackets?", the owner chose: "yea".
+
+## D26. `random(from: low, to: high)` gives a whole number with both ends included
+
+2026-11-20.
+
+**Chosen.** `random(from: low, to: high)` gives a whole number from `low` to `high`, both included, each equally
+likely:
+
+```
+let $secret: Whole = random(from: 1, to: 100);
+```
+
+It's game randomness: fast, and fine for dice, loot and secret numbers in a game, not for anything that must be
+unguessable.
+
+(Seeding, a separate kind of randomness for real secrets, `from:` above `to:`, and random numbers of other types
+aren't decided yet.)
+
+**Weighed.**
+- Leaving out the top, as Python's `randrange(1, 100)`: a classic off-by-one, where 100 never comes up.
+- `randomize`, as in multifinity's first sketch. In Nim it means seeding, not picking a number.
+
+**Why this won.** `from:` and `to:` read exactly as the range you get, both ends included, as people mean when they
+say "a number from 1 to 100". Keeping the plain name for game randomness leaves room for a clearly different name for
+secrets later, the split Plainly v1's D25 made.
+
+**Tankun's words.** Asked "`random(from:, to:)`, both ends included?", the owner chose: "yea".

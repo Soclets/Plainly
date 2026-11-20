@@ -25,3 +25,4 @@ happened; this standard says what the rules are today (D12).
 6. [Variables](06-variables.md): `let` and `var`
 7. [Types](07-types.md): `Whole`, `Text` and converting
 8. [Failures](08-failures.md): `?`, `??` and `otherwise:`
+9. [Library](09-library.md): `random`

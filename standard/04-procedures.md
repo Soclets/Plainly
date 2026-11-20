@@ -64,7 +64,7 @@ end proc random
 where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:` and
 `to:` (D25).
 
-**Not decided:** defaults; label order; `random` itself.
+**Not decided:** defaults; label order.
 
 ## `proc.main`
 
