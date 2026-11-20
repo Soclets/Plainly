@@ -442,11 +442,15 @@ fn seed_random() {
 #[unsafe(no_mangle)]
 pub extern "C" fn plainly_runtime_end() {
     if std::env::var_os("PLAINGC_REPORT").is_some_and(|value| value == "1")
-        && let Some((collections, moved, healed)) = plain_gc::report()
+        && let Some(report) = plain_gc::report()
     {
         let _ = writeln!(
             std::io::stderr(),
-            "PlainGC: {collections} collections, {moved} objects moved, {healed} references healed"
+            "PlainGC: {} collections, {} objects moved, {} references healed, {} marking batches on its own thread",
+            report.collections,
+            report.moved_objects,
+            report.healed_references,
+            report.marker_batches
         );
     }
     if std::io::stdout().flush().is_err() {

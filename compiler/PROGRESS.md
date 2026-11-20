@@ -61,7 +61,7 @@ and the compiler depends on nothing but that interface.
 
 1. ~~**Stop-the-world mark and compact.**~~ Done (2026-11-20). In detail below.
 2. ~~**Moving with a load barrier:**~~ Done (2026-11-20). In detail below.
-3. **Marking while the program runs.**
+3. ~~**Marking while the program runs.**~~ Done (2026-11-20). In detail below.
 4. **Moving while the program runs.**
 5. **Handles for `extern.rust` code,** once the design session says how they work.
 
@@ -75,6 +75,25 @@ and the compiler depends on nothing but that interface.
   collections and move up to 240,000 objects each.
 - PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
   freeing, moving, forwarding, and reading the stack map table.
+
+### Step 3 in detail
+
+- **A collection now has phases.** At an allocation when a collection is due, the program pauses only to take its
+  stack's roots: a new good color, every root healed and handed to marking. Then **PlainGC's marker thread** marks
+  while the program carries on, 256 objects each time it holds the heap's lock, so the program never waits long for
+  it. When marking's work runs out, the program's next allocation finishes the collection: it marks anything the
+  barrier added since, then compacts (still with the program paused, until step 4).
+- **The barrier marks:** while a marking is under way, a reference the slow path heals is handed to marking, so the
+  program can never hold a reference marking hasn't reached. An object made during marking is marked at birth.
+- **The pauses happen on the program's own thread,** at allocations, since only it can walk its own stack; when
+  workers (D68) come, each takes its own stack's roots the same way.
+- **Collect-often mode** now has allocations take turns finishing one collection and starting the next, waiting for
+  the marker first, so the program always runs between them, both with stale references to heal and with marking
+  under way.
+- **Checked:** 23 PlainGC unit tests, among them a reference the program takes out of an object marking hasn't
+  reached and then removes from it, which marking must still find; and a real second thread marking a 5,000-object
+  graph while the first allocates and reads through the barrier. Every run passes, and the runner checks that the
+  marker thread really marked while the program ran.
 
 ### Step 2 in detail
 

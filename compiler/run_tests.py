@@ -13,7 +13,7 @@ which must exit with status 0.
 Every test runs twice: as it is, and with PLAINGC_STRESS=1, which makes PlainGC collect
 and move every object at every allocation. A stress program in compiler/gc_tests also
 asks for PLAINGC_REPORT=1 there, and must show that collections happened, objects moved,
-and the load barrier healed references.
+the load barrier healed references, and the marker thread marked while the program ran.
 
 Usage: python3 compiler/run_tests.py [NAME ...]
 """
@@ -29,7 +29,10 @@ TESTS_FOLDER = os.path.join(REPOSITORY, "tests")
 GC_TESTS_FOLDER = os.path.join(COMPILER_FOLDER, "gc_tests")
 PLAINLY = os.path.join(COMPILER_FOLDER, "target", "debug", "plainly")
 TIME_LIMIT_SECONDS = 120
-REPORT = re.compile(rb"PlainGC: (\d+) collections, (\d+) objects moved, (\d+) references healed\n$")
+REPORT = re.compile(
+    rb"PlainGC: (\d+) collections, (\d+) objects moved, (\d+) references healed, "
+    rb"(\d+) marking batches on its own thread\n$"
+)
 
 
 def read_bytes(path):
@@ -81,10 +84,14 @@ def run_test(folder, stress, gc_test):
             problems.append(("PlainGC's report", "a report", standard_error))
         else:
             standard_error = standard_error[: report.start()]
-            collections, moved, healed = (int(report.group(number)) for number in (1, 2, 3))
-            if collections == 0 or moved == 0 or healed == 0:
+            counts = [int(report.group(number)) for number in (1, 2, 3, 4)]
+            if 0 in counts:
                 problems.append(
-                    ("PlainGC's work", "collections, moved objects and healed references", report.group(0))
+                    (
+                        "PlainGC's work",
+                        "collections, moved objects, healed references and marking on its own thread",
+                        report.group(0),
+                    )
                 )
 
     expected_output = read_bytes(os.path.join(folder, "expected.out"))

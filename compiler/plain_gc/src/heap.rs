@@ -180,6 +180,12 @@ pub struct Heap {
     forwarding: HashMap<usize, usize>,
     /// How many references the barrier's slow path has healed.
     pub healed: usize,
+    /// Whether a marking is under way, between [`Heap::begin_marking`] and [`Heap::finish`].
+    marking: bool,
+    /// Objects reached but not yet marked and traced: marking's work.
+    work: Vec<usize>,
+    /// What the collection under way has found so far.
+    report: CollectionReport,
 }
 
 // SAFETY: a `Heap` owns its pages' memory outright, and is only ever reached through the one lock in `lib.rs`, so
@@ -202,6 +208,9 @@ impl Heap {
             good: FIRST_COLOR,
             forwarding: HashMap::new(),
             healed: 0,
+            marking: false,
+            work: Vec::new(),
+            report: CollectionReport::default(),
         }
     }
 
@@ -215,10 +224,15 @@ impl Heap {
         colored(address, self.good)
     }
 
-    /// The load barrier's slow path: heals a reference of a bad color (D69).
+    /// The load barrier's slow path: heals a reference of a bad color (D69). While marking, the object it points to
+    /// joins marking's work, so the program never holds a reference marking hasn't reached.
     pub fn heal(&mut self, reference: u64) -> u64 {
         self.healed += 1;
-        heal_with(&self.forwarding, self.good, reference)
+        let healed = heal_with(&self.forwarding, self.good, reference);
+        if self.marking && healed != 0 {
+            self.work.push(address(healed));
+        }
+        healed
     }
 
     /// The page holding the object at `address`, if it's in the heap.
@@ -263,6 +277,16 @@ impl Heap {
         // SAFETY: `address` is the start of `size` freshly allocated, zeroed bytes in one of the heap's pages.
         unsafe { (address as *mut u64).write(header(kind, length)) };
         self.allocated_since_collection += size;
+        if self.marking {
+            // An object made while marking is live: it's marked at birth, and needs no tracing, since every
+            // reference stored in it has already passed the barrier.
+            if let Some(page) = self.page_of_mut(address) {
+                page.mark(address);
+                page.live_bytes += size;
+            }
+            self.report.live_objects += 1;
+            self.report.live_bytes += size;
+        }
         Ok(address)
     }
 
@@ -284,17 +308,80 @@ impl Heap {
         Ok(address)
     }
 
-    /// A collection, with the program stopped: marks everything reachable from the roots, healing every reference
-    /// it passes, then evacuates sparse pages and changes the good color. With `evacuate_everything`, every small
-    /// page with a live object is evacuated, so tests reach the moving path.
+    /// A whole collection with the program stopped: every phase in a row, for tests.
+    #[cfg(test)]
     pub fn collect(
         &mut self,
         roots: &mut RootVisitor<'_>,
         evacuate_everything: bool,
     ) -> Result<CollectionReport, HeapError> {
-        let mut report = CollectionReport::default();
-        self.mark(roots, &mut report)?;
-        // Every reference marking reached is healed, so the last collection's forwarding is no longer needed.
+        self.begin_marking(roots)?;
+        while !self.mark_some(usize::MAX)? {}
+        self.finish(evacuate_everything)
+    }
+
+    /// Starts a marking, with the program paused: a new good color, and every root healed and handed to marking.
+    /// The roots are the only thing marking needs the program paused for.
+    pub fn begin_marking(&mut self, roots: &mut RootVisitor<'_>) -> Result<(), HeapError> {
+        // trace: D69
+        for page in self.pages.values_mut() {
+            page.marks.iter_mut().for_each(|cell| *cell = 0);
+            page.live_bytes = 0;
+        }
+        self.report = CollectionReport::default();
+        self.good = next_color(self.good);
+        self.marking = true;
+        self.work.clear();
+        let (forwarding, good, work) = (&self.forwarding, self.good, &mut self.work);
+        roots(&mut |slot: &mut usize| {
+            let healed = heal_with(forwarding, good, *slot as u64);
+            *slot = healed as usize;
+            if healed != 0 {
+                work.push(address(healed));
+            }
+        })
+    }
+
+    /// Marks and traces up to `budget` objects, healing every reference inside them. Gives whether marking's work
+    /// has run out; the barrier can still add more, until [`Heap::finish`].
+    pub fn mark_some(&mut self, budget: usize) -> Result<bool, HeapError> {
+        let mut done = 0;
+        while done < budget {
+            let Some(object) = self.work.pop() else {
+                return Ok(true);
+            };
+            done += 1;
+            let Some(page) = self.page_of_mut(object) else {
+                return Err(HeapError::Internal(format!(
+                    "a reference to {object:#x} points outside PlainGC's heap"
+                )));
+            };
+            if !page.mark(object) {
+                continue;
+            }
+            let (_, length) = object_at(object)?;
+            page.live_bytes += object_size(length);
+            self.report.live_objects += 1;
+            self.report.live_bytes += object_size(length);
+            for place in references_in(object)? {
+                let healed = heal_with(&self.forwarding, self.good, read_reference(place));
+                write_reference(place, healed);
+                if healed != 0 {
+                    self.work.push(address(healed));
+                }
+            }
+        }
+        Ok(self.work.is_empty())
+    }
+
+    /// Ends the collection, with the program paused: marks what the barrier added since marking's work last ran
+    /// out, then evacuates sparse pages and changes the good color. With `evacuate_everything`, every small page with
+    /// a live object is evacuated, so tests reach the moving path.
+    pub fn finish(&mut self, evacuate_everything: bool) -> Result<CollectionReport, HeapError> {
+        while !self.mark_some(usize::MAX)? {}
+        self.marking = false;
+        let mut report = std::mem::take(&mut self.report);
+        // Every reachable reference is healed by now, so the last collection's forwarding is no longer needed.
         self.forwarding.clear();
 
         // Which pages to evacuate, and which to free outright.
@@ -347,50 +434,6 @@ impl Heap {
         self.allocated_since_collection = 0;
         self.live_after_collection = report.live_bytes;
         Ok(report)
-    }
-
-    /// Marks every object reachable from the roots, healing each reference on the way and counting each page's live
-    /// bytes.
-    fn mark(
-        &mut self,
-        roots: &mut RootVisitor<'_>,
-        report: &mut CollectionReport,
-    ) -> Result<(), HeapError> {
-        for page in self.pages.values_mut() {
-            page.marks.iter_mut().for_each(|cell| *cell = 0);
-            page.live_bytes = 0;
-        }
-        let (forwarding, good) = (&self.forwarding, self.good);
-        let mut work = Vec::new();
-        roots(&mut |slot: &mut usize| {
-            let healed = heal_with(forwarding, good, *slot as u64);
-            *slot = healed as usize;
-            if healed != 0 {
-                work.push(address(healed));
-            }
-        })?;
-        while let Some(object) = work.pop() {
-            let Some(page) = self.page_of_mut(object) else {
-                return Err(HeapError::Internal(format!(
-                    "a reference to {object:#x} points outside PlainGC's heap"
-                )));
-            };
-            if !page.mark(object) {
-                continue;
-            }
-            let (_, length) = object_at(object)?;
-            page.live_bytes += object_size(length);
-            report.live_objects += 1;
-            report.live_bytes += object_size(length);
-            for place in references_in(object)? {
-                let healed = heal_with(&self.forwarding, self.good, read_reference(place));
-                write_reference(place, healed);
-                if healed != 0 {
-                    work.push(address(healed));
-                }
-            }
-        }
-        Ok(())
     }
 
     /// Whether `address` is an object in the heap, for tests.
@@ -645,5 +688,88 @@ mod tests {
             heap.collect(&mut visit, false),
             Err(HeapError::Internal(_))
         ));
+    }
+
+    /// Roots as a visitor over `roots`, for the phases' tests.
+    fn visit(roots: &mut [u64]) -> Box<RootVisitor<'_>> {
+        Box::new(move |visitor: &mut dyn FnMut(&mut usize)| {
+            for root in roots.iter_mut() {
+                let mut slot = *root as usize;
+                visitor(&mut slot);
+                *root = slot as u64;
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_reference_taken_while_marking_is_never_lost() {
+        let mut heap = Heap::new();
+        let hidden = text(&mut heap, "hidden");
+        // A collection first, so every reference stored in the heap has an old color.
+        let mut roots = [list(&mut heap, &[hidden])];
+        collect(&mut heap, &mut roots, false);
+        heap.begin_marking(&mut *visit(&mut roots)).ok();
+        let mut holder = roots[0];
+        // Before marking traces `holder`, the program takes `hidden` out of it through the barrier, then clears the
+        // place it came from: marking can now only learn of `hidden` from the barrier.
+        let mut taken = item(&mut heap, &mut holder, 0);
+        let object = read(&mut heap, &mut holder);
+        write_reference(object + WORD, 0);
+        let fresh = text(&mut heap, "made while marking");
+        while !heap.mark_some(1).unwrap_or(true) {}
+        let report = heap.finish(true).unwrap_or_default();
+        assert_eq!(report.live_objects, 3);
+        assert_eq!(text_at(&mut heap, &mut taken), "hidden");
+        let mut fresh = fresh;
+        assert_eq!(text_at(&mut heap, &mut fresh), "made while marking");
+    }
+
+    #[test]
+    fn marking_on_another_thread_while_the_program_allocates_and_reads() {
+        use std::sync::{Arc, Mutex};
+        let mut heap = Heap::new();
+        let items: Vec<u64> = (0..5_000)
+            .map(|number| text(&mut heap, &number.to_string()))
+            .collect();
+        let mut roots = [list(&mut heap, &items)];
+        collect(&mut heap, &mut roots, false);
+        heap.begin_marking(&mut *visit(&mut roots)).ok();
+        let heap = Arc::new(Mutex::new(heap));
+        let marker = {
+            let heap = Arc::clone(&heap);
+            std::thread::spawn(move || {
+                loop {
+                    let done = match heap.lock() {
+                        Ok(mut heap) => heap.mark_some(64).unwrap_or(true),
+                        Err(_) => true,
+                    };
+                    if done {
+                        break;
+                    }
+                    std::thread::yield_now();
+                }
+            })
+        };
+        // Meanwhile the program allocates garbage and reads items through the barrier.
+        for number in 0..5_000 {
+            if let Ok(mut heap) = heap.lock() {
+                text(&mut heap, "garbage");
+                if number % 50 == 0 {
+                    let mut item = item(&mut heap, &mut roots[0], number);
+                    assert_eq!(text_at(&mut heap, &mut item), number.to_string());
+                }
+            }
+        }
+        assert!(marker.join().is_ok());
+        let Ok(mut heap) = heap.lock() else {
+            panic!("the heap's lock broke");
+        };
+        let report = heap.finish(true).unwrap_or_default();
+        assert!(report.live_objects > 5_000);
+        for number in (0..5_000).step_by(7) {
+            let mut item = item(&mut heap, &mut roots[0], number);
+            assert_eq!(text_at(&mut heap, &mut item), number.to_string());
+        }
     }
 }
