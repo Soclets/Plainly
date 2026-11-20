@@ -3516,3 +3516,39 @@ of making PlainGC real (D69). It also keeps memory use bounded, rather than lett
 "Should PlainGC's pacer be ZGC's: measure how fast the program allocates and how long a collection takes, and start each
 collection just early enough to finish before the heap's limit?", the owner chose: "yea. What's the setting?" (the
 question about settings is the next one).
+
+## D114. The heap's hard limit is the machine's memory less a reserve; the pacer aims at a soft target; no settings yet
+
+2026-11-20.
+
+**Chosen.**
+- **The hard limit,** the most the heap may ever use, is the machine's memory less a reserve for the system and other
+  programs: 10% or 1 GiB, whichever is bigger.
+- **The soft target,** where D113's pacer aims, is about twice what the program is really using, as ZGC's
+  `SoftMaxHeapSize` is a target below its limit. The heap goes past it, up to the hard limit, only when the program
+  needs that much.
+- **No settings** for the pacer or the limits for now. Optional ones can be added later, when a real need shows up.
+
+```
+16 GiB machine, game really using 30 MiB:
+  soft target ≈ 60 MiB   ← where the pacer aims
+  hard limit  ≈ 14.4 GiB ← the most it may ever use
+```
+
+(The soft target's smallest size, so a tiny program doesn't collect all the time, is PlainGC's to tune, since users
+never see it.)
+
+**Weighed.**
+- The machine's memory less a reserve as the only number, which the pacer aims at too. The pacer would see plenty of
+  room and rarely collect, so a small game could grow to gigabytes of garbage and slow the rest of the machine.
+- Java's default, a quarter of the machine's memory. A game that really needs more would run out early.
+- ZGC's settings (`-XX:SoftMaxHeapSize`, `-XX:ZAllocationSpikeTolerance`, `-XX:ZCollectionInterval` and the like) from
+  the start. A terminal game never needs them, and each is something a learner might think they have to understand.
+
+**Why this won.** A program can use nearly the whole machine when it truly needs to, while a small game stays small,
+and nothing needs setting.
+
+**Tankun's words.** Asked "Should the pacer have no settings, leaving the heap's limit as PlainGC's only number?",
+Tankun said: "So, what about optional settings later, and default to utilize the current hardware entirely, but leave a
+little". Then, asked "Should the heap's hard limit be the machine's memory minus a reserve, with the pacer aiming at a
+soft target of about twice what's in use, and no settings until one is needed?", the owner chose: "yea".

@@ -58,8 +58,10 @@ PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69
   beyond one call, as a root (D105).
 - **A collection starts just early enough to finish before the heap's limit,** as ZGC's pacer does, from how fast the
   program allocates and how long a collection takes (D113).
+- **The heap may use the machine's memory less a reserve** of 10% or 1 GiB, whichever is bigger, and the pacer aims
+  at about twice what the program is really using, so a small program stays small. There are no settings (D114).
 
-**Not decided:** the heap's limit; whether the pacer has settings; what happens when memory runs out.
+**Not decided:** what happens when memory runs out.
 
 ## Build modes
 
