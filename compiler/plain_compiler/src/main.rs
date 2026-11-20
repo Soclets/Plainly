@@ -127,8 +127,12 @@ fn command_mistakes_in(command: &str, action: Action, rest: &[String]) -> Vec<St
     if files.is_empty() {
         mistakes.push(format!("`{command}` needs a file"));
     }
-    if action != Action::Check && known_modes.is_empty() {
-        // trace: D92
+    // An unknown mode's line already names the modes, so it stands in for the missing-mode line (D123).
+    let unknown_mode = rest.iter().any(|argument| {
+        argument.starts_with("--") && argument != "--working" && argument != "--final"
+    });
+    if action != Action::Check && known_modes.is_empty() && !unknown_mode {
+        // trace: D92, D123
         mistakes.push("run and compile need a mode: --working or --final".to_string());
     }
     mistakes

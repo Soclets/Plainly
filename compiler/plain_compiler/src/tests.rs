@@ -421,7 +421,6 @@ fn d116_every_command_mistake_is_shown_in_the_order_written() {
         [
             "`run` takes one file, but this gives 2",
             "`--fast` isn't a mode; the modes are `--working` and `--final`",
-            "run and compile need a mode: --working or --final",
         ]
     );
     let mistakes = command_mistakes_in("run", Action::Run, &words("--working --final"));
@@ -433,6 +432,11 @@ fn d116_every_command_mistake_is_shown_in_the_order_written() {
         ]
     );
     assert!(command_mistakes_in("check", Action::Check, &words("game.plainly")).is_empty());
+    // trace: D123
+    assert_eq!(
+        command_mistakes_in("run", Action::Run, &words("game.plainly")),
+        ["run and compile need a mode: --working or --final"]
+    );
 }
 
 #[test]

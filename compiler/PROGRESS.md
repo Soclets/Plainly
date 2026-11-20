@@ -33,7 +33,7 @@ the test results (`python3 compiler/run_tests.py`).
 
 - **D116:** a command with several mistakes shows every one, a `plainly:` line each in the order written, then
   anything missing (a file, a mode), then the usage once. An unknown command is its only mistake, since what follows
-  it can't be judged. When an unknown mode is the only mode, the missing-mode line still follows it.
+  it can't be judged. When a mode is unknown, its line stands in for the missing-mode line (D123).
 - **D117:** a line after `break;` in the same block is refused, with D88's wording for `break`.
 - **D120:** a call that gives back a value, standing alone, is refused: "`random` gives back a `Whole`, but nothing
   uses it". A statement that's only a value and not a call stays `NotDesignedYet`.
