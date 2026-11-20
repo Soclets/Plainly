@@ -345,3 +345,50 @@ call), keywords can be added later without breaking anyone's names, and variable
 
 **Tankun's words.** Asked "Variable names start with `$`?", the owner chose: "yea. Compiler before oracle, right? But
 with tests. And also a standard before compiler"
+
+## D12. The order of work: standard, tests, compiler, then the oracle
+
+2026-11-20.
+
+**Chosen.**
+1. **A standard grows with the decisions,** in `standard/`. Each decision that changes a rule updates the standard in
+   the same commit, so the standard says what Plainly is now and DECISIONS.md how it got there.
+   - It starts with a **Terms** chapter defining every word it relies on (statement, block, procedure, refused, and so
+     on), each defined before any chapter uses it.
+   - **Every general form says what its placeholders stand for,** right before or after it, as in: `proc name(parameters)
+     returns Type:`, where `name` is the procedure's name, `parameters` its parameters separated by commas, and `Type`
+     the type it gives back. A real example with no placeholders needs no such line.
+2. **Tests are written by hand from the standard,** each a small program with its exact expected output or refusal,
+   naming the decision and section it comes from. Where an expected value is computed (arithmetic, rounding, overflow,
+   text, a whole program's output), it's cross-checked by the same calculation in Python, or in Rust where fixed-size
+   numbers matter, with the check kept beside the test.
+3. **The compiler is built to pass those tests.** Its side never edits an expected output: a test that looks wrong
+   goes back to the design session, which checks it against the standard, and asks Tankun where the standard is
+   unclear.
+4. **The oracle comes later,** as a second implementation written from the standard, running the same tests, and as
+   the web playground. Where the compiler, the oracle and an expected output disagree, the standard decides.
+
+Nothing gets built until Tankun says so (CLAUDE.md); this sets the order.
+
+**Weighed.**
+- The oracle first, as in Plainly v1, where building it was what found the gaps in the design. Compiler first gets a
+  usable language sooner; until the oracle exists, only the tests' named rules and their cross-checks stand against a
+  wrong expected output, so the tests have to cover the awkward cases, not just programs that work.
+- C as a cross-check: its signed overflow is undefined behaviour, so it's least trustworthy on exactly the cases that
+  matter.
+- SPARK at Platinum level, Ada with mathematical proof of correctness: the strongest opinion, but proving even a short
+  function can take days, and the tests need an independent answer, not a proof. Lower SPARK levels prove only that
+  code doesn't crash, not that its answer is right.
+
+**Why this won.** A standard written alongside the decisions is always the current truth, and its Terms chapter and
+placeholder lines make it readable by someone who isn't a programmer. Tests written from it are the compiler's
+contract, and a compiler that may never edit them can't lock a wrong expectation in. An independent calculation in
+another language catches a wrong expected value before any compiler exists, and the oracle later checks everything
+twice.
+
+**Tankun's words.** Tankun set the order ("Compiler before oracle, right? But with tests. And also a standard before
+compiler", in D11's answer), then added "Before that, I think there should be a definition inside the standard about
+the terms it uses, and also if you write `let $placeholder: Placeholder = placeholder;`, you should say before or after
+what `placeholder` in that context means", asked has code, suggested "What about a separate language's opinion on
+result too? When possible, maybe C, Python, Rust, or SPARK Platinum", then "Holy shit, bro. Do you know how diabolical
+Plat is?". Asked "Go with that?", the owner chose: "yea".
