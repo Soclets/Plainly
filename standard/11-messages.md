@@ -20,7 +20,16 @@ refused: game.plainly:5:5, line 5 column 5
   3. `because:`, the earlier place the error comes from, as a sentence, then that line with `^` under the cause;
   4. `why:`, the rule, as a plain sentence.
 - **No error codes, and no "did you mean" guesses** (D54).
-- **Every error is shown,** and a refused declaration still creates its variable, so later lines aren't refused
-  because of it (D54).
+- **Every error is shown** (D54).
+
+## One mistake, one message
+
+1. **After an error, only that statement is skipped,** and checking carries on (D55).
+2. **A refused declaration still creates its variable** with its written type (D54, D55).
+3. **A refused expression's type becomes unknown,** and nothing is refused for using an unknown value (D55).
+4. **Knock-on errors are sorted out:** the first error's single fix is applied in memory and the program checked
+   again, and anything that disappears is shown under a `because:` pointing back at it (D55).
+5. **A broken block opener:** checking carries on into the body if it's clear what was meant, and stops there if it
+   isn't (D55).
 
 **Not decided:** each message's wording; how columns are counted in text beyond plain English letters; exit statuses.

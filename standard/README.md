@@ -27,4 +27,4 @@ happened; this standard says what the rules are today (D12).
 8. [Failures](08-failures.md): `?`, `??`, `otherwise:` and handler families
 9. [Library](09-library.md): `random`
 10. [Tools](10-tools.md): the compiler, the command, memory and build modes
-11. [Messages](11-messages.md): the layout
+11. [Messages](11-messages.md): the layout, and one mistake giving one message

@@ -1670,3 +1670,31 @@ here" notes do.
 
 **Tankun's words.** "Where's because? That msg seems like it should have because", "Should we have because show code
 too?", then, asked "That message layout, with `because:` showing its line?", the owner chose: "yea".
+
+## D55. Anti-cascade: one mistake gives one message
+
+2026-11-20.
+
+**Chosen.**
+1. **After an error, only that statement is skipped,** and checking carries on, so one build shows every real error.
+2. **A refused declaration still creates its variable** with its written type (D13), so later lines don't fail
+   because it "doesn't exist".
+3. **A refused expression's type becomes "unknown",** and nothing is refused for using an unknown value, so one
+   mistake can't set off a chain of messages about everything using its result.
+4. **Knock-on errors are sorted out:** the first error's fix, when it has exactly one, is applied in memory and the
+   program checked again. Anything that disappears was caused by it, and is shown under a `because:` pointing back at
+   it (D54), not as an error of its own.
+5. **A broken block opener:** if it's clear what was meant, as with a header missing only its `:`, checking carries
+   on into the body. If it isn't clear, checking stops there.
+
+**Weighed.**
+- Stopping at the first error, as some compilers do. One fix per build, which is slow to work through.
+- Skipping a broken block to its `end` and carrying on. With a header too broken to read, the matching `end` can be
+  misjudged, making every message after it wrong (Plainly v1's D62).
+- Reporting every error as found, with no sorting. A beginner sees ten messages for one typo and starts at the wrong
+  one.
+
+**Why this won.** A wrong message is worse than a missing one (D54), and a cascade of false ones buries the real
+mistake. This is Plainly v1's D58 and D62, Cyborg's rules, and what v1's PlainOracle did.
+
+**Tankun's words.** "Where's Anti Cascade?", then, asked "Those five anti-cascade rules?", the owner chose: "yea".
