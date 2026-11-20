@@ -84,7 +84,9 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 ## Building
 
 Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
-2026-11-20):
+2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Plainly is a
+learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
+It can come later for one small, critical piece if a bug there ever gets through.
 
 1. **Optimizations from the start.** PlainCompiler is built with its optimizations as it goes, never as a plain version
    sped up later. Each part of the language arrives with `final` mode's optimizations for it (D124), and compiling is
@@ -149,9 +151,9 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
     without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
     source, can write a second, independent generator. (From Cyborg's rule 3.)
 13. **Where.** Only the design session edits DECISIONS.md, `standard/`, `tests/`, `design/` and CLAUDE.md, the last only
-    with Tankun's OK. Each building session edits only its own folders: the compiler session `compiler/`, the oracle
-    session `oracle/` and `check/`. With several sessions in one folder, each commits only its own files by name, never
-    `git add -A` or `git add .`. (From Cyborg's rule 2.)
+    with Tankun's OK. Each building session edits only its own folders: the compiler session `compiler/` and `tools/`,
+    the oracle session `oracle/` and `check/`. With several sessions in one folder, each commits only its own files by
+    name, never `git add -A` or `git add .`. (From Cyborg's rule 2.)
 
 ## Prompting
 
