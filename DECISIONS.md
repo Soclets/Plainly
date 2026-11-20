@@ -2517,3 +2517,26 @@ Each needs a `var` list (D77), and a bad position is a failed check (D75).
 same `=` as changing a variable (D14).
 
 **Tankun's words.** Asked "`.add`, `.remove`, and changing an item with `=`?", the owner chose: "yea".
+
+## D81. `??` sticks to the call before it; chains of comparisons and an operator after a step are refused
+
+2026-11-20.
+
+**Chosen.**
+1. **`??` belongs to the call right before it,** as `?` does, and takes a single value, `ignore` or `crash` after it
+   (D23). So `score + be.Whole(t) ?? 0` means `score + (be.Whole(t) ?? 0)`, and anything bigger after `??` needs `( )`.
+2. **Two comparisons in a row, as in `1 < x < 10`, are refused,** with `1 < x and x < 10` as the fix.
+3. **An operator after a slide's step, as in `x |> f + 1`, is refused,** since a step must be a procedure (D5), with
+   `(x |> f) + 1` as the fix (D73).
+
+**Weighed.**
+- `1 < x < 10` meaning "both hold", as in maths and Python. In most other languages it means `(1 < x) < 10`, comparing
+  a `Bool`, so a learner moving on would be betrayed by it.
+- `??` taking a whole expression after it. It handles one call's failure, so it belongs to that call, and a long
+  fallback reads better in `( )`.
+
+**Why this won.** Each closes a gap left by D72 and D73, which the compiler session found, by refusing what could be
+misread and giving the one-word or one-bracket fix.
+
+**Tankun's words.** Asked "`??` sticks to its call, chains of comparisons refused, and an operator after a step
+refused?", the owner chose: "yea".
