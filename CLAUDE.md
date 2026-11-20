@@ -97,8 +97,8 @@ before they did harm. Never skip one for being small.
   `(owner: "yea"; D2)`.
 - Every commit ends with its own session's trailer, so `git log` shows which
   session made each change: `Co-Authored-By: design claude <noreply@anthropic.com>`
-  for the design session, and `compiler claude`, `oracle claude` or `gc claude`
-  in the same form for building sessions.
+  for the design session, and `compiler claude` (which builds PlainGC too) or
+  `oracle claude` in the same form for building sessions.
 
 ## Bedtime
 

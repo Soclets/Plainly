@@ -56,8 +56,8 @@ Compile every program in `tests/` and the guessing game to a native executable, 
 - **The runtime,** in Rust: `show_msg`, `ask`, `be.Whole`, `random` and anything else the subset needs, called from
   the compiled code.
 - **Memory:** `Text` needs heap memory. Put every allocation behind PlainGC's interface, in its own crate, with the
-  simplest correct version for now. The real PlainGC, ZGC-style (D69), is a later milestone that Tankun wants to build
-  as its own piece of work, so don't start it, and don't let the compiler depend on anything but the interface.
+  simplest correct version for now. The real PlainGC, ZGC-style (D69), is yours too, as a later milestone of its own,
+  started when Tankun says so; until then, keep the compiler depending on nothing but the interface.
 - **Checks in `working` mode:** whole-number overflow stops the program (D46). Its message's wording isn't decided, so
   use D54's layout and draft the wording (see below).
 - **Refusals:** the subset has some, like a missing `;` or `=` on a `let`. Their wording isn't decided either.
