@@ -36,6 +36,14 @@ plainly oracle game.plainly
 - **`oracle`** runs the file on PlainOracle (D51), the separate reference implementation, printing exactly what the compiled
   program would. `plainly` forwards to the oracle's own program (D50).
 
+## Compiling
+
+- **While you edit,** PlainCompiler compiles after every save on one background thread, inside the editor support,
+  filling the cache (D65).
+- **`plainly run` and `plainly build`** compile whatever isn't cached on every CPU core (D65).
+- **The cache** keeps each compiled piece under a fingerprint of everything that affects it, in the system's cache
+  folder, shared by every project, so only what changed is recompiled, and a build never differs because of it (D65).
+
 ## Memory
 
 PlainGC (D51), a garbage collector in the style of Go's, frees memory (D48):

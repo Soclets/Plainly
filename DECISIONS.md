@@ -1992,3 +1992,36 @@ settled on the spot with the package's name. This is Plainly v1's D39 with v2's 
 
 **Tankun's words.** Asked "One program per folder, a manifest for packages, bare names with `package::` only for a
 clash?", the owner chose: "yea".
+
+## D65. Compiling: one background thread while you edit, every core when you run or build, and a shared cache
+
+2026-11-20.
+
+**Chosen.**
+- **Background:** while you edit, PlainCompiler compiles after every save on one thread of its own, inside the editor
+  support (the language server), in `working` mode or the mode last run, filling the cache. It never blocks typing,
+  and a newer save cancels an unfinished build.
+- **Parallel:** `plainly run` and `plainly build` compile whatever the cache doesn't have on every CPU core, procedure
+  by procedure, since Cranelift compiles each on its own.
+- **Cached:** each compiled piece is saved under a fingerprint of everything that affects it (its code, the compiler's
+  version, the mode) in the system's cache folder, shared by every project. Only what changed is recompiled, and a
+  build can never differ because of the cache.
+
+Without an editor, `plainly run` compiles on demand, in parallel, with the cache.
+
+(The language server itself, the cache folder's place on each system, and clearing the cache aren't decided yet.)
+
+**Weighed.**
+- Background compiling in parallel too. It would take every core while you work, making the editor and a game being
+  tested stutter.
+- Background checking only, compiling at `run`. `run` would wait for the whole compile.
+- A cache per project. The same package compiled again for every game.
+
+**Why this won.** `plainly run` feels close to instant (D45) because most of the work was done while you were typing,
+without slowing you down; when you're waiting, everything goes to the build. Keying the cache by fingerprint is how
+Cyborg's `okay` keeps cached builds exactly equal to fresh ones.
+
+**Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (the "no" answered the question about
+threads in the language, still to settle), "Let me answer compiling first. By background I meant that it compiles on
+another thread while you work", "Background compiling is on another thread, but not para", then, asked "Background
+compiling on one thread while you edit, parallel when you run or build, and a shared cache?", the owner chose: "yea".
