@@ -3632,3 +3632,21 @@ both.
 **Tankun's words.** Asked "Should a line after `break;` in the same block be refused like one after `return`, with the
 same wording?", the owner chose: "yea. So, what would `final` optimize? And does PlainCompiler have para, concur,
 cache, background yet?" (the questions are answered in chat, not decisions).
+
+## D118. A `rust` folder is built only when an `extern.rust` procedure uses it
+
+2026-11-20.
+
+**Chosen.** A program with a `rust` folder (D107) but no `extern.rust` procedure doesn't build the folder; it's
+ignored.
+
+**Weighed.**
+- Building it anyway. Rust code nothing calls would slow every `plainly run`, by many seconds the first time, for no
+  gain.
+- Refusing the program. Annoying while the Rust code is being started, before any header exists.
+
+**Why this won.** Nothing is lost by skipping it: someone who writes Rust and forgets the `extern.rust` header finds out
+as soon as their Plainly code calls the procedure, which is refused as unknown.
+
+**Tankun's words.** Asked "Should a `rust` folder be ignored, not built, when no `extern.rust` procedure uses it?", the
+owner chose: "yea".

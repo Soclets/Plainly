@@ -66,7 +66,7 @@ end proc beep
 Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
 
 Its Rust code lives in a folder named `rust` in the program's folder, holding an ordinary Cargo project, which
-PlainCompiler builds and links into the program (D107). Each procedure's Rust function is marked with a macro naming
+PlainCompiler builds and links into the program (D107), only when an `extern.rust` procedure uses it (D118). Each procedure's Rust function is marked with a macro naming
 it exactly, which writes the glue that links it, and holds Plainly values through handles (D105, D108):
 
 ```rust
