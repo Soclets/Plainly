@@ -3062,3 +3062,26 @@ Go gets from `gofmt`, built into the checker, with the fix in every refusal. The
 
 **Tankun's words.** Asked "Names as lowercase letters, digits and `_` between words, starting with a letter?", the
 owner chose: "yea".
+
+## D100. Every spacing mistake on a line is one message, with every gap fixed at once
+
+2026-11-20.
+
+**Chosen.** A line with several spacing mistakes (D98), like `    show_msg( "three" ); ` with three, gives one message,
+with a `^` under each gap and a `fix:` showing the line fully corrected (D84):
+
+```
+ fix:     `    show_msg("three");`
+```
+
+(Its wording isn't decided yet; the `why:` drafted for it names the spacing rule once.)
+
+**Weighed.**
+- One message per mistake. Each `fix:` corrects only its own gap, so copying one still leaves the rest, and the reader
+  goes round once per gap.
+
+**Why this won.** D84's point is that the fix can be copied straight in, and only one message per line keeps that true.
+The compiler session leaned the same way.
+
+**Tankun's words.** Asked "Spacing mistakes on one line give one message, with every gap fixed at once?", the owner
+chose: "yea".

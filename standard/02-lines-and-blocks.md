@@ -58,7 +58,8 @@ Spacing is fixed, and anything else is refused with the corrected line as the fi
 | anywhere but indentation | never two spaces in a row | |
 | at the end of a line, and on a blank line | no spaces | |
 
-Spacing inside text is the program's own.
+Spacing inside text is the program's own. Every spacing mistake on one line gives one message, whose `fix:` corrects
+them all (D100).
 
 ## Comments
 
