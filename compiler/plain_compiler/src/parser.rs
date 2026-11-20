@@ -251,7 +251,7 @@ impl<'a> Parser<'a> {
                     ),
                     _ => Message::not_designed_yet(
                         token.place,
-                        "anything outside a procedure, other than a procedure, isn't decided",
+                        "anything outside a procedure, other than a procedure, isn't decided yet",
                     ),
                 };
                 self.messages.push(message);
@@ -296,10 +296,7 @@ impl<'a> Parser<'a> {
             } else {
                 self.messages.push(Message::not_designed_yet(
                     word.place,
-                    format!(
-                        "`proc.{}` isn't decided; `proc.main` is the only narrowing of `proc`",
-                        word.written()
-                    ),
+                    format!("`proc.{}` isn't decided yet", word.written()),
                 ));
                 self.stop_unless_line_ends_with_colon();
                 Name {
@@ -523,13 +520,15 @@ impl<'a> Parser<'a> {
         if known.is_none() {
             self.messages.push(Message::not_designed_yet(
                 token.place,
-                format!("types other than `Whole`, `Bool` and `Text` aren't decided, so `{word}` can't be used yet"),
+                format!(
+                    "types other than `Whole`, `Bool` and `Text`, like `{word}`, aren't decided yet"
+                ),
             ));
         }
         if self.at_symbol(Symbol::Less) && self.current().spaces_before == 0 {
             self.messages.push(Message::not_designed_yet(
                 self.current().place,
-                "filling in a type with `< >` isn't decided beyond the bracket itself (D3)",
+                "filling in a type with `< >` isn't decided yet",
             ));
             while !self.at_line_start() && !self.at_symbol(Symbol::Greater) {
                 self.advance();
@@ -573,7 +572,7 @@ impl<'a> Parser<'a> {
         } else if !text.is_ascii() {
             self.messages.push(Message::not_designed_yet(
                 token.place,
-                format!("letters beyond English in a name, as in `{text}`, aren't decided"),
+                format!("letters beyond English in a name, as in `{text}`, aren't decided yet"),
             ));
         } else if let Some(problem) = name_problem(&text) {
             // trace: D99
@@ -596,7 +595,7 @@ impl<'a> Parser<'a> {
             if !self.at_line_start() {
                 self.messages.push(Message::not_designed_yet(
                     self.current().place,
-                    "a body on the same line as its opening line isn't decided",
+                    "a body on the same line as its opening line isn't decided yet",
                 ));
                 self.stopped = true;
             }
@@ -848,7 +847,7 @@ impl<'a> Parser<'a> {
         } else if self.at_symbol(Symbol::Semicolon) {
             self.messages.push(Message::not_designed_yet(
                 self.current().place,
-                "declaring a variable without a first value isn't decided",
+                "declaring a variable without a first value isn't decided yet",
             ));
             return Err(Skip);
         } else if self.starts_value() {
@@ -946,13 +945,13 @@ impl<'a> Parser<'a> {
                     .unwrap_or(semicolon.place);
                 self.messages.push(Message::not_designed_yet(
                     later,
-                    "how a statement's later lines are indented isn't decided",
+                    "how a statement's later lines are indented isn't decided yet",
                 ));
             }
             if !self.at_line_start() {
                 self.messages.push(Message::not_designed_yet(
                     self.current().place,
-                    "two statements on one line isn't decided",
+                    "two statements on one line isn't decided yet",
                 ));
             }
             return Ok(());
@@ -1129,7 +1128,7 @@ impl<'a> Parser<'a> {
         if self.at_symbol(Symbol::QuestionQuestion) {
             return Err(self.not_designed_here(
                 self.current().place,
-                "`??` after a slide's step isn't decided, since a step isn't written as a call",
+                "`??` after a slide's step isn't decided yet",
             ));
         }
         if self.at_binary_operator() {
@@ -1441,7 +1440,7 @@ impl<'a> Parser<'a> {
                 {
                     self.messages.push(Message::not_designed_yet(
                         place,
-                        format!("going past `Whole`'s range isn't decided, and `{written}` is outside it"),
+                        format!("a whole number outside `Whole`'s range, like `{written}`, isn't decided yet"),
                     ));
                 }
                 Err(Skip)

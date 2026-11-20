@@ -45,7 +45,7 @@ fn output_failed() -> ! {
         "NotDesignedYet: the program's output can't be written\n{}",
         labelled_line(
             "what",
-            "what a program does when its output can't be written isn't decided"
+            "what a program does when its output can't be written isn't decided yet"
         )
     );
     let _ = std::io::stderr().write_all(message.as_bytes());
@@ -96,7 +96,7 @@ fn new_text(bytes: &[u8]) -> *const u8 {
                 "NotDesignedYet: the program ran out of memory\n{}",
                 labelled_line(
                     "what",
-                    "what a program does when memory runs out isn't decided"
+                    "what a program does when memory runs out isn't decided yet"
                 )
             );
             let _ = std::io::stdout().flush();
@@ -289,7 +289,7 @@ pub unsafe extern "C" fn plainly_ask(
         Ok(_) => {}
         Err(_) => stop_not_designed_yet(
             site,
-            "what happens when input can't be read isn't decided".to_string(),
+            "what happens when input can't be read isn't decided yet".to_string(),
             None,
         ),
     }
@@ -303,7 +303,7 @@ pub unsafe extern "C" fn plainly_ask(
     if std::str::from_utf8(&line).is_err() {
         stop_not_designed_yet(
             site,
-            "typed input that isn't UTF-8 text isn't decided".to_string(),
+            "typed input that isn't UTF-8 text isn't decided yet".to_string(),
             None,
         );
     }
@@ -340,7 +340,7 @@ pub unsafe extern "C" fn plainly_random(
         let site = unsafe { site_text(site, site_length) };
         stop_not_designed_yet(
             site,
-            "`from:` above `to:` isn't decided".to_string(),
+            "`from:` above `to:` isn't decided yet".to_string(),
             Some(format!("from: {low}, to: {high}")),
         );
     }

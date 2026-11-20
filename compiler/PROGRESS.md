@@ -71,8 +71,8 @@ and the compiler depends on nothing but that interface.
 - **Step 1 works.** Every `Text` is a PlainGC object. Collections find their roots precisely through Cranelift's
   stack maps, mark, and compact by evacuating sparse pages; texts held in variables, parameters and deep recursion
   survive being moved, with every value right afterwards.
-- **Every run passes:** each of the 21 tests in `tests/` and the 7 stress programs in `compiler/gc_tests/`, run both as
-  they are and in collect-often mode: 56 runs. In collect-often mode the stress programs make up to 100,000
+- **Every run passes:** each of the 27 tests in `tests/` and the 7 stress programs in `compiler/gc_tests/`, run both as
+  they are and in collect-often mode: 68 runs. In collect-often mode the stress programs make up to 100,000
   collections and move up to 240,000 objects each.
 - PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
   freeing, moving, forwarding, and reading the stack map table.
@@ -265,15 +265,13 @@ unknown narrowing, whose `why:` lists the word's narrowings ("`show_msg`'s narro
 counting as variables; D93's `because:`; the knock-on `because:` (D83); bad names, with "but" (D99); extra blank
 lines (D97, D101); and spacing (D98, D100). Each is marked `// trace: D102`.
 
-**Still waiting for wording:**
-- a word with no narrowings, drafted on D102's pattern as "`be.Whole` has no narrowings.";
-- `internal error:`'s first line, "PlainCompiler itself went wrong, not your program", and PlainGC's: "PlainGC
-  itself went wrong, not your program", with why: "this is a bug in PlainGC. Please report it at
-  https://github.com/Soclets/Plainly/issues, with the program that caused it.";
-- the other command mistakes: no command, `x` isn't a command, no file, two files, two modes, `check` needs no mode,
-  `x` isn't a mode; and `can't read:` with "a Plainly file's name ends in `.plainly`" or "it isn't UTF-8 text";
-- every `NotBuiltYet` and `NotDesignedYet` message's `what:`, at compile time and at runtime (D56 leaves their wording
-  open), and where a runtime message starts when the program's line is still open (Q23).
+**Approved in D103,** the sixth batch's second part: each command mistake with its own first line, `can't read:`,
+internal errors naming the part that went wrong (PlainCompiler or PlainGC), the `NotBuiltYet` pattern (what isn't
+built, with its decisions) and the `NotDesignedYet` pattern ("X isn't decided yet"), and a word with no more
+narrowings ("`random` has no narrowings.", "`be.Whole` can't be narrowed further."). Each is marked
+`// trace: D103` where it's made.
+
+**Still waiting for wording:** only where a runtime message starts when the program's line is still open (Q23).
 
 ### Refusals
 

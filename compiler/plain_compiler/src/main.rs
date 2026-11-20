@@ -78,52 +78,70 @@ fn run_command(arguments: &[String]) -> u8 {
         "compile" => Action::Compile,
         "check" => Action::Check,
         "oracle" => {
-            eprintln!(
-                "NotBuiltYet: `plainly oracle` (D50) isn't built yet, since PlainOracle doesn't exist yet"
+            // trace: D103
+            eprint!(
+                "NotBuiltYet: `plainly oracle`\n{}",
+                message::labelled_line(
+                    "what",
+                    "PlainOracle and `plainly oracle` (D50, D52) aren't built yet"
+                )
             );
             return STATUS_NOT_YET;
         }
         other => return command_mistake(&format!("`{other}` isn't a command")),
     };
-    let mut file = None;
-    let mut mode = None;
-    for argument in &arguments[1..] {
-        if argument.starts_with("--") {
-            if mode.is_some() {
-                return command_mistake("only one mode can be given");
-            }
-            mode = Some(argument.as_str());
-        } else if file.is_some() {
-            return command_mistake("only one file can be given");
+    // trace: D103
+    let (modes, files): (Vec<&String>, Vec<&String>) = arguments[1..]
+        .iter()
+        .partition(|argument| argument.starts_with("--"));
+    let [file] = files.as_slice() else {
+        return if files.is_empty() {
+            command_mistake(&format!("`{command}` needs a file"))
         } else {
-            file = Some(argument.as_str());
-        }
-    }
-    let Some(file) = file else {
-        return command_mistake("no file given");
+            command_mistake(&format!(
+                "`{command}` takes one file, but this gives {}",
+                files.len()
+            ))
+        };
     };
     // trace: D46, D50
-    match (action, mode) {
-        (Action::Check, None) => {}
-        (Action::Check, Some(_)) => return command_mistake("`check` needs no mode"),
+    if action == Action::Check && !modes.is_empty() {
+        return command_mistake("`check` takes no mode, since it doesn't compile");
+    }
+    if let Some(unknown) = modes
+        .iter()
+        .find(|mode| mode.as_str() != "--working" && mode.as_str() != "--final")
+    {
+        return command_mistake(&format!(
+            "`{unknown}` isn't a mode; the modes are `--working` and `--final`"
+        ));
+    }
+    if modes.len() > 1 {
+        let written: Vec<String> = modes.iter().map(|mode| format!("`{mode}`")).collect();
+        let listed = match written.as_slice() {
+            [first, second] => format!("both {first} and {second}"),
+            [first @ .., last] => format!("{} and {last}", first.join(", ")),
+            [] => String::new(),
+        };
+        return command_mistake(&format!(
+            "`{command}` takes one mode, but this gives {listed}"
+        ));
+    }
+    match (action, modes.first().map(|mode| mode.as_str())) {
+        (Action::Check, _) | (_, Some("--working")) => {}
         (_, None) => {
             // trace: D92
             return command_mistake("run and compile need a mode: --working or --final");
         }
-        (_, Some("--working")) => {}
-        (_, Some("--final")) => {
-            eprintln!(
-                "NotBuiltYet: `final` mode (D46) isn't built yet; compile in `working` mode with `--working`"
+        (_, Some(_)) => {
+            eprint!(
+                "NotBuiltYet: `--final`\n{}",
+                message::labelled_line("what", "`final` mode (D46) isn't built yet")
             );
             return STATUS_NOT_YET;
         }
-        (_, Some(other)) => {
-            return command_mistake(&format!(
-                "`{other}` isn't a mode; the modes are `--working` and `--final`"
-            ));
-        }
     }
-    match compile_and_go(action, Path::new(file)) {
+    match compile_and_go(action, Path::new(file.as_str())) {
         Ok(status) => status,
         Err(error) => {
             eprint!("{}", error.render());

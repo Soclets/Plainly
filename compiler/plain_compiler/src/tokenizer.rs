@@ -219,7 +219,7 @@ fn tokenize_line(
         if character == '\t' {
             messages.push(Message::not_designed_yet(
                 place(column, 1),
-                "a tab between the parts of a line isn't decided",
+                "a tab between the parts of a line isn't decided yet",
             ));
             index += 1;
             spaces_before = 1;
@@ -266,7 +266,7 @@ fn tokenize_line(
             {
                 messages.push(Message::not_designed_yet(
                     place(column, index - start),
-                    format!("how whole numbers are written isn't decided, so `{written}` can't be read yet"),
+                    format!("how whole numbers are written beyond plain digits, as in `{written}`, isn't decided yet"),
                 ));
             }
             Some(TokenKind::Whole(written))
@@ -320,7 +320,7 @@ fn tokenize_line(
         } else if character == '\r' {
             messages.push(Message::not_designed_yet(
                 place(column, 1),
-                "line breaks written as `\\r\\n`, as Windows writes them, aren't decided",
+                "line breaks written as `\\r\\n`, as Windows writes them, aren't decided yet",
             ));
             index += 1;
             None
@@ -401,7 +401,7 @@ fn read_text(
         let Some(&character) = characters.get(*index) else {
             messages.push(Message::not_designed_yet(
                 place(start + 1, characters.len() - start),
-                "text running onto another line isn't decided, so every text needs its closing `\"` on the same line",
+                "text running onto another line isn't decided yet",
             ));
             *index = characters.len();
             return None;
@@ -421,9 +421,7 @@ fn read_text(
                 if next.is_alphabetic() {
                     messages.push(Message::not_designed_yet(
                         place(column, 2),
-                        format!(
-                            "`\\` before a letter isn't decided, so `\\{next}` can't be read yet"
-                        ),
+                        format!("`\\` before a letter, as in `\\{next}`, isn't decided yet"),
                     ));
                 }
                 text.push(TextCharacter {
@@ -436,7 +434,7 @@ fn read_text(
             '\t' => {
                 messages.push(Message::not_designed_yet(
                     place(column, 1),
-                    "a tab inside text isn't decided",
+                    "a tab inside text isn't decided yet",
                 ));
                 *index += 1;
             }

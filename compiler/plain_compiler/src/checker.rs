@@ -113,14 +113,14 @@ pub fn check_program(
             if let Some(returns) = &procedure.returns {
                 messages.push(Message::not_designed_yet(
                     returns.place,
-                    "`proc.main` giving something back isn't decided",
+                    "`proc.main` giving something back isn't decided yet",
                 ));
             }
         } else if LIBRARY_NAMES.contains(&procedure.name.text.as_str()) {
             messages.push(Message::not_designed_yet(
                 procedure.name.place,
                 format!(
-                    "a program declaring its own `{}`, which the library has, isn't decided",
+                    "a program declaring its own `{}`, which the library has, isn't decided yet",
                     procedure.name.text
                 ),
             ));
@@ -181,16 +181,15 @@ pub fn check_program(
 fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature {
     let mut labels: Vec<Option<String>> = vec![None; procedure.parameters.len()];
     for (index, parameter) in procedure.parameters.iter().enumerate() {
-        if let Some(earlier) = procedure.parameters[..index]
+        if procedure.parameters[..index]
             .iter()
-            .find(|earlier| earlier.name.text == parameter.name.text)
+            .any(|earlier| earlier.name.text == parameter.name.text)
         {
             messages.push(
                 Message::refused(
                     parameter.name.place,
                     format!("two parameters are named `{}`", parameter.name.text),
                 )
-                .because("the first is here", earlier.name.place)
                 // trace: D102
                 .why("each parameter needs its own name."),
             );
@@ -228,13 +227,12 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
             );
             continue;
         }
-        if let Some((_, place)) = labelled.iter().find(|(label, _)| *label == pair.label.text) {
+        if labelled.iter().any(|(label, _)| *label == pair.label.text) {
             messages.push(
                 Message::refused(
                     pair.label.place,
                     format!("two parameters have the label `{}`", pair.label.text),
                 )
-                .because("the first is here", *place)
                 // trace: D89
                 .why("each label names one parameter, so a call can say which value is which."),
             );
@@ -276,6 +274,8 @@ struct VariableFacts {
     kind: VariableKind,
     /// Where it's declared: the `let` or `var`, or the parameter's name.
     place: Place,
+    /// Where its name is written in the declaration.
+    name_place: Place,
 }
 
 /// How a statement can leave, for D9 and D57.
@@ -338,6 +338,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 parameter.type_name.known,
                 VariableKind::Parameter,
                 parameter.name.place,
+                parameter.name.place,
             ));
         }
         let (body, flow) = checker.check_block(&procedure.body);
@@ -396,6 +397,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         value_type: Option<Type>,
         kind: VariableKind,
         place: Place,
+        name_place: Place,
     ) -> VariableId {
         let id = self.variables.len();
         self.variables.push(VariableFacts {
@@ -403,6 +405,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             value_type,
             kind,
             place,
+            name_place,
         });
         if let Some(scope) = self.scopes.last_mut() {
             scope.push(id);
@@ -425,7 +428,8 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         if let Some(scope) = self.scopes.pop() {
             for id in scope {
                 let variable = &self.variables[id];
-                self.ended.insert(variable.name.clone(), variable.place);
+                self.ended
+                    .insert(variable.name.clone(), variable.name_place);
             }
         }
     }
@@ -504,7 +508,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         .why("nothing may follow `return` in the same block."),
                         Blocked::Break(place) => Message::not_designed_yet(
                             statement.place,
-                            "code after `break` in the same block isn't decided",
+                            "code after `break` in the same block isn't decided yet",
                         )
                         .because("the `break` is here", *place),
                         Blocked::IfLeaves(place) => Message::refused(
@@ -553,7 +557,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 let checked = self.value(value);
                 if let Some(id) = self.lookup(&name.text) {
                     // trace: D94
-                    let earlier = self.variables[id].place;
+                    let earlier = self.variables[id].name_place;
                     self.messages.push(
                         Message::refused(
                             name.place,
@@ -578,7 +582,13 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     VariableKind::Let
                 };
                 // A refused declaration still creates its variable, with its written type (D55).
-                let variable = self.declare(&name.text, type_name.known, kind, statement.place);
+                let variable = self.declare(
+                    &name.text,
+                    type_name.known,
+                    kind,
+                    statement.place,
+                    name.place,
+                );
                 Some(TypedStatement::Declare {
                     variable,
                     value: checked.expression,
@@ -618,7 +628,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             VariableKind::Parameter => {
                                 self.messages.push(Message::not_designed_yet(
                                     name.place,
-                                    "whether a parameter can be given a new value isn't decided",
+                                    "whether a parameter can be given a new value isn't decided yet",
                                 ));
                                 None
                             }
@@ -650,9 +660,9 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             expression.kind,
                             ExpressionKind::Call { .. } | ExpressionKind::Slide { .. }
                         ) {
-                            "a call whose value isn't used isn't decided"
+                            "a call whose value isn't used isn't decided yet"
                         } else {
-                            "a statement that's only a value isn't decided"
+                            "a statement that's only a value isn't decided yet"
                         };
                         self.messages
                             .push(Message::not_designed_yet(expression.place, what));
@@ -781,7 +791,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(Message::not_designed_yet(
                     condition.place,
                     format!(
-                        "whether a condition must be a `Bool` isn't decided, but this is a `{}`",
+                        "a condition that's a `{}` rather than a `Bool` isn't decided yet",
                         other.name()
                     ),
                 ));
@@ -982,7 +992,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         self.messages.push(Message::not_designed_yet(
                             value.place,
                             format!(
-                                "whether a condition must be a `Bool` isn't decided, but this is a `{}`",
+                                "a condition that's a `{}` rather than a `Bool` isn't decided yet",
                                 other.name()
                             ),
                         ));
@@ -1000,7 +1010,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 if !checked.can_fail {
                     self.messages.push(Message::not_designed_yet(
                         call.place,
-                        "`??` after a call that can't fail isn't decided",
+                        "`??` after a call that can't fail isn't decided yet",
                     ));
                     return Checked::unknown(place);
                 }
@@ -1152,7 +1162,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(Message::not_designed_yet(
                     operator_place,
                     format!(
-                        "whether `{written}` works on anything but `Bool`s isn't decided, but this is a `{}` and a `{}`",
+                        "`{written}` on a `{}` and a `{}`, rather than two `Bool`s, isn't decided yet",
                         types.0.name(),
                         types.1.name()
                     ),
@@ -1203,13 +1213,13 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 } else if types.0 == Type::Text {
                     Message::not_designed_yet(
                         operator_place,
-                        "comparing two pieces of text isn't decided",
+                        "comparing two pieces of text isn't decided yet",
                     )
                 } else {
                     Message::not_designed_yet(
                         operator_place,
                         format!(
-                            "comparing `{}`s with `{written}` isn't decided",
+                            "comparing `{}`s with `{written}` isn't decided yet",
                             types.0.name()
                         ),
                     )
@@ -1235,11 +1245,17 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             ["show_msg", narrowings @ ..] => {
                 self.check_show_msg(callee, narrowings, slid, arguments, place)
             }
+            [word @ ("ask" | "random"), _, ..] => {
+                // trace: D103
+                self.refuse_unknown_narrowing(callee, word, 1, &[]);
+                self.check_arguments_alone(slid, arguments);
+                Checked::unknown(place)
+            }
             ["ask"] => {
                 if slid.is_none() && arguments.is_empty() {
                     self.messages.push(Message::not_designed_yet(
                         place,
-                        "asking with no question isn't decided",
+                        "asking with no question isn't decided yet",
                     ));
                     return Checked::unknown(place);
                 }
@@ -1314,6 +1330,28 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 Checked::unknown(place)
             }
         }
+    }
+
+    /// Refuses the narrowing at `callee.words[unknown]`, which `word` doesn't have; `why:` lists the narrowings it
+    /// does have (D102, D103).
+    fn refuse_unknown_narrowing(
+        &mut self,
+        callee: &Callee,
+        word: &str,
+        unknown: usize,
+        narrowings: &[&str],
+    ) {
+        let Some(narrowing) = callee.words.get(unknown) else {
+            return;
+        };
+        // trace: D102, D103
+        self.messages.push(
+            Message::refused(
+                narrowing.place,
+                format!("`{word}` has no narrowing `.{}`", narrowing.text),
+            )
+            .why(narrowings_why(word, narrowings)),
+        );
     }
 
     /// Checks arguments for their own errors, for a call that was refused.
@@ -1427,7 +1465,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             if let Some((Some(label), _)) = parameters.first() {
                 self.messages.push(Message::not_designed_yet(
                     place,
-                    format!("sliding a value into a first parameter with a label, `{label}:`, isn't decided"),
+                    format!("sliding a value into a first parameter with a label, `{label}:`, isn't decided yet"),
                 ));
                 self.check_arguments_alone(None, arguments);
                 return None;
@@ -1452,7 +1490,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         if written != expected && written_sorted == expected_sorted && !written.is_empty() {
             self.messages.push(Message::not_designed_yet(
                 place,
-                "writing labels in a different order from the procedure's isn't decided",
+                "writing labels in a different order from the procedure's isn't decided yet",
             ));
             self.check_arguments_alone(None, arguments);
             return None;
@@ -1665,7 +1703,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             "Bool" => {
                 self.messages.push(Message::not_designed_yet(
                     callee.place,
-                    "converting to `Bool` isn't decided",
+                    "converting to `Bool` isn't decided yet",
                 ));
                 self.check_arguments_alone(slid, arguments);
                 return Checked::unknown(place);
@@ -1673,7 +1711,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             _ => {
                 self.messages.push(Message::not_designed_yet(
                     callee.place,
-                    format!("types other than `Whole`, `Bool` and `Text` aren't decided, so `be.{target}` can't be used yet"),
+                    format!("types other than `Whole`, `Bool` and `Text`, like `{target}`, aren't decided yet"),
                 ));
                 self.check_arguments_alone(slid, arguments);
                 return Checked::unknown(place);
@@ -1693,24 +1731,16 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 };
             }
             _ => {
-                self.messages.push(
-                    Message::refused(
-                        callee.words.get(2).map_or(callee.place, |word| word.place),
-                        format!(
-                            "`be.{target}` has no narrowing `.{}`",
-                            rest.first().copied().unwrap_or_default()
-                        ),
-                    )
-                    // trace: D102
-                    .why(narrowings_why(
-                        &format!("be.{target}"),
-                        if target_type == Type::Text {
-                            &["fmt"]
-                        } else {
-                            &[]
-                        },
-                    )),
-                );
+                // `be.Text.fmt` takes no more narrowings, and `be.Text` only `.fmt`; `be.Whole` takes none (D102, D103).
+                let (word, unknown, narrowings): (String, usize, &[&str]) =
+                    if target_type == Type::Text && rest.first() == Some(&"fmt") {
+                        ("be.Text.fmt".to_string(), 3, &[])
+                    } else if target_type == Type::Text {
+                        ("be.Text".to_string(), 2, &["fmt"])
+                    } else {
+                        (format!("be.{target}"), 2, &[])
+                    };
+                self.refuse_unknown_narrowing(callee, &word, unknown, narrowings);
                 self.check_arguments_alone(slid, arguments);
                 return Checked::unknown(place);
             }
@@ -1747,7 +1777,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(Message::not_designed_yet(
                     place,
                     format!(
-                        "converting a `{}` to `{}` isn't decided",
+                        "converting a `{}` to `{}` isn't decided yet",
                         from.name(),
                         to.name()
                     ),
@@ -1778,7 +1808,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         if slid.is_some() {
             self.messages.push(Message::not_designed_yet(
                 place,
-                "`.fmt` as a slide's step isn't decided",
+                "`.fmt` as a slide's step isn't decided yet",
             ));
             return None;
         }
@@ -1802,7 +1832,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         let ExpressionKind::Text(characters) = &argument.value.kind else {
             self.messages.push(Message::not_designed_yet(
                 argument.value.place,
-                "`.fmt` with text that isn't written in the call isn't decided, since its braces are checked at compile time",
+                "`.fmt` with text that isn't written in the call isn't decided yet",
             ));
             let _ = self.value(&argument.value);
             return None;
@@ -1836,7 +1866,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         length: 1,
                         ..text_place
                     },
-                    "a `{` with no `}` after it in `.fmt` text isn't decided; `\\{` writes a brace",
+                    "a `{` with no `}` after it in `.fmt` text isn't decided yet",
                 ));
                 return None;
             };
@@ -1867,7 +1897,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         Some(Type::Bool) => {
                             self.messages.push(Message::not_designed_yet(
                                 brace_place,
-                                "a `Bool` in `.fmt` braces isn't decided",
+                                "a `Bool` in `.fmt` braces isn't decided yet",
                             ));
                             refused = true;
                         }
@@ -1896,9 +1926,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             } else {
                 self.messages.push(Message::not_designed_yet(
                     brace_place,
-                    format!(
-                        "`{{{inside}}}` in `.fmt` text isn't decided; braces hold a variable's name"
-                    ),
+                    format!("`{{{inside}}}` in `.fmt` text isn't decided yet"),
                 ));
                 refused = true;
             }
@@ -1919,6 +1947,8 @@ fn narrowings_why(word: &str, narrowings: &[&str]) -> String {
     match listed.as_slice() {
         [only] => format!("`{word}`'s only narrowing is {only}."),
         [first @ .., last] => format!("`{word}`'s narrowings are {} and {last}.", first.join(", ")),
+        // A word that's already a narrowing, like `be.Whole`, can't be narrowed further (D103).
+        [] if word.contains('.') => format!("`{word}` can't be narrowed further."),
         [] => format!("`{word}` has no narrowings."),
     }
 }
