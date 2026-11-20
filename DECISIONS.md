@@ -1892,7 +1892,7 @@ the situation, and the writer never chooses (D2's aim, as D60 does for symbols).
 **Weighed.**
 - Each parameter always writing its own type, `add(a: Whole, b: Whole)`, as the design claude recommended. One order
   everywhere, matching `let a: Whole` (D13), and nothing to rewrite when a parameter of another type is added. Tankun
-  compared the two side by side: "Tbh, 2nd was faster."
+  compared the two side by side and found the short one faster (has code).
 - A type in front covering every name after it until the next type, as in C's `int a, b`. The design claude first
   misread Tankun's idea this way; to find a parameter's type you scan back past others, and C's `int* a, b` shows the
   trap.
@@ -1904,6 +1904,5 @@ exactly then, and the long form otherwise, keeps one spelling per header. The co
 only in short headers, and adding a parameter of another type means rewriting the header, which the refusal's fix
 does.
 
-**Tankun's words.** In their answer to D57 (quoted whole there), then the messages listed in D58, which include "Tbh,
-2nd was faster." (as part of a message with code); asked "The short form required when two or more parameters share
+**Tankun's words.** In their answer to D57 (quoted whole there), then the messages listed in D58; asked "The short form required when two or more parameters share
 one type?", the owner chose: "yea".
