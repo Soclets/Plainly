@@ -77,7 +77,7 @@ Inside `plain_compiler`: `tokenizer.rs`, `parser.rs` (syntax tree, with indentat
 The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard is silent or says "Not decided". Each
 place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
-two statements on one line; comparing text; conditions that aren't `Bool`; using a variable outside its
+two statements on one line; comparing text; conditions that aren't `Bool`;
 declaring a name already in use; a call whose value isn't used; `??` on a call that can't fail; label order;
 sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `be.Whole` on text like
 ` 42`, `+5`, `007` or a number out of range; running out of input; `random` with `from:` above `to:`; types other
