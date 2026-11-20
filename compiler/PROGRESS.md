@@ -29,6 +29,16 @@ the test results (`python3 compiler/run_tests.py`).
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
+## Since: D116, D117 and D120 (2026-11-20)
+
+- **D116:** a command with several mistakes shows every one, a `plainly:` line each in the order written, then
+  anything missing (a file, a mode), then the usage once. An unknown command is its only mistake, since what follows
+  it can't be judged. When an unknown mode is the only mode, the missing-mode line still follows it.
+- **D117:** a line after `break;` in the same block is refused, with D88's wording for `break`.
+- **D120:** a call that gives back a value, standing alone, is refused: "`random` gives back a `Whole`, but nothing
+  uses it". A statement that's only a value and not a call stays `NotDesignedYet`.
+- Unit tests for each, 45 in all; 80 of 80 runs pass.
+
 ## PlainGC's pacer and limits (D113 to D115)
 
 **Done (2026-11-20).**
@@ -281,8 +291,9 @@ Inside `plain_compiler`: `tokenizer.rs`, `parser.rs` (syntax tree, with indentat
 ## What `NotDesignedYet` covers
 
 The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard is silent or says "Not decided". Each
-place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; letters beyond English in names; a statement over several lines (its later lines' indentation);
-two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; a call whose value isn't used; `??` on a call that can't fail; label order;
+place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; a statement that's
+only a value and not a call; letters beyond English in names; a statement over several lines (its later lines' indentation);
+two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; `??` on a call that can't fail; label order;
 sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
 
@@ -455,7 +466,7 @@ The `^` is under the whole calculation, like `tries + 1`.
 | `NotDesignedYet:`, `NotBuiltYet:` (D56) | as listed above | `what:` says what isn't decided or built, as in "maths order isn't decided, so more than one of `+`, `-` and `*` needs brackets for now" |
 | `internal error:` (status 7, D82) | PlainCompiler itself goes wrong | `what:` the problem; `why:` this is a bug in PlainCompiler. Please report it at https://github.com/Soclets/Plainly/issues, with the program that caused it. |
 | `can't read:` (status 2) | the file can't be read | `can't read: game.plainly` then `what:` the system's reason |
-| `plainly:` (status 6, D82) | a mistake in the command | `plainly: run and compile need a mode: --working or --final`, then the usage lines |
+| `plainly:` (status 6, D82) | a mistake in the command | `plainly: run and compile need a mode: --working or --final`, then the usage lines; with several mistakes, every one on its own line, in the order the command is written with anything missing last, then the usage once (D116, built) |
 
 ## Open questions for the design session
 
@@ -486,10 +497,9 @@ uses a placeholder until it's decided.
   anything else fails, a number too big or too small for a `Whole` included. The failure's name is still open.
 - **Q14. Answered by D96:** when input runs out, `ask` ends the program quietly with status 0, and a last line with
   no Enter still counts as an answer.
-- **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone; and `?? ignore` on a call that gives
-  a value.
-- **Q16. Code after `break;` in the same block.** D57 refuses code after `return`, and D9 code after an `if` that can
-  leave; a line straight after `break;` isn't covered. `NotDesignedYet`.
+- **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone, is refused (D120, built). `?? ignore`
+  on a call that gives a value is still open.
+- **Q16. Answered by D117:** a line after `break;` in the same block is refused, as one after `return` is. Built.
 - **Q17. What the command's file means, and where `compile` puts its file.** D64 makes a program every `.plainly` file
   in its folder, so `plainly run games/guess.plainly` compiles every `.plainly` file in `games/`. `plainly compile`
   writes the executable into the current folder, named after the file (`guess`).

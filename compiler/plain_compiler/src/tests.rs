@@ -409,3 +409,45 @@ fn d100_every_spacing_mistake_on_a_line_is_one_message() {
         .map(|edit| crate::message::fixed_line(&sources, edit));
     assert_eq!(fixed.as_deref(), Some("    show_msg(\"three\");"));
 }
+
+#[test]
+fn d116_every_command_mistake_is_shown_in_the_order_written() {
+    use crate::{Action, command_mistakes_in};
+    let words =
+        |text: &str| -> Vec<String> { text.split_whitespace().map(str::to_string).collect() };
+    let mistakes = command_mistakes_in("run", Action::Run, &words("a.plainly b.plainly --fast"));
+    assert_eq!(
+        mistakes,
+        [
+            "`run` takes one file, but this gives 2",
+            "`--fast` isn't a mode; the modes are `--working` and `--final`",
+            "run and compile need a mode: --working or --final",
+        ]
+    );
+    let mistakes = command_mistakes_in("run", Action::Run, &words("--working --final"));
+    assert_eq!(
+        mistakes,
+        [
+            "`run` takes one mode, but this gives both `--working` and `--final`",
+            "`run` needs a file"
+        ]
+    );
+    assert!(command_mistakes_in("check", Action::Check, &words("game.plainly")).is_empty());
+}
+
+#[test]
+fn d117_a_line_after_break_is_refused() {
+    let program = main_with(&[
+        "while true:",
+        "    break;",
+        "    show_msg(\"never\");",
+        "end while",
+    ]);
+    assert_eq!(found(&program), refused_on(4));
+}
+
+#[test]
+fn d120_a_call_whose_value_is_unused_is_refused() {
+    let program = main_with(&["random(from: 1, to: 6);", "show_msg(\"rolled\");"]);
+    assert_eq!(found(&program), refused_on(2));
+}

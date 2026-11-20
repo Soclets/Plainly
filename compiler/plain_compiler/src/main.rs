@@ -64,14 +64,79 @@ enum Action {
     Check,
 }
 
-fn command_mistake(what: &str) -> u8 {
-    eprint!("plainly: {what}\n{USAGE}");
+/// Shows every mistake in the command, one `plainly:` line each, then how to use it once (D103, D116).
+fn command_mistakes(mistakes: &[String]) -> u8 {
+    let mut shown = String::new();
+    for mistake in mistakes {
+        shown.push_str(&format!("plainly: {mistake}\n"));
+    }
+    eprint!("{shown}{USAGE}");
     STATUS_COMMAND_MISTAKE
+}
+
+/// Every mistake in a command's arguments after the command itself, in the order they're written, then anything
+/// missing (D116).
+fn command_mistakes_in(command: &str, action: Action, rest: &[String]) -> Vec<String> {
+    // trace: D103, D116
+    let mut mistakes = Vec::new();
+    let files: Vec<&String> = rest
+        .iter()
+        .filter(|argument| !argument.starts_with("--"))
+        .collect();
+    let known_modes: Vec<&String> = rest
+        .iter()
+        .filter(|argument| argument.as_str() == "--working" || argument.as_str() == "--final")
+        .collect();
+    let mut files_seen = 0;
+    let mut modes_seen = 0;
+    for argument in rest {
+        if !argument.starts_with("--") {
+            files_seen += 1;
+            if files_seen == 2 {
+                mistakes.push(format!(
+                    "`{command}` takes one file, but this gives {}",
+                    files.len()
+                ));
+            }
+        } else if action == Action::Check {
+            // trace: D46, D50
+            if modes_seen == 0 {
+                mistakes.push("`check` takes no mode, since it doesn't compile".to_string());
+            }
+            modes_seen += 1;
+        } else if argument != "--working" && argument != "--final" {
+            mistakes.push(format!(
+                "`{argument}` isn't a mode; the modes are `--working` and `--final`"
+            ));
+        } else {
+            modes_seen += 1;
+            if modes_seen == 2 {
+                let written: Vec<String> =
+                    known_modes.iter().map(|mode| format!("`{mode}`")).collect();
+                let listed = match written.as_slice() {
+                    [first, second] => format!("both {first} and {second}"),
+                    [first @ .., last] => format!("{} and {last}", first.join(", ")),
+                    [] => String::new(),
+                };
+                mistakes.push(format!(
+                    "`{command}` takes one mode, but this gives {listed}"
+                ));
+            }
+        }
+    }
+    if files.is_empty() {
+        mistakes.push(format!("`{command}` needs a file"));
+    }
+    if action != Action::Check && known_modes.is_empty() {
+        // trace: D92
+        mistakes.push("run and compile need a mode: --working or --final".to_string());
+    }
+    mistakes
 }
 
 fn run_command(arguments: &[String]) -> u8 {
     let Some(command) = arguments.first() else {
-        return command_mistake("no command given");
+        return command_mistakes(&["no command given".to_string()]);
     };
     let action = match command.as_str() {
         "run" => Action::Run,
@@ -89,58 +154,27 @@ fn run_command(arguments: &[String]) -> u8 {
             );
             return STATUS_NOT_YET;
         }
-        other => return command_mistake(&format!("`{other}` isn't a command")),
+        // What follows an unknown command can't be judged, so this is its only mistake.
+        other => return command_mistakes(&[format!("`{other}` isn't a command")]),
     };
-    // trace: D103
-    let (modes, files): (Vec<&String>, Vec<&String>) = arguments[1..]
+    let files: Vec<&String> = arguments[1..]
         .iter()
-        .partition(|argument| argument.starts_with("--"));
-    let [file] = files.as_slice() else {
-        return if files.is_empty() {
-            command_mistake(&format!("`{command}` needs a file"))
-        } else {
-            command_mistake(&format!(
-                "`{command}` takes one file, but this gives {}",
-                files.len()
-            ))
-        };
+        .filter(|argument| !argument.starts_with("--"))
+        .collect();
+    let known_modes: Vec<&String> = arguments[1..]
+        .iter()
+        .filter(|argument| argument.as_str() == "--working" || argument.as_str() == "--final")
+        .collect();
+    let mistakes = command_mistakes_in(command, action, &arguments[1..]);
+    let ([file], []) = (files.as_slice(), mistakes.as_slice()) else {
+        return command_mistakes(&mistakes);
     };
-    // trace: D46, D50
-    if action == Action::Check && !modes.is_empty() {
-        return command_mistake("`check` takes no mode, since it doesn't compile");
-    }
-    if let Some(unknown) = modes
-        .iter()
-        .find(|mode| mode.as_str() != "--working" && mode.as_str() != "--final")
-    {
-        return command_mistake(&format!(
-            "`{unknown}` isn't a mode; the modes are `--working` and `--final`"
-        ));
-    }
-    if modes.len() > 1 {
-        let written: Vec<String> = modes.iter().map(|mode| format!("`{mode}`")).collect();
-        let listed = match written.as_slice() {
-            [first, second] => format!("both {first} and {second}"),
-            [first @ .., last] => format!("{} and {last}", first.join(", ")),
-            [] => String::new(),
-        };
-        return command_mistake(&format!(
-            "`{command}` takes one mode, but this gives {listed}"
-        ));
-    }
-    match (action, modes.first().map(|mode| mode.as_str())) {
-        (Action::Check, _) | (_, Some("--working")) => {}
-        (_, None) => {
-            // trace: D92
-            return command_mistake("run and compile need a mode: --working or --final");
-        }
-        (_, Some(_)) => {
-            eprint!(
-                "NotBuiltYet: `--final`\n{}",
-                message::labelled_line("what", "`final` mode (D46) isn't built yet")
-            );
-            return STATUS_NOT_YET;
-        }
+    if action != Action::Check && known_modes.first().map(|mode| mode.as_str()) == Some("--final") {
+        eprint!(
+            "NotBuiltYet: `--final`\n{}",
+            message::labelled_line("what", "`final` mode (D46) isn't built yet")
+        );
+        return STATUS_NOT_YET;
     }
     match compile_and_go(action, Path::new(file.as_str())) {
         Ok(status) => status,

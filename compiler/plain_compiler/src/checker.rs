@@ -531,11 +531,13 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         .because("the `return` is here", *place)
                         // trace: D88
                         .why("nothing may follow `return` in the same block."),
-                        Blocked::Break(place) => Message::not_designed_yet(
+                        Blocked::Break(place) => Message::refused(
                             statement.place,
-                            "code after `break` in the same block isn't decided yet",
+                            "this line comes after a `break` in the same block, so it can never run",
                         )
-                        .because("the `break` is here", *place),
+                        .because("the `break` is here", *place)
+                        // trace: D117
+                        .why("nothing may follow `break` in the same block."),
                         Blocked::IfLeaves(place) => Message::refused(
                             statement.place,
                             "this line follows an `if` that can leave",
@@ -680,17 +682,30 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 match checked.shape {
                     Shape::Nothing => Some(TypedStatement::Run(checked.expression)),
                     Shape::Unknown => None,
-                    Shape::Value(_) => {
-                        let what = if matches!(
-                            expression.kind,
-                            ExpressionKind::Call { .. } | ExpressionKind::Slide { .. }
-                        ) {
-                            "a call whose value isn't used isn't decided yet"
-                        } else {
-                            "a statement that's only a value isn't decided yet"
+                    Shape::Value(value_type) => {
+                        let called = match &expression.kind {
+                            ExpressionKind::Call { callee, .. } => Some(callee.written()),
+                            ExpressionKind::Slide { steps, .. } => {
+                                steps.last().map(|step| step.callee.written())
+                            }
+                            _ => None,
                         };
-                        self.messages
-                            .push(Message::not_designed_yet(expression.place, what));
+                        let message = match called {
+                            // trace: D120
+                            Some(name) => Message::refused(
+                                expression.place,
+                                format!(
+                                    "`{name}` gives back a `{}`, but nothing uses it",
+                                    value_type.name()
+                                ),
+                            )
+                            .why("a call that gives back a value is used: kept in a variable, passed on, or compared."),
+                            None => Message::not_designed_yet(
+                                expression.place,
+                                "a statement that's only a value isn't decided yet",
+                            ),
+                        };
+                        self.messages.push(message);
                         None
                     }
                 }
