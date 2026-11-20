@@ -104,6 +104,9 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    `unsafe` block has a comment saying why it's safe. A bad program never crashes PlainCompiler: if PlainCompiler
    itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle, in C, builds with Clang,
    with warnings as errors and sanitizers on (D52, D53). (From Cyborg's rules 6 and 7.)
+4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
+   mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
+   the design session first. (From Cyborg's rule 18.)
 
 ## Prompting
 
