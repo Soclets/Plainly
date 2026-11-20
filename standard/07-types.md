@@ -6,7 +6,7 @@ A whole number from -9223372036854775808 to 9223372036854775807, negatives inclu
 `i64` (D15).
 
 ```
-let secret: Whole = 42;
+let $secret: Whole = 42;
 ```
 
 `Whole` has no second name. Other sizes, if they come, are different types with names of their own (D15).
@@ -17,23 +17,23 @@ let secret: Whole = 42;
 (D27):
 
 ```
-tries = tries + 1;
-let left: Whole = 5 - tries;
-let back: Whole = -speed;
+$tries = $tries + 1;
+let $left: Whole = 5 - $tries;
+let $back: Whole = -$speed;
 ```
 
 `+` is only for numbers (D27). `*` multiplies, with a space on each side (D59):
 
 ```
-let total: Whole = price * count;
+let $total: Whole = $price * $count;
 ```
 
 ### Dividing
 
 ```
-let half: Whole = 8 / 2;
-let each: Whole = 7 div.floor 2;
-let each: Whole = 7 div.trunc 2;
+let $half: Whole = 8 / 2;
+let $each: Whole = 7 div.floor 2;
+let $each: Whole = 7 div.trunc 2;
 ```
 
 These give 4, 3 and 3. With -7 in place of 7, `div.floor` gives -4 and `div.trunc` gives -3.
@@ -50,8 +50,8 @@ These give 4, 3 and 3. With -7 in place of 7, `div.floor` gives -4 and `div.trun
 `rem.floor` and `rem.trunc` give what's left after dividing, each matching its division (D71):
 
 ```
-let left: Whole = 7 rem.floor 2;
-let left: Whole = 7 rem.trunc 2;
+let $left: Whole = 7 rem.floor 2;
+let $left: Whole = 7 rem.trunc 2;
 ```
 
 Both give 1. With -7, `rem.floor` gives 1, with the sign of the number divided by, so `-1 rem.floor 8` is 7; and
@@ -85,8 +85,8 @@ number types.
 `true` or `false` (D33):
 
 ```
-var won: Bool = false;
-won = guess == secret;
+var $won: Bool = false;
+$won = $guess == $secret;
 ```
 
 A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool` is short for Boolean (D2).
@@ -98,7 +98,7 @@ A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool
 Text, written in double quotes (D21):
 
 ```
-let name: Text = "Mia";
+let $name: Text = "Mia";
 show_msg("Don't give up!");
 ```
 
@@ -108,7 +108,7 @@ Single quotes aren't used for text (D21).
 visible where a number becomes text (D22, D28):
 
 ```
-show_msg("You got it in " & be.Text(tries) & " tries.");
+show_msg("You got it in " & be.Text($tries) & " tries.");
 ```
 
 ### Filling in text
@@ -117,14 +117,14 @@ show_msg("You got it in " & be.Text(tries) & " tries.");
 (D29):
 
 ```
-show_msg.fmt("You got it in {tries} tries.");
-let line: Text = be.Text.fmt("{name}: {score}");
+show_msg.fmt("You got it in {$tries} tries.");
+let $line: Text = be.Text.fmt("{$name}: {$score}");
 ```
 
-- **Braces hold only a variable's name;** a calculation or a call in them is refused (D29).
+- **Braces hold only a variable's name, with its `$`;** a calculation or a call in them is refused (D29).
 - **A number in braces becomes text by itself** (D29).
 - **The text is checked at compile time:** a name in braces that isn't a variable is refused (D29).
-- **Without `.fmt`, text is plain,** so `show_msg("{tries}")` shows exactly `{tries}` (D29).
+- **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).
 
 `fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first
 (D31).
@@ -136,7 +136,7 @@ and `\\` a backslash. Only `{` needs escaping in `.fmt` text, since a `}` with n
 doesn't start C-style codes, so `\n` isn't a new line (D30).
 
 ```
-show_msg.fmt("Type \{help} to see the commands, {name}.");
+show_msg.fmt("Type \{help} to see the commands, {$name}.");
 show_msg("She said \"hi\".");
 ```
 
@@ -149,9 +149,9 @@ Empty text is `""` (D76).
 `List<Type>` is a list of one type, written in `[ ]` with commas (D3, D75):
 
 ```
-var students: List<Text> = ["Fern", "Plern", "Churn"];
-let first: Text = students[pos: 1];
-let also_first: Text = students[offset: 0];
+var $students: List<Text> = ["Fern", "Plern", "Churn"];
+let $first: Text = $students[pos: 1];
+let $also_first: Text = $students[offset: 0];
 ```
 
 - **An item is reached with `pos:`, counting from 1, or `offset:`, counting from 0.** A bare number is refused (D75).
@@ -166,10 +166,10 @@ A value's methods are called with a plain `.` after it, and a method that change
 `var` (D77):
 
 ```
-students.add("Churn");
-students.add("Tankun", pos: 1);
-students.remove(pos: 2);
-students[pos: 1] = "Mia";
+$students.add("Churn");
+$students.add("Tankun", pos: 1);
+$students.remove(pos: 2);
+$students[pos: 1] = "Mia";
 ```
 
 - **`.add(item)`** puts it at the end, and **`.add(item, pos: n)`** or `offset: n` at that place (D80).
@@ -180,7 +180,7 @@ After a value's `.`, a name with no `( )` is a fact the value already knows, rea
 number of items is `.len` (D79):
 
 ```
-let count: Whole = students.len;
+let $count: Whole = $students.len;
 ```
 
 **Not decided:** which other methods and facts lists and text have; how a type's methods are declared;
@@ -197,8 +197,8 @@ be.Type(value)
 where `Type` is the type it becomes and `value` the value converted.
 
 ```
-let guess: Whole = be.Whole(typed);
-show_msg(be.Text(guess));
+let $guess: Whole = be.Whole($typed);
+show_msg(be.Text($guess));
 ```
 
 - **Converting to the type a value already is, is refused,** since it does nothing (D22).

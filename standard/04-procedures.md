@@ -26,7 +26,7 @@ A procedure that gives back a value says so at the end of its header, with `retu
 A procedure that gives nothing back writes no `returns` (D38):
 
 ```
-proc greet(name: Text):
+proc greet($name: Text):
 ```
 
 Using what such a procedure gives as a value is refused (D38).
@@ -41,14 +41,13 @@ Using what such a procedure gives as a value is refused (D38).
 
 ### Parameters
 
-A parameter is written as its name, `:` and its type. When two or more parameters all share one type, the type is
-written once, in front, and covers them all; with mixed types, or a single parameter, each writes its own. The other
-form is refused (D61):
+Each parameter is written as its name, with its `$`, then `:` and its type, as a declaration is, even when several
+share a type (D125, D126). Writing a shared type once in front, as in `proc add(Whole a, b)`, is refused (D126):
 
 ```
-proc add(Whole a, b) returns Whole:
-proc draw(x: Whole, name: Text):
-proc double(n: Whole) returns Whole:
+proc add($a: Whole, $b: Whole) returns Whole:
+proc draw($x: Whole, $name: Text):
+proc double($n: Whole) returns Whole:
 ```
 
 Failures in a header: chapter 8.
@@ -99,11 +98,11 @@ where `kind` is what the family holds (`proc` for a procedure and its narrowings
 
 ```
 fam.proc show_msg:
-    proc show_msg(text: Text):
+    proc show_msg($text: Text):
         ...
     end proc show_msg
 
-    proc show_msg.same_line(text: Text):
+    proc show_msg.same_line($text: Text):
         ...
     end proc show_msg.same_line
 end fam.proc show_msg
@@ -125,7 +124,7 @@ Handler families: chapter 8.
 A call writes the procedure's name and `( )`, with its arguments inside, even when there are none (D3, D4):
 
 ```
-let total: Whole = add(1, 2);
+let $total: Whole = add(1, 2);
 show_score();
 ```
 
@@ -137,7 +136,7 @@ its value thrown away, is refused; a call that gives nothing stands alone (D120)
 A procedure can give its arguments labels, and every call writes them, with `:` after each (D24):
 
 ```
-let secret: Whole = random(from: 1, to: 100);
+let $secret: Whole = random(from: 1, to: 100);
 ```
 
 - **The procedure's writer chooses each label.** A call can't leave one off, or write one the procedure doesn't have
@@ -154,13 +153,13 @@ where each `parameter` is one of the procedure's parameters and `label` the word
 the commas and the `;` are written as they are.
 
 ```
-proc random(low: Whole, high: Whole) returns Whole:
-    labels low as from, high as to;
+proc random($low: Whole, $high: Whole) returns Whole:
+    labels $low as from, $high as to;
     ...
 end proc random
 ```
 
-where `...` stands for the rest of the body. Inside, the procedure uses `low` and `high`, and callers write `from:` and
+where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:` and
 `to:` (D25).
 
 **Not decided:** defaults; label order.
@@ -182,8 +181,8 @@ A slide passes the value on the left of `|>` into the next step as its first arg
 in the order it runs (D5):
 
 ```
-points |> be.Text |> show_msg;
-score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
+$points |> be.Text |> show_msg;
+$score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
 ```
 
 - **A step with nothing else to pass is bare,** with no `( )`: `|> be.Text`.
@@ -218,7 +217,7 @@ ask(question)
 where `question` is the text shown.
 
 ```
-let typed: Text = ask("Your guess: ");
+let $typed: Text = ask("Your guess: ");
 ```
 
 What's typed always comes back as text, even digits: typing `42` gives `"42"`, not the number 42 (D20).

@@ -42,14 +42,16 @@ message".
 
 ## Names
 
-A variable's name is a plain word with no mark, like `secret` or `tries`, written the same where it's made and where
-it's used. A procedure's name is a plain word too, like `larger` or `roll_dice` (D58).
+A variable's name starts with `$`, like `$secret` or `$tries`, written the same where it's made and where it's used. A
+parameter is a variable too, so its name has the `$`. A procedure's name is a plain word, like `larger` or `roll_dice`,
+with no `$` (D125).
 
-A name can't be a keyword: a program using a keyword as a name is refused, and a keyword added later can make an older
-program need a rename (D58).
+Since `$` keeps them apart, a variable's name can be a keyword, as in `$if`, and a keyword added later never breaks a
+program's names; a variable can also share a procedure's name, as in `let $roll: Whole = roll();` (D125, D127). A
+procedure's name can't be a keyword (D58, for procedures).
 
-A name is lowercase English letters `a` to `z`, digits, and `_` between words, starting with a letter: `player2`,
-`hp_max_2`. No capitals, and `_` never at the start or end, nor two in a row (D99).
+A name, after a variable's `$`, is lowercase English letters `a` to `z`, digits, and `_` between words, starting with
+a letter: `$player2`, `$hp_max_2`, `roll_dice`. No capitals, and `_` never at the start or end, nor two in a row (D99).
 
 **Not decided:** letters beyond English.
 

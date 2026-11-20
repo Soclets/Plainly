@@ -11,7 +11,7 @@ end proc.main
 Every statement ends with `;` (D7). A statement can run over several lines, and ends only at its `;`:
 
 ```
-score
+$score
 |> clamp(min: 0, max: 100)
 |> be.Text
 |> show_msg;
@@ -71,13 +71,13 @@ them all (D100).
 
 ```
 /// Gives the larger of two whole numbers.
-proc larger(Whole a, b) returns Whole:
-    // the tie goes to b
+proc larger($a: Whole, $b: Whole) returns Whole:
+    // the tie goes to $b
     ...
 end proc larger
 
 comment old_scoring:
-    let bonus: Whole = tries * 10;
+    let $bonus: Whole = $tries * 10;
 end comment old_scoring
 ```
 

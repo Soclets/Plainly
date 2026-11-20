@@ -5,16 +5,16 @@
 A new variable is declared with `let` or `var`, its name, its type and its first value (D13):
 
 ```
-let name: Type = value;
-var name: Type = value;
+let $name: Type = value;
+var $name: Type = value;
 ```
 
-where `name` is the variable's name (D58), `Type` its type, and `value` its first value. `let` or `var`, the `:`, the
+where `$name` is the variable's name, starting with `$` (D125), `Type` its type, and `value` its first value. `let` or `var`, the `:`, the
 `=` and the `;` are written as they are.
 
 ```
-let secret: Whole = 42;
-var tries: Whole = 0;
+let $secret: Whole = 42;
+var $tries: Whole = 0;
 ```
 
 - **`let`:** the value never changes after this line, all the way down (D13, D78).
@@ -27,22 +27,22 @@ A variable declared inside a block (an `if`'s way, an `else`, a loop's body, an 
 ends. After it, the name can be declared again as a new variable, and a `var` from outside that was changed inside
 keeps its new value (D93).
 
-While a variable is in use, in its own block or any block inside it, its name can't be declared again, and a variable
-can't take a procedure's name (D94).
+While a variable is in use, in its own block or any block inside it, its name can't be declared again (D94). A variable
+may share a procedure's name, since `$` keeps them apart (D127).
 
 ## Changing
 
 A `var` gets a new value with its name, `=` and the value, as a statement of its own (D14):
 
 ```
-name = value;
+$name = value;
 ```
 
-where `name` is a `var`'s name and `value` its new value.
+where `$name` is a `var`'s name and `value` its new value.
 
 ```
-var tries: Whole = 0;
-tries = tries + 1;
+var $tries: Whole = 0;
+$tries = $tries + 1;
 ```
 
 - **`=` on a `let` is refused,** since a `let` never changes (D13, D14).
@@ -53,11 +53,11 @@ tries = tries + 1;
 When a list or a record is given to a new name, the line says `copy` or `share`, with no default (D49):
 
 ```
-var b: List<Whole> = copy a;
-var c: List<Whole> = share a;
+var $b: List<Whole> = copy $a;
+var $c: List<Whole> = share $a;
 ```
 
-Changing `b` leaves `a` alone; changing `c` changes `a`. A plain value like a `Whole` needs neither word (D49).
+Changing `$b` leaves `$a` alone; changing `$c` changes `$a`. A plain value like a `Whole` needs neither word (D49).
 
 `let` is deep: nothing reachable through a `let` can ever change, not its items nor the items inside them. So `share`
 is refused between a `let` and a `var`, either way, with `copy` as the fix; it's allowed between two `let`s or two

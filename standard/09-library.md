@@ -7,14 +7,14 @@ colours, drawing at a position and clearing the screen, on Windows, macOS and Li
 ## `random`
 
 ```
-random(from: low, to: high)
+random(from: $low, to: $high)
 ```
 
-where `low` and `high` are whole numbers. It gives a whole number from `low` to `high`, both included, each equally
+where `$low` and `$high` are whole numbers. It gives a whole number from `$low` to `$high`, both included, each equally
 likely (D26).
 
 ```
-let secret: Whole = random(from: 1, to: 100);
+let $secret: Whole = random(from: 1, to: 100);
 ```
 
 It's game randomness, fine for dice and loot, not for anything that must be unguessable (D26).
