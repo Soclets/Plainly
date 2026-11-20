@@ -17,10 +17,12 @@
 //! first. The step still to come is in `compiler/PROGRESS.md`.
 
 mod color;
+pub mod handles;
 mod heap;
 mod object;
 mod stack_roots;
 
+use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Condvar, Mutex, MutexGuard};
 
@@ -73,6 +75,8 @@ struct Collector {
     worker_batches: usize,
     /// The longest the program has been paused for a collection, in microseconds.
     longest_pause_microseconds: u128,
+    /// Kept handles' references (D105), roots shared by every thread, by slot; `None` is a free slot.
+    kept: Vec<Option<u64>>,
 }
 
 /// Where a collection is (D69).
@@ -134,6 +138,7 @@ fn new_collector() -> Collector {
         moved_objects: 0,
         worker_batches: 0,
         longest_pause_microseconds: 0,
+        kept: Vec::new(),
     }
 }
 
@@ -172,12 +177,21 @@ pub unsafe fn start(stack_maps: *const u64, main_frame: usize) -> Result<(), All
 /// Any reference the caller holds outside the stack maps' slots may be out of date after this returns, since a
 /// collection moves objects; the runtime reads what it needs from its arguments before allocating.
 pub fn allocate(kind: ObjectKind, length: usize) -> Result<u64, AllocationError> {
+    allocate_with_roots(kind, length, &mut [])
+}
+
+/// [`allocate`], with `roots` as roots too: an `extern.rust` call's handles (D105), which a collection may heal.
+pub(crate) fn allocate_with_roots(
+    kind: ObjectKind,
+    length: usize,
+    roots: &mut [Cell<u64>],
+) -> Result<u64, AllocationError> {
     let mut guard = lock()?;
     if guard
         .as_ref()
         .is_some_and(|collector| collector.main_frame != 0)
     {
-        guard = run_collection(guard)?;
+        guard = run_collection(guard, roots)?;
     }
     let collector = guard.get_or_insert_with(new_collector);
     let object = collector.heap.allocate(kind, length)?;
@@ -194,6 +208,7 @@ pub fn allocate(kind: ObjectKind, length: usize) -> Result<u64, AllocationError>
 /// collect-often mode, it waits for PlainGC's thread first, so every allocation moves the collection one phase on.
 fn run_collection(
     guard: MutexGuard<'static, Option<Collector>>,
+    roots: &mut [Cell<u64>],
 ) -> Result<MutexGuard<'static, Option<Collector>>, AllocationError> {
     let stress = guard.as_ref().is_some_and(|collector| collector.stress);
     let mut guard = if stress {
@@ -237,7 +252,7 @@ fn run_collection(
     // An allocation that moves a collection on doesn't also start the next, so the program always runs a while in
     // every phase.
     if collector.phase == Phase::Idle && !moved_on && (collector.stress || due) {
-        begin_marking(collector)?;
+        begin_marking(collector, roots)?;
         if !collector.worker_started {
             std::thread::Builder::new()
                 .name("PlainGC".to_string())
@@ -255,15 +270,32 @@ fn run_collection(
 }
 
 /// Starts a marking, with the program paused for its stack's roots only.
-fn begin_marking(collector: &mut Collector) -> Result<(), AllocationError> {
+fn begin_marking(
+    collector: &mut Collector,
+    handles: &mut [Cell<u64>],
+) -> Result<(), AllocationError> {
     let Collector {
         heap,
         table,
         main_frame,
         phase,
+        kept,
         ..
     } = collector;
     let mut roots = |visitor: &mut dyn FnMut(&mut usize)| {
+        // Kept handles and the current call's handles (D105), then the stack.
+        for reference in kept
+            .iter_mut()
+            .flatten()
+            .chain(handles.iter_mut().map(Cell::get_mut))
+        {
+            let mut slot = *reference as usize;
+            visitor(&mut slot);
+            *reference = slot as u64;
+        }
+        if *main_frame == 0 {
+            return Ok(());
+        }
         // SAFETY: the program's frames and the runtime's keep frame pointers, and `table` describes the compiled
         // code on this stack, as `start` was promised. This runs on the program's own thread.
         unsafe { stack_roots::visit(table, *main_frame, visitor) }.map_err(HeapError::Internal)
@@ -321,6 +353,70 @@ pub fn heal(reference: u64) -> Result<u64, AllocationError> {
     with_collector(|collector| Ok(collector.heap.heal(reference)?))
 }
 
+/// Registers a kept handle's reference as a root (D105), giving its slot.
+pub(crate) fn keep_root(reference: u64) -> Result<usize, AllocationError> {
+    with_collector(|collector| {
+        if let Some(slot) = collector.kept.iter().position(Option::is_none) {
+            collector.kept[slot] = Some(reference);
+            return Ok(slot);
+        }
+        collector.kept.push(Some(reference));
+        Ok(collector.kept.len() - 1)
+    })
+}
+
+/// A kept handle's reference, through the load barrier, healed in its slot.
+pub(crate) fn kept_root(slot: usize) -> Result<u64, AllocationError> {
+    with_collector(|collector| {
+        let Some(Some(reference)) = collector.kept.get(slot).copied() else {
+            return Err(AllocationError::Internal(format!(
+                "kept handle {slot} isn't registered"
+            )));
+        };
+        let healed = if reference & plainly_gc_bad_mask.load(Ordering::SeqCst) != 0 {
+            collector.heap.heal(reference)?
+        } else {
+            reference
+        };
+        collector.kept[slot] = Some(healed);
+        Ok(healed)
+    })
+}
+
+/// Releases a kept handle's slot, so its value is no longer a root.
+pub(crate) fn release_root(slot: usize) {
+    let _ = with_collector(|collector| {
+        if let Some(reference) = collector.kept.get_mut(slot) {
+            *reference = None;
+        }
+        Ok(())
+    });
+}
+
+/// A whole collection, every phase in a row, with kept handles and `roots` as the only roots, moving every object it
+/// can: for the handles' tests, which run without a program's stack.
+#[cfg(test)]
+pub(crate) fn collect_everything(roots: &mut [Cell<u64>]) -> Result<(), AllocationError> {
+    with_collector(|collector| {
+        begin_marking(collector, roots)?;
+        while !collector.heap.mark_some(usize::MAX)? {}
+        collector.heap.end_marking(true)?;
+        while !collector.heap.relocate_some(usize::MAX)? {}
+        collector.moved_objects += collector.heap.end_relocation();
+        collector.collections += 1;
+        collector.phase = Phase::Idle;
+        plainly_gc_bad_mask.store(
+            color::bad_mask(collector.heap.good_color()),
+            Ordering::SeqCst,
+        );
+        Ok(())
+    })
+}
+
+/// Tests that use the one global heap take this, so a collection in one never frees another's objects.
+#[cfg(test)]
+pub(crate) static TEST_LOCK: Mutex<()> = Mutex::new(());
+
 /// The address of the object a reference points to, whatever its color. Only an up-to-date reference, one that has
 /// passed the load barrier, points where its object is now.
 pub fn address(reference: u64) -> *mut u8 {
@@ -360,6 +456,7 @@ mod tests {
 
     #[test]
     fn allocation_before_start_never_collects() {
+        let _alone = TEST_LOCK.lock();
         let first = allocate(ObjectKind::Bytes, 3);
         let second = allocate(ObjectKind::Bytes, 16);
         assert!(
@@ -375,6 +472,7 @@ mod tests {
 
     #[test]
     fn a_fresh_reference_passes_the_barrier() {
+        let _alone = TEST_LOCK.lock();
         let reference = allocate(ObjectKind::Bytes, 1).unwrap_or(0);
         assert_ne!(reference, 0);
         assert_eq!(reference & plainly_gc_bad_mask.load(Ordering::SeqCst), 0);

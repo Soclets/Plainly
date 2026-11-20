@@ -5,6 +5,9 @@
 //! Every message's wording here is a draft (D54), listed in `compiler/PROGRESS.md`.
 
 use std::io::{BufRead, Write};
+
+use plain_gc::AllocationError;
+use plain_gc::handles::{Call, Handle, Text};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 // trace: D56
@@ -99,13 +102,10 @@ fn internal_error(what: &str) -> ! {
     std::process::exit(STATUS_INTERNAL_ERROR);
 }
 
-/// Makes new text through PlainGC, holding `bytes`. A `Text` is a PlainGC object of kind `Bytes` (D69).
-///
-/// A collection can happen here and move every object, so callers copy what they need out of other texts first.
-fn new_text(bytes: &[u8]) -> *const u8 {
-    let reference = match plain_gc::allocate(plain_gc::ObjectKind::Bytes, bytes.len()) {
-        Ok(reference) => reference,
-        Err(plain_gc::AllocationError::OutOfMemory) => {
+/// Stops the program when PlainGC can't go on: out of memory, or a bug in PlainGC itself.
+fn gc_failed(error: plain_gc::AllocationError) -> ! {
+    match error {
+        plain_gc::AllocationError::OutOfMemory => {
             let message = format!(
                 "NotDesignedYet: the program ran out of memory\n{}",
                 labelled_line(
@@ -117,39 +117,32 @@ fn new_text(bytes: &[u8]) -> *const u8 {
             let _ = std::io::stderr().write_all(message.as_bytes());
             std::process::exit(STATUS_NOT_YET);
         }
-        Err(plain_gc::AllocationError::Internal(what)) => internal_error(&what),
-    };
-    let memory = plain_gc::address(reference);
-    // SAFETY: `memory` is a fresh object with a payload of `bytes.len()` bytes, starting `PAYLOAD_OFFSET` bytes in,
-    // and nothing else uses it yet.
-    unsafe {
-        std::ptr::copy_nonoverlapping(
-            bytes.as_ptr(),
-            memory.add(plain_gc::PAYLOAD_OFFSET),
-            bytes.len(),
-        );
+        plain_gc::AllocationError::Internal(what) => internal_error(&what),
     }
-    // Compiled code holds the colored reference (D69).
-    reference as *const u8
 }
 
-/// A text's bytes. They stay put only until the next allocation, which may move them.
+/// Runs `work` as one call holding PlainGC handles (D105), the way `extern.rust` code will: Rust's borrow checker
+/// makes sure no look at a text is held while one is made, since making one can move every object.
+fn with_handles<R>(
+    work: impl for<'call> FnOnce(&mut Call<'call>) -> Result<R, AllocationError>,
+) -> R {
+    // trace: D105
+    plain_gc::handles::with_call(work).unwrap_or_else(|error| gc_failed(error))
+}
+
+/// A handle to a text compiled code passed in.
 ///
 /// # Safety
 ///
-/// `text` must be a colored reference to a `Text` made by [`new_text`], still live, that has passed the load
-/// barrier, as every reference compiled code passes has.
-unsafe fn text_bytes<'a>(text: *const u8) -> &'a [u8] {
-    let object = plain_gc::address(text as u64);
-    if object.is_null() {
-        return &[];
-    }
-    // SAFETY: the caller promises `text` is up to date, so `object` is a live PlainGC object of kind `Bytes`, whose
-    // payload holds the text.
-    unsafe {
-        let length = plain_gc::payload_length(object);
-        std::slice::from_raw_parts(object.add(plain_gc::PAYLOAD_OFFSET), length)
-    }
+/// `text` must be the colored reference to a live `Text`, as compiled code passes after its load barrier.
+unsafe fn adopt<'call>(call: &mut Call<'call>, text: *const u8) -> Handle<'call, Text> {
+    // SAFETY: passed on from this function's own promise.
+    unsafe { call.adopt_text(text as u64) }
+}
+
+/// Makes new text, holding `text`, and gives the compiled program its colored reference (D69).
+fn new_text(text: &str) -> *const u8 {
+    with_handles(|call| call.new_text(text)?.reference(call)) as *const u8
 }
 
 /// The load barrier's slow path, which compiled code calls for a reference of a bad color (D69).
@@ -157,10 +150,7 @@ unsafe fn text_bytes<'a>(text: *const u8) -> &'a [u8] {
 pub extern "C" fn plainly_gc_heal(reference: *const u8) -> *const u8 {
     match plain_gc::heal(reference as u64) {
         Ok(healed) => healed as *const u8,
-        Err(plain_gc::AllocationError::Internal(what)) => internal_error(&what),
-        Err(plain_gc::AllocationError::OutOfMemory) => {
-            internal_error("PlainGC's barrier ran out of memory")
-        }
+        Err(error) => gc_failed(error),
     }
 }
 
@@ -173,11 +163,14 @@ pub extern "C" fn plainly_gc_heal(reference: *const u8) -> *const u8 {
 pub unsafe extern "C" fn plainly_text_from_bytes(bytes: *const u8, length: i64) -> *const u8 {
     let length = usize::try_from(length).unwrap_or(0);
     if bytes.is_null() || length == 0 {
-        return new_text(&[]);
+        return new_text("");
     }
     // SAFETY: the caller promises `bytes` points to `length` readable bytes.
     let slice = unsafe { std::slice::from_raw_parts(bytes, length) };
-    new_text(slice)
+    match std::str::from_utf8(slice) {
+        Ok(text) => new_text(text),
+        Err(_) => internal_error("text written in the program isn't UTF-8"),
+    }
 }
 
 /// `&`: new text holding `left`, then `right` (D28).
@@ -187,18 +180,19 @@ pub unsafe extern "C" fn plainly_text_from_bytes(bytes: *const u8, length: i64) 
 /// Both must be `Text`s made by this runtime.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_text_join(left: *const u8, right: *const u8) -> *const u8 {
-    // SAFETY: the caller promises both are texts from this runtime.
-    let (left, right) = unsafe { (text_bytes(left), text_bytes(right)) };
-    let mut joined = Vec::with_capacity(left.len() + right.len());
-    joined.extend_from_slice(left);
-    joined.extend_from_slice(right);
-    new_text(&joined)
+    with_handles(|call| {
+        // SAFETY: the caller promises both are live texts, as compiled code passes them.
+        let (left, right) = unsafe { (adopt(call, left), adopt(call, right)) };
+        // Both looks end here, before making the joined text can move anything.
+        let joined = format!("{}{}", left.read(call)?, right.read(call)?);
+        call.new_text(&joined)?.reference(call)
+    }) as *const u8
 }
 
 /// `be.Text` of a `Whole`: its digits, with `-` in front when it's negative (D22).
 #[unsafe(no_mangle)]
 pub extern "C" fn plainly_whole_to_text(value: i64) -> *const u8 {
-    new_text(value.to_string().as_bytes())
+    new_text(&value.to_string())
 }
 
 /// `be.Whole` of text (D22, D95). Writes the number to `result` and gives 1, or gives 0 when the text isn't a
@@ -210,7 +204,12 @@ pub extern "C" fn plainly_whole_to_text(value: i64) -> *const u8 {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_text_to_whole(text: *const u8, result: *mut i64) -> u8 {
     // SAFETY: the caller promises `text` is a text from this runtime.
-    let value = read_whole(unsafe { text_bytes(text) });
+    // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
+    let value = with_handles(|call| {
+        Ok(read_whole(
+            unsafe { adopt(call, text) }.read(call)?.as_bytes(),
+        ))
+    });
     if !result.is_null() {
         // SAFETY: the caller promises `result` points to 8 writable bytes.
         unsafe { result.write(value.unwrap_or(0)) };
@@ -264,7 +263,11 @@ fn write_output(bytes: &[u8], end_line: bool) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_show_msg(text: *const u8) {
     // SAFETY: the caller promises `text` is a text from this runtime.
-    write_output(unsafe { text_bytes(text) }, true);
+    with_handles(|call| {
+        // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
+        write_output(unsafe { adopt(call, text) }.read(call)?.as_bytes(), true);
+        Ok(())
+    });
 }
 
 /// `show_msg.same_line`: shows text and leaves the line open (D6).
@@ -275,7 +278,11 @@ pub unsafe extern "C" fn plainly_show_msg(text: *const u8) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn plainly_show_msg_same_line(text: *const u8) {
     // SAFETY: the caller promises `text` is a text from this runtime.
-    write_output(unsafe { text_bytes(text) }, false);
+    with_handles(|call| {
+        // SAFETY: the caller promises `text` is a live text, as compiled code passes it.
+        write_output(unsafe { adopt(call, text) }.read(call)?.as_bytes(), false);
+        Ok(())
+    });
 }
 
 /// `ask`: shows the question, leaves the cursor on its line, waits for Enter, and gives back what was typed,
@@ -292,8 +299,16 @@ pub unsafe extern "C" fn plainly_ask(
     site_length: i64,
 ) -> *const u8 {
     // SAFETY: the caller promises `question` is a text from this runtime and `site` is valid.
-    let (question, site) = unsafe { (text_bytes(question), site_text(site, site_length)) };
-    write_output(question, false);
+    // SAFETY: the caller promises `site` is valid.
+    let site = unsafe { site_text(site, site_length) };
+    with_handles(|call| {
+        // SAFETY: the caller promises `question` is a live text, as compiled code passes it.
+        write_output(
+            unsafe { adopt(call, question) }.read(call)?.as_bytes(),
+            false,
+        );
+        Ok(())
+    });
     let mut line = Vec::new();
     let read = std::io::stdin().lock().read_until(b'\n', &mut line);
     match read {
@@ -319,14 +334,14 @@ pub unsafe extern "C" fn plainly_ask(
             line.pop();
         }
     }
-    if std::str::from_utf8(&line).is_err() {
-        stop_not_designed_yet(
+    match std::str::from_utf8(&line) {
+        Ok(text) => new_text(text),
+        Err(_) => stop_not_designed_yet(
             site,
             "typed input that isn't UTF-8 text isn't decided yet".to_string(),
             None,
-        );
+        ),
     }
-    new_text(&line)
 }
 
 // ----- Randomness -----
@@ -532,10 +547,12 @@ mod tests {
 
     #[test]
     fn d28_joins_text() {
-        let left = new_text(b"Hello, ");
-        let right = new_text(b"Mia");
+        let left = new_text("Hello, ");
+        let right = new_text("Mia");
         // SAFETY: both texts come from `new_text`.
-        let joined = unsafe { text_bytes(plainly_text_join(left, right)) };
-        assert_eq!(joined, b"Hello, Mia");
+        let joined = unsafe { plainly_text_join(left, right) };
+        // SAFETY: as above.
+        let read = with_handles(|call| Ok(unsafe { adopt(call, joined) }.read(call)?.to_string()));
+        assert_eq!(read, "Hello, Mia");
     }
 }
