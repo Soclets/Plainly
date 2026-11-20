@@ -26,12 +26,13 @@ UndefinedBehaviorSanitizer (D53).
 
 ```
 plainly run game.plainly --working
-plainly build game.plainly --final
+plainly compile game.plainly --final
 plainly check game.plainly
 plainly oracle game.plainly
 ```
 
-- **`run`** builds to a temporary file and runs it; **`build`** makes the file to ship. Both need a mode (D46, D50).
+- **`run`** compiles to a temporary file and runs it; **`compile`** makes the file to ship. Both need a mode (D46, D50,
+  D91).
 - **`check`** reports what's refused without building, and needs no mode (D50).
 - **`oracle`** runs the file on PlainOracle (D51), the separate reference implementation, printing exactly what the compiled
   program would. `plainly` forwards to the oracle's own program (D50).
@@ -40,7 +41,7 @@ plainly oracle game.plainly
 
 - **While you edit,** PlainCompiler compiles after every save on one background thread, inside the editor support,
   filling the cache (D65).
-- **`plainly run` and `plainly build`** compile whatever isn't cached on every CPU core (D65).
+- **`plainly run` and `plainly compile`** compile whatever isn't cached on every CPU core (D65).
 - **The cache** keeps each compiled piece under a fingerprint of everything that affects it, in the system's cache
   folder, shared by every project, so only what changed is recompiled, and a build never differs because of it (D65).
 

@@ -2785,3 +2785,27 @@ Tankun raised it.
 What's the "space" in "every name in a program shares one space, so two procedures can’t have one name."", then,
 asked "Compile time and runtime everywhere, in place of while building and while
 running?", the owner chose: "yea, what about `plainly compile`?"
+
+## D91. The command that makes the file to ship is `plainly compile`
+
+2026-11-20.
+
+**Chosen.** `plainly build` (D50) becomes `plainly compile`:
+
+```
+plainly compile game.plainly --final
+plainly run game.plainly --working
+plainly check game.plainly
+```
+
+It still needs a mode (D46), and `run`, `check` and `oracle` stay as they are.
+
+**Weighed.**
+- `build`, as D50 had it. A second word for the act D90 calls compiling, and in other tools (Cargo, Go, npm) "build"
+  also means fetching packages, running scripts and bundling, which this command doesn't do.
+
+**Why this won.** "Compile time is when `plainly compile` runs": one word for one thing (D2), matching D90. Tankun
+raised it.
+
+**Tankun's words.** "yea, what about `plainly compile`?" (in D90's answer); then, asked "`plainly compile` in place of
+`plainly build`?", the owner chose: "yea".

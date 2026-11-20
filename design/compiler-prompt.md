@@ -44,7 +44,7 @@ message instead of a wrong answer.
 <first_milestone>
 Compile every program in `tests/` and the guessing game to a native executable, in `working` mode:
 
-- **The command,** `plainly`, with `run`, `build` and `check` (D50), and the `--working` mode (D46). `--final`,
+- **The command,** `plainly`, with `run`, `compile` and `check` (D50, D91), and the `--working` mode (D46). `--final`,
   `plainly oracle`, background compiling and the cache (D65) come in later milestones.
 - **The stages** from D62: syntax tree, typed tree (where refusals happen, and where `check` stops), Plainly IR, then
   Cranelift IR and native code (D45). Keep Plainly IR even though there are no optimizations yet: `final` mode's
