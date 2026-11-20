@@ -120,6 +120,13 @@ with `&` (D28); a keyword as a name (D58). Each is marked `// trace: D87`.
 what a no-`returns` procedure gives, and `return value;` without `returns` (D38); the four `return` messages (D57); a
 line after an `if` that can leave (D9); `break` outside a loop (D32). Each is marked `// trace: D88`.
 
+**Approved in D89,** with "but" wherever a `what:` sets what's expected against what was found, which also changed
+D87's comparison and D88's argument count: a slid value of the wrong type (D5); the value after `??` of the wrong
+type (D23); the four `labels` messages (D25); `-` on something that isn't a number, and a space after a negating `-`
+(D27); maths on anything but two `Whole`s (D27, D59); a `Bool` joined with `&`, with its own `why:` (D28);
+`show_msg.same_line.fmt` (D31); both parameter forms (D61); `&` next to maths (D72). Each is marked `// trace: D89`.
+"But" is used the same way in the drafts still waiting.
+
 ### Refusals
 
 | Decision | Refused | `fix:` or `what:` | `why:` |
@@ -127,7 +134,7 @@ line after an `if` that can leave (D9); `break` outside a loop (D32). Each is ma
 | D4 | `( )` on a definition with no parameters | fix: the line without `()` | a definition writes `( )` only when it has parameters. |
 | D4 | parameters on `proc.main` | what: `proc.main` takes nothing | only the program's start runs `proc.main`, so it's never given anything. |
 | D5 | `()` on a step with nothing else to pass | fix: the step bare | a step with nothing else to pass is written bare, since the slide gives it its value. |
-| D5 | the slid value's type is wrong | what: `` `f` takes a `Whole` first, and the slid value is a `Text` `` | a slide passes the value on its left in as the step's first argument. |
+| D5 | the slid value's type is wrong | what: `` `f` takes a `Whole` first, but the slid value is a `Text` `` | a slide passes the value on its left in as the step's first argument. |
 | D7 | a missing `;` | fix: the line with `;` | every statement ends with `;`. |
 | D8 | a wrong closer, or `;` after one | fix: the right closer | a closer is `end` and what it closes. / a closer stands alone, with no `;`. |
 | D8 | a missing closer | what: `` `end if` is missing before this line `` or `` the file ends before `end proc.main` `` | every block ends with `end` and what it closes. |
@@ -140,7 +147,7 @@ line after an `if` that can leave (D9); `break` outside a loop (D32). Each is ma
 | D14 | `=` on a `let` | what: `` `lives` can't be given a new value ``; because: line N declares it with `let` | only a `var` can be given a new value. |
 | D14 | `=` in a condition | fix: the line with `==` | `=` gives a variable a value, and is never part of a condition; `==` compares. |
 | D17, D27, D59 | `<`, `>`, `+`, `-`, `*` without a space each side | fix: the spaced line | `<`, `>`, `+`, `-` and `*` between two values have a space on each side. |
-| D17 | comparing two types | what: `` `==` compares two values of one type, and this is a `Whole` and a `Text` `` | a comparison is between two values of the same type. |
+| D17 | comparing two types | what: `` `==` compares two values of one type, but this is a `Whole` and a `Text` `` | a comparison is between two values of the same type. |
 | D18 | spaces around a narrowing's `.` | fix: the joined line | a narrowing's `.` touches the words on both sides. |
 | D21 | text in single quotes | fix: the line with double quotes | text is written in double quotes, never single ones like `'hi'`. |
 | D22 | converting to the type it already is | what: `` this value is already a `Text`, so `be.Text` does nothing `` | converting a value to the type it already is does nothing, so it's refused. |
@@ -150,16 +157,16 @@ line after an `if` that can leave (D9); `break` outside a loop (D32). Each is ma
 | D24 | a missing label | fix: the line with `from: ` | every call writes the labels its procedure chose. |
 | D24 | a label where there's none | fix: the line without it | a call writes only the labels its procedure chose. |
 | D24 | a wrong label | what: `` this argument's label is `to`, not `upto` `` | every call writes the labels its procedure chose. |
-| D24 | too few or too many arguments | what: `` `pick` takes 2 values, and this call gives 1 value ``; because: `` `pick` is declared here `` | a call gives every parameter a value, with its label if it has one. |
+| D24 | too few or too many arguments | what: `` `pick` takes 2 values, but this call gives 1 value ``; because: `` `pick` is declared here `` | a call gives every parameter a value, with its label if it has one. |
 | D25 | `labels` not on the first line | what: a `labels` line can only be the first line of a procedure's body | a procedure declares its labels on the first line of its body. |
 | D25 | a label for a parameter that isn't there | what: `` `pick` has no parameter named `lo` `` | a `labels` line gives labels to the procedure's own parameters. |
 | D25 | two labels on one parameter, or one label twice | what: `` `low` already has a label `` / `` two parameters have the label `from` `` | each parameter has at most one label. / each label names one parameter, so a call can say which value is which. |
-| D27 | `-` on something that isn't a number | what: `` `-` makes a number negative, and this is a `Text` `` | a `-` with no space after it makes a number negative. |
+| D27 | `-` on something that isn't a number | what: `` `-` makes a number negative, but this is a `Text` `` | a `-` with no space after it makes a number negative. |
 | D27 | a space after a negating `-` | fix: the line without it | a `-` that makes a value negative has no space after it. |
 | D27, D28 | `+` on two texts | fix: the line with `&` | `+` is only for numbers, and `&` joins text. |
-| D27, D59 | `+`, `-`, `*` on anything but two `Whole`s | what: `` `+` works on two `Whole`s, and this is a `Bool` and a `Whole` `` | `+`, `-` and `*` are only for numbers. |
+| D27, D59 | `+`, `-`, `*` on anything but two `Whole`s | what: `` `+` works on two `Whole`s, but this is a `Bool` and a `Whole` `` | `+`, `-` and `*` are only for numbers. |
 | D28 | a number joined with `&` | fix: the line with `be.Text(...)` around it | `&` joins two pieces of text, and a number becomes text only where `be.Text` says so. |
-| D28 | a `Bool` joined with `&` | what: `` `&` joins text, and this is a `Bool` `` | (same) |
+| D28 | a `Bool` joined with `&` | what: `` `&` joins text, but this is a `Bool` `` | (same) |
 | D29 | a brace that isn't a variable | what: `` there's no variable named `nme` here `` | braces in `.fmt` text hold a variable's name, checked while building. |
 | D29 | a calculation or a call in braces | what: braces in `.fmt` text hold only a variable's name | text never hides a calculation or a call; work it out into a variable first. |
 | D29 | `.fmt` with no text, or with a label | what: `` `.fmt` takes one piece of text `` / `` `.fmt`'s text has no label `` | `.fmt` fills in the braces of the text it's given. |
@@ -173,7 +180,7 @@ line after an `if` that can leave (D9); `break` outside a loop (D32). Each is ma
 | D57 | `return;` as the last line | what: a bare `return;` as a procedure's last line does nothing | a procedure ends there anyway; `return;` is for leaving early. |
 | D58 | a keyword as a name | what: `` `if` is a keyword, so it can't be a name `` | a name can't be one of Plainly's own words. |
 | D61 | the long form for parameters sharing one type, or the short form for one parameter | fix: the line in the other form | parameters sharing one type write it once, in front, when there are two or more; otherwise each writes its own. |
-| D61 | both forms in one header | what: a header writes one type in front for every parameter, or a type after each, never both | parameters sharing one type write it once, in front; otherwise each writes its own (D61). |
+| D61 | both forms in one header | what: a header writes one type in front for every parameter, or a type after each, never both | parameters sharing one type write it once, in front; otherwise each writes its own. |
 | D64 | two `proc.main`s, two procedures with one name | what: this program has two `proc.main`s / `` there's already a procedure named `pick` ``; because: the first is here | a program has exactly one `proc.main`, where it starts. / every name in a program shares one space, so two procedures can't have one name. |
 | D64 | no `proc.main` | what: this program has no `proc.main` (shown at line 1 column 1 of the first file) | a program starts with `proc.main`. |
 | D81 | two comparisons in a row | fix: the line with `and` and the middle value again, as `1 < x and x < 10` | two comparisons in a row are refused; `and` joins them, naming the middle value twice. |

@@ -430,7 +430,8 @@ impl<'a> Parser<'a> {
                     self.messages.push(Message::refused(
                         self.current().place,
                         "a header writes one type in front for every parameter, or a type after each, never both",
-                    ).why("parameters sharing one type write it once, in front; otherwise each writes its own (D61)."));
+                    // trace: D89
+                    ).why("parameters sharing one type write it once, in front; otherwise each writes its own."));
                     return Err(Skip);
                 }
                 parameters.push(Parameter { name, type_name });
@@ -475,6 +476,7 @@ impl<'a> Parser<'a> {
             && parameters
                 .iter()
                 .all(|parameter| parameter.type_name.known == first_type);
+        // trace: D89
         let why = "parameters sharing one type write it once, in front, when there are two or more; \
                    otherwise each writes its own.";
         if shared_type && parameters.len() == 1 {
@@ -763,6 +765,7 @@ impl<'a> Parser<'a> {
                             place,
                             "a `labels` line can only be the first line of a procedure's body",
                         )
+                        // trace: D89
                         .why("a procedure declares its labels on the first line of its body."),
                     );
                     Err(Skip)
@@ -1360,6 +1363,7 @@ impl<'a> Parser<'a> {
                     "`&` is next to maths without brackets, so it isn't clear which goes first",
                 )
                 .because("the maths is here", maths_place)
+                // trace: D89
                 .why("where maths doesn't say which goes first, `( )` shows it."),
             );
             return Err(Skip);
@@ -1773,6 +1777,7 @@ fn decided_spacing(token: &Token, role: Role) -> Option<&'static str> {
     }
     if role == Role::PrefixMinus {
         // trace: D27
+        // trace: D89
         return Some("a `-` that makes a value negative has no space after it.");
     }
     let spaced = [

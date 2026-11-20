@@ -208,6 +208,7 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
                         procedure.name.text, pair.parameter.text
                     ),
                 )
+                // trace: D89
                 .why("a `labels` line gives labels to the procedure's own parameters."),
             );
             continue;
@@ -218,6 +219,7 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
                     pair.parameter.place,
                     format!("`{}` already has a label", pair.parameter.text),
                 )
+                // trace: D89
                 .why("each parameter has at most one label."),
             );
             continue;
@@ -229,6 +231,7 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
                     format!("two parameters have the label `{}`", pair.label.text),
                 )
                 .because("the first is here", *place)
+                // trace: D89
                 .why("each label names one parameter, so a call can say which value is which."),
             );
             continue;
@@ -768,7 +771,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(Message::not_designed_yet(
                     condition.place,
                     format!(
-                        "whether a condition must be a `Bool` isn't decided, and this is a `{}`",
+                        "whether a condition must be a `Bool` isn't decided, but this is a `{}`",
                         other.name()
                     ),
                 ));
@@ -944,10 +947,11 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             Message::refused(
                                 place,
                                 format!(
-                                    "`-` makes a number negative, and this is a `{}`",
+                                    "`-` makes a number negative, but this is a `{}`",
                                     other.name()
                                 ),
                             )
+                            // trace: D89
                             .why("a `-` with no space after it makes a number negative."),
                         );
                         Checked::unknown(place)
@@ -967,7 +971,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         self.messages.push(Message::not_designed_yet(
                             value.place,
                             format!(
-                                "whether a condition must be a `Bool` isn't decided, and this is a `{}`",
+                                "whether a condition must be a `Bool` isn't decided, but this is a `{}`",
                                 other.name()
                             ),
                         ));
@@ -995,6 +999,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 };
                 // trace: D23
                 self.expect_type(&checked_fallback, expected, |expected, found| {
+                    // trace: D89
                     format!("the call gives a `{expected}`, so the value after `??` must be one too, not a `{found}`")
                 });
                 let shape = checked.shape;
@@ -1083,11 +1088,12 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         Message::refused(
                             operator_place,
                             format!(
-                                "`{written}` works on two `Whole`s, and this is a `{}` and a `{}`",
+                                "`{written}` works on two `Whole`s, but this is a `{}` and a `{}`",
                                 types.0.name(),
                                 types.1.name()
                             ),
                         )
+                        // trace: D89
                         .why("`+`, `-` and `*` are only for numbers.")
                     };
                 self.messages.push(message);
@@ -1108,14 +1114,16 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     }
                     let side_place = side.expression.place;
                     let message = match self.wrap_in_be_text(side_place, side_type, Type::Text) {
-                        Some(edit) => Message::refused_with_fix(side_place, edit),
+                        // trace: D87
+                        Some(edit) => Message::refused_with_fix(side_place, edit)
+                            .why("`&` joins two pieces of text, and a number becomes text only where `be.Text` says so."),
+                        // trace: D89
                         None => Message::refused(
                             side_place,
-                            format!("`&` joins text, and this is a `{}`", side_type.name()),
-                        ),
-                    }
-                    // trace: D87
-                    .why("`&` joins two pieces of text, and a number becomes text only where `be.Text` says so.");
+                            format!("`&` joins text, but this is a `{}`", side_type.name()),
+                        )
+                        .why("`&` joins two pieces of text, and anything else becomes text only where `be.Text` says so."),
+                    };
                     self.messages.push(message);
                 }
                 Checked::unknown(place)
@@ -1133,7 +1141,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(Message::not_designed_yet(
                     operator_place,
                     format!(
-                        "whether `{written}` works on anything but `Bool`s isn't decided, and this is a `{}` and a `{}`",
+                        "whether `{written}` works on anything but `Bool`s isn't decided, but this is a `{}` and a `{}`",
                         types.0.name(),
                         types.1.name()
                     ),
@@ -1173,7 +1181,8 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     Message::refused(
                         operator_place,
                         format!(
-                            "`{written}` compares two values of one type, and this is a `{}` and a `{}`",
+                            // trace: D89
+                            "`{written}` compares two values of one type, but this is a `{}` and a `{}`",
                             types.0.name(),
                             types.1.name()
                         ),
@@ -1438,7 +1447,8 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         let given = offset + arguments.len();
         if given != parameters.len() {
             let what = format!(
-                "`{name}` takes {}, and this call gives {}",
+                // trace: D89
+                "`{name}` takes {}, but this call gives {}",
                 count(parameters.len(), "value"),
                 count(given, "value"),
             );
@@ -1506,7 +1516,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             }
             let value = self.value(&argument.value);
             self.expect_type(&value, *parameter_type, |expected, found| {
-                format!("`{name}` takes a `{expected}` here, and this is a `{found}`")
+                format!("`{name}` takes a `{expected}` here, but this is a `{found}`")
             });
             if let (Shape::Value(found), Some(expected)) = (value.shape, parameter_type)
                 && found != *expected
@@ -1524,11 +1534,12 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 Message::refused(
                     first.expression.place,
                     format!(
-                        "`{name}` takes a `{}` first, and the slid value is a `{}`",
+                        "`{name}` takes a `{}` first, but the slid value is a `{}`",
                         expected.name(),
                         found.name()
                     ),
                 )
+                // trace: D89
                 .why("a slide passes the value on its left in as the step's first argument."),
             );
             refused = true;
@@ -1585,6 +1596,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         replacement,
                     },
                 )
+                // trace: D89
                 .why("narrowings go strongest first: `.fmt` changes what's shown, `.same_line` only where it ends."),
             );
         }
