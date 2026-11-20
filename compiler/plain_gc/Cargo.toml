@@ -1,0 +1,7 @@
+[package]
+name = "plain_gc"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]

@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["plain_compiler", "plain_runtime", "plain_gc"]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0 WITH LLVM-exception"
+version = "0.1.0"
