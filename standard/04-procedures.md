@@ -31,8 +31,8 @@ proc greet($name: Text):
 
 Using what such a procedure gives as a value is refused (D38).
 
-**Not decided:** how a parameter is written; how a procedure gives back its value in its body; how failures are listed
-in a header.
+**Not decided:** how a parameter is written; how a procedure gives back its value in its body. Failures in a header:
+chapter 8.
 
 ## Procedures written in Rust
 

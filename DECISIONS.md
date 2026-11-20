@@ -1131,3 +1131,29 @@ Plainly v1's D46 before its D100.
 
 **Tankun's words.** "`returns nothing or fail`? When there's void & fail?", then, asked "A procedure that gives
 nothing back writes no `returns`, and `fails` alone when it can fail?", the owner chose: "yes".
+
+## D39. A header lists its failures after `fails`, separated by commas, with no brackets
+
+2026-11-20.
+
+**Chosen.** A procedure that can fail lists its failures' names at the end of its header, after `fails`, separated by
+commas. After `returns`, it's joined with `or`; with no `returns`, `fails` stands alone (D38):
+
+```
+proc load_level($name: Text) returns Level or fails not_found, broken:
+proc save_game($state: Text) fails disk_full:
+```
+
+A failure's name is a plain word, like `not_found` or `disk_full`.
+
+(How a procedure fails on purpose, the form of `otherwise:` and its cases, and handler families aren't decided yet.)
+
+**Weighed.**
+- `or fails [not_found, broken]`, as in Plainly v1. Since D3, `[ ]` means a list value, and a failure list is part of
+  the definition. `( )` would look like a call.
+
+**Why this won.** The header reads as English, "returns a Level, or fails: not found, broken", and the failures sit
+next to what the procedure gives back, since a failure is what it can give back instead. The brackets follow the same
+reasoning as D25's `labels` line.
+
+**Tankun's words.** Asked "`fails`, then names separated by commas, no brackets?", the owner chose: "yea".

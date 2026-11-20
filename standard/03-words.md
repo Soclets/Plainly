@@ -26,6 +26,7 @@ message".
 | `.fmt` | format | D2, D29 |
 | `extern`, `.rust` | external | D2, D36 |
 | `returns` | | D37 |
+| `fails`, `or` | | D39 |
 
 **Not decided:** every other keyword.
 
