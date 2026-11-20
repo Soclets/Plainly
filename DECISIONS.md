@@ -110,3 +110,38 @@ anything: `range(from: 1, to: 5)`, say, now looks like the call it is.
 **Tankun's words.** From multifinity's chat (Nov 19): "If kids ask why, then I'll probably say there's maybe not a
 real reason. So, maybe switch to `()`? `proc add()` and `add()` don't look the same". Asked "`( )` for parameters and
 calls?", the owner chose: "yea".
+
+## D4. A definition that takes nothing has no brackets, and every call writes `()`
+
+2026-11-20.
+
+**Chosen.** A procedure's definition writes brackets only when it has parameters. A call always writes `( )`, empty
+or not. `proc.main` is never called, since only the runtime starts it, so it has no call form.
+
+```
+proc.main:
+    show_msg("Hello, World!");
+end proc.main
+
+proc roll_dice returns Whole:
+    ...
+end proc roll_dice
+
+$roll: Whole = roll_dice();
+```
+
+(`.main`'s meaning, `returns` and `$` aren't decided yet.)
+
+**Weighed.**
+- `()` everywhere, `proc.main():` and `proc roll_dice() returns Whole:`, as in Python. `proc.main()` reads like
+  calling a method `main` on something called `proc`, as `$list.add()` would.
+- `proc.main:` alone without brackets, and `()` on every other definition. It singles out `main` for no reason a
+  learner could see.
+- An empty pair in definitions, as Tankun first wrote `proc.main[]`. An empty bracket looks unfinished.
+
+**Why this won.** In a definition, brackets hold parameters, so with none there's nothing to hold (multifinity's
+rule). In a call, `( )` means "run it", so it's always there, which is what Python readers expect. Both readings
+avoid the method-call look of `proc.main()`.
+
+**Tankun's words.** Asked "No brackets on a definition that takes nothing, `()` on every call?", the owner chose:
+"yea, what about calls inside slides?"
