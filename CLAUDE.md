@@ -95,11 +95,7 @@ before they did harm. Never skip one for being small.
   optional; there's never a fourth.
 - A decision's commit credits who chose it and its number, as in
   `(owner: "yea"; D2)`.
-- Every commit ends with
-  `Co-Authored-By: design claude <noreply@anthropic.com>`.
-
-## Bedtime
-
-Stop everything after 8:30 PM local time and suggest Tankun stops too: going
-past bedtime has made them abandon languages before. Check the time with
-`date` when a conversation runs into the evening.
+- Every commit ends with its own session's trailer, so `git log` shows which
+  session made each change: `Co-Authored-By: design claude <noreply@anthropic.com>`
+  for the design session, and `compiler claude`, `oracle claude` or `gc claude`
+  in the same form for building sessions.
