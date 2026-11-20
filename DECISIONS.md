@@ -1050,3 +1050,32 @@ and editors can map it to Plainly without a clash; and it's easy to search for. 
 Plainly v1's D78.
 
 **Tankun's words.** Asked "`game.plainly`?", the owner chose: "yea. Where's families? And making a extern proc"
+
+## D36. `extern.rust proc` declares a procedure whose body is written in Rust
+
+2026-11-20.
+
+**Chosen.** `extern.rust` in front of `proc` says the procedure's body is written in Rust, outside the Plainly file.
+Its body is empty, or holds only a `labels` line (D25), never code, and its closer doesn't repeat `extern.rust`:
+
+```
+extern.rust proc beep returns Bool:
+end proc beep
+```
+
+- `extern` is short for external (D2); `.rust` narrows it to where the body is, leaving room for `extern.c` later.
+- Callers can't tell it apart from any other procedure.
+
+(How Plainly's values cross into Rust, and what an extern procedure does when it fails, are left for when building
+starts.)
+
+**Weighed.**
+- `proc.rust`, narrowing `proc` itself. `extern` is a modifier in front, like `let` against `var`, and says the body
+  is elsewhere before saying where.
+
+**Why this won.** A game's library needs procedures that talk to the terminal and the operating system, which are
+written in Rust, and this lets them look like any other procedure to the people calling them. This is Plainly v1's
+D40, with v2's short forms.
+
+**Tankun's words.** Asked "`extern.rust proc` like that?", the owner chose: "yea. `returns` locked" (the second half
+is D37).
