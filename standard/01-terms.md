@@ -1,0 +1,42 @@
+# 1. Terms
+
+The words this standard uses, each defined before a chapter relies on it.
+
+## Programs and lines
+
+- **Program:** everything that's built and run together, starting from `proc.main` (chapter 4).
+- **Statement:** one instruction, ending with `;`, as in `show_msg("Hi");` (chapter 2).
+- **Block:** a group of statements with an opening line and a closer, like a procedure or an `if`.
+- **Opening line:** the line that starts a block, ending with `:`, as in `proc.main:`.
+- **Closer:** the line that ends a block: `end` and what it closes, as in `end proc.main`.
+- **Body:** the statements between a block's opening line and its closer.
+- **Indentation:** the spaces at the start of a line.
+
+## Words
+
+- **Keyword:** a word that's part of Plainly itself, like `proc`, `end` or `if`. A program can't choose its own
+  keywords.
+- **Name:** a word a program chooses, for a variable or a procedure.
+- **Variable:** a named place holding a value, with a name starting with `$`, as in `$score`.
+- **Value:** a piece of data, like a number or a piece of text.
+- **Type:** the kind of a value, like a whole number or text, written with a capital letter.
+- **Narrowing:** a word after a `.` that makes another word more specific, as `.main` makes `proc` mean the procedure
+  the program starts with, and `.same_line` makes `show_msg` leave its line open.
+
+## Procedures
+
+- **Procedure:** a named block of statements that can be run from elsewhere. `proc` is short for procedure (D2).
+- **Definition:** the block that writes a procedure, starting with `proc`.
+- **Parameter:** a name in a definition's `( )`, standing for a value the procedure is given.
+- **Argument:** a value given to a procedure when it's called.
+- **Call:** running a procedure, written as its name and `( )`, as in `roll_dice()`.
+- **Slide:** a chain of steps joined by `|>`, passing a value along (chapter 4).
+- **Step:** one procedure in a slide.
+
+## Checking and running
+
+- **While building:** when a program is checked and turned into something that can run, before it runs.
+- **While running:** when the built program runs.
+- **Refused:** rejected while building, with a message saying why. A refused program doesn't run.
+- **Placeholder:** a part of a general form that stands for something you fill in. Each one is explained where it's
+  used (D12).
