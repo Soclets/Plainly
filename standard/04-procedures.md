@@ -50,11 +50,41 @@ Callers can't tell it apart from any other procedure. `extern` is short for exte
 
 ## Families
 
-**Not decided.** Tankun is refining families in Cyborg first (2026-11-20), since they're one of their biggest ideas.
-Discussed so far, and not decided: a family as a word and its narrowings declared together, like `show_msg` and
-`show_msg.same_line`, in a `fam.kind` block holding only that kind (`fam.proc`, `fam.handler`), and not the
-module-like grouping Cyborg's families grew into. Once families are in, the `msg` family turned down in D20
-(`msg.show`, `msg.ask`) is worth reopening, since it was judged as a narrowing, not as a family.
+A family declares a word and its kinds together, in a block saying what kind of thing it holds, and holding only that
+(D41):
+
+```
+fam.kind word:
+    members
+end fam.kind word
+```
+
+where `kind` is what the family holds (`proc` for a procedure and its narrowings, `handler` for a failure's handlers),
+`word` the word, and `members` its declarations.
+
+```
+fam.proc show_msg:
+    proc show_msg($text: Text):
+        ...
+    end proc show_msg
+
+    proc show_msg.same_line($text: Text):
+        ...
+    end proc show_msg.same_line
+end fam.proc show_msg
+```
+
+where each `...` stands for that procedure's body.
+
+- **Every member is the word itself, or reads as "a Y kind of X" for its name `X.Y`.** Anything else is refused:
+  `geometry.area` isn't a kind of geometry (D41).
+- **A narrowed procedure is declared inside its word's family** (D41).
+- **Each member keeps its full name** (D41).
+
+`fam` is short for family (D2).
+
+**Not decided:** how a handler family's handlers are written; handlers that take arguments; handlers covering only some
+failures.
 
 ## Calls
 

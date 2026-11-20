@@ -23,12 +23,13 @@ The words this standard uses, each defined before a chapter relies on it.
 - **Type:** the kind of a value, like a whole number or text, as in `Whole` (chapter 7).
 - **Narrowing:** a word after a `.` that makes another word more specific, as `.main` makes `proc` mean the procedure
   the program starts with, and `.same_line` makes `show_msg` leave its line open. The `.` has no spaces around it
-  (D18). When a word has several, the one that changes the action most comes first, as in `show_msg.fmt.same_line`,
+  (D18). A narrowing names a kind: `X.Y` reads as "a Y kind of X" (D41). When a word has several, the one that changes the action most comes first, as in `show_msg.fmt.same_line`,
   and any other order is refused (D31).
 
 ## Procedures
 
 - **Procedure:** a named block of statements that can be run from elsewhere. `proc` is short for procedure (D2).
+- **Family:** a word and its kinds, declared together, as `show_msg` and `show_msg.same_line` (chapter 4).
 - **Definition:** the block that writes a procedure, starting with `proc`.
 - **Parameter:** a name in a definition's `( )`, standing for a value the procedure is given.
 - **Argument:** a value given to a procedure when it's called.

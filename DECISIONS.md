@@ -1193,3 +1193,56 @@ end otherwise
 case says how the line carries on. This is Cyborg's `otherwise:` and Plainly v1's D55, with v2's indentation.
 
 **Tankun's words.** Asked "The `otherwise:` block like that?", the owner chose: "yea".
+
+## D41. A family is a word and its kinds, declared together in a `fam.kind` block
+
+2026-11-20.
+
+**Chosen.** A family declares a word and its kinds together. `fam` narrowed by what it holds opens it, and it holds
+only that kind of thing: `fam.proc` for a procedure and its narrowings, `fam.handler` for a failure's handlers.
+
+```
+fam.proc show_msg:
+    proc show_msg($text: Text):
+        ...
+    end proc show_msg
+
+    proc show_msg.same_line($text: Text):
+        ...
+    end proc show_msg.same_line
+end fam.proc show_msg
+```
+
+where each `...` stands for that procedure's body.
+
+- **Every member reads as "a Y kind of X"** for its name `X.Y`, or is the word `X` itself. Anything else is refused:
+  `show_msg.same_line` is a same-line kind of showing, but `geometry.area` isn't a kind of geometry.
+- **A narrowed procedure is declared inside its word's family,** so every variant is in one place.
+- **Each member keeps its full name,** so one search finds its declaration and every use.
+- **The test is what a narrowing is in general:** a kind. Everything v2 has passes it: `show_msg.same_line`,
+  `show_msg.fmt`, `be.Whole`, `proc.main`, and handlers like `word_failed.use_placeholder`.
+- `fam` is short for family (D2).
+
+(How a handler family's handlers are written, handlers that take arguments, and handlers covering only some failures
+aren't decided yet.)
+
+**Weighed.**
+- Cyborg's families before its D480: any named group, `fam.fn geometry` with `geometry.area()`, which grew into
+  modules. Tankun's words: too big, when the purpose was `print` and `print.stored`.
+- A family block with no kind, `fam show_msg:`, which Tankun questioned ("Woah, why no `.`?"): the opening line wouldn't
+  say what's inside, and a family could mix procedures and handlers.
+- No family block, with `proc show_msg.same_line` declarable anywhere. Shorter, but variants could scatter, and families
+  stop being a visible thing.
+- A `msg` family, `msg.show` and `msg.ask` (D20's alternative, which seemed worth reopening once families came in). It
+  fails the test, "a show kind of message", so D20 stands.
+
+**Why this won.** It's the original idea of families, a word and its variants, with Cyborg's test (its D480, refined
+by Tankun on 2026-11-20) keeping them from growing into folders. The kind in `fam.kind` puts what's inside in the first
+word, and lets the checker refuse anything else.
+
+**Tankun's words.** "Wait what? That's not families", "Now, here's the thing. I think Cyborg's families are too big
+grouping. You know what I mean? The purpose was originally `print`, and `print.stored` being different in a family.
+Familiy now can create shit like different modules. And I think that is too big", "Woah, why no `.`?", "Actually,
+wait. I think we should pause here, and let me go refine families in Cyborg. So, it would be better or more in my
+vision. Since families are one of my biggest innovations.", then, after Cyborg's D480, asked "Families as a word and
+its kinds, in a `fam.kind` block, with every member passing "a Y kind of X"?", the owner chose: "yea".
