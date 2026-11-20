@@ -81,6 +81,16 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in Rust and C alike, so a check can
    list any decision nothing carries out yet.
 
+## Building
+
+Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
+2026-11-20):
+
+1. **Optimizations from the start.** PlainCompiler is built with its optimizations as it goes, never as a plain version
+   sped up later. Each part of the language arrives with `final` mode's optimizations for it (D124), and compiling is
+   fast from the start: parallel, cached and in the background (D65). `working` mode stays the light build (D46).
+   PlainOracle stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
+
 ## Prompting
 
 Owner, 2026-11-20, carrying over Plainly v1's IMPLEMENTATION.md rule 4 (itself from Cyborg's rule 11):
