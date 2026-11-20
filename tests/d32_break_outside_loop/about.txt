@@ -1,0 +1,1 @@
+break outside a loop is refused. D32, D54, D86, D88; standard ch. 5 and 11.

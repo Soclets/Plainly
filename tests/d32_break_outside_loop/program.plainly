@@ -1,0 +1,4 @@
+proc.main:
+    show_msg("Hi");
+    break;
+end proc.main
