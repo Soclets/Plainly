@@ -45,5 +45,6 @@ Each kind of bracket has one job (D3):
 | `;` | ends a statement | D7 |
 | `:` | ends an opening line | D8 |
 | `$` | starts a variable's name | D11 |
+| `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
 | `.` | narrows | D4, D6 |
 | `\|>` | passes a value along a slide | D5 |

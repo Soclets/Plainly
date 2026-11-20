@@ -423,3 +423,30 @@ var $tries: Whole = 0;
 shows from the first line that Plainly is static, and says which kind of number a variable holds.
 
 **Tankun's words.** Asked "`let` and `var`, with the type always written?", the owner chose: "yea".
+
+## D14. A bare `=` changes a `var`, with no `change` in front
+
+2026-11-20.
+
+**Chosen.** A `var` gets a new value with its name, `=` and the value, as a statement of its own:
+
+```
+var $tries: Whole = 0;
+$tries = $tries + 1;
+```
+
+- `=` on a `let` is refused, since a `let` never changes (D13).
+- `=` only ever stands alone as a statement. It never appears inside a condition, so `if $tries = 3:` is refused, the
+  classic typo for comparing. The fix offered was `==`, but how comparison is written isn't decided yet.
+
+(`+`, `if` and shorthand like `+=` aren't decided yet.)
+
+**Weighed.**
+- `change` in front, `change $tries = $tries + 1;`, as in Plainly v1 (its D27), so a change can never be mistaken for
+  a creation. In v2, `let` and `var` already mark every creation (D13), so the word adds nothing.
+
+**Why this won.** A line starting with `let` or `var` makes a variable, and one starting with `$tries =` changes it,
+so the two can't be confused. It's how Python and most languages write a change, and searching for `$tries =` still
+finds every one. Keeping `=` out of conditions catches the `=`-for-`==` typo.
+
+**Tankun's words.** Asked "A bare `=` changes a `var`, and `change` goes?", the owner chose: "yea".

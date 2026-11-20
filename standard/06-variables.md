@@ -21,5 +21,23 @@ var $tries: Whole = 0;
 - **`var`:** the value can change. `var` is short for variable (D2, D13).
 - **The type is always written,** never worked out from the value (D13).
 
-**Not decided:** how a `var` is changed; constants known while building, like `const`; the types themselves; declaring
+## Changing
+
+A `var` gets a new value with its name, `=` and the value, as a statement of its own (D14):
+
+```
+$name = value;
+```
+
+where `$name` is a `var`'s name and `value` its new value.
+
+```
+var $tries: Whole = 0;
+$tries = $tries + 1;
+```
+
+- **`=` on a `let` is refused,** since a `let` never changes (D13, D14).
+- **`=` never appears inside a condition,** so `if $tries = 3:` is refused (D14).
+
+**Not decided:** shorthand like `+=`; constants known while building, like `const`; the types themselves; declaring
 a variable without a first value.
