@@ -56,6 +56,21 @@ backticks). Pick by a check, never by feel: write the whole message to a file
 python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has code" if "```" in m else "too long" if len(m)>300 else "quote", "| commit:", "has code" if "`" in m else "too long" if len(m)>60 else "quote")' message.txt
 ```
 
+## Code
+
+Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
+
+1. **Code uses the standard's terms,** as its Terms chapter defines them (procedure, narrowing, label, failure,
+   handler, family, slide, step), so the code, the standard and the messages say the same thing. One name per
+   concept: never `func` in one place and `procedure` in another.
+2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in Plainly;
+   compiler code is read like the docs, which teach the full word. A keyword like `proc` appears in code only as the
+   text Plainly reads.
+3. **Each language's own casing:** Rust's `snake_case` and `CamelCase`, C's `snake_case`.
+4. **Tests are named after their decision,** like `d17_comparisons`, so a failing test points at its rule.
+5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in Rust and C alike, so a check can
+   list any decision nothing carries out yet.
+
 ## PlainOracle's C problems
 
 PlainOracle is written in C as an experiment, to see how many problems C causes (D52). Any session working on it
