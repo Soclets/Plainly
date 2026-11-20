@@ -109,7 +109,17 @@ A Plainly program can run several parts of itself at once (D66), in two ways (D6
    waiting for a key or a timer, so nothing changes behind a task's back and the turns go the same way every run.
 2. **Real threads on several cores, opt-in,** for speed.
 
-**Not decided:** the words for starting a task and handing over; how real threads share or send values.
+Real threads are **workers** (D68):
+- **Each worker has its own variables;** nothing changeable is shared between two workers.
+- **Workers talk by sending values,** which arrive as copies.
+- **`share` can't cross from one worker to another,** and trying is refused while building, so data races are
+  impossible.
+- **Values that can never change, like a `let`, may be read by every worker** without copying.
+
+Messages from several workers can still arrive in different orders between runs, and two workers each waiting on the
+other freeze (D68).
+
+**Not decided:** the words for starting a task, handing over, starting a worker, sending and receiving.
 
 ## After an `if` that leaves
 

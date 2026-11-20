@@ -2083,3 +2083,50 @@ there for speed, with their risks landing only on those who reach for them.
 "ZGC-style GC + A seems very fun", "Lol, Plainly v1 was just abandoned because I didn't get to the fun stuff being
 real, ZGC and comoiler", "Can't people who don't wanna learn threads just do "concurrent" single thread?", then, asked
 "Tasks on one thread as the everyday way, with real threads opt-in for speed?", the owner chose: "yea".
+
+## D68. Real threads are workers that send each other messages; values that never change can be read by all
+
+2026-11-20.
+
+**Chosen.** The opt-in real threads (D67) are workers:
+- **Each worker runs on its own thread, with its own variables.** Nothing changeable is ever shared between two
+  workers.
+- **Workers talk by sending values,** which arrive as copies.
+- **`share` (D49) can't cross from one worker to another;** trying is refused while building. This is what makes data
+  races impossible.
+- **Values that can never change, like a `let`, may be read by every worker without copying,** since reading alone
+  can't race.
+
+```
+let search: Worker = start(find_best_move);
+send(search, board);
+let best: Move = receive(search);
+```
+
+(The words, including `Worker`, `start`, `send` and `receive`, are placeholders, and aren't decided yet.)
+
+What it doesn't cover: many threads writing one big thing (a chess engine's shared table), sending big changeable data
+often, parallel loops writing into one list, a shared counter, and lock-free techniques; each needs one owning worker,
+or splitting the data. And it rules out data races only: messages from several workers can still arrive in different
+orders between runs, and two workers each waiting on the other freeze, as in every threading design.
+
+**Weighed.**
+- Shared memory with locks (A), as Java, C#, Python and C++ have. It covers every gap above, and pairs well with a
+  ZGC-style collector, but a forgotten lock gives data races, bugs that differ between runs and vanish when looked for.
+  Tankun weighed it in a 60-minute class: half the hour would go on a score that's "sometimes wrong", and a program
+  passing for the student could fail for the teacher.
+- Ownership, as Cyborg and Rust prevent races with. It makes every program, threaded or not, follow borrowing rules:
+  "Ah, Ownership is too much to learn" (Tankun). A garbage collector can replace ownership's memory job, but not its
+  race job: Go and Java have collectors and data races.
+- Locks attached to the data, `Locked<Table>`, as Rust's `Mutex`. Without ownership, a reference can still be kept
+  after the lock is let go, so races narrow without going away.
+
+**Why this won.** No data races anywhere, with no ownership to learn, and the cost falls only on code that sends
+values between workers. Its gaps are advanced work a beginner class doesn't reach. This is Erlang's processes and
+Dart's isolates, with read-only sharing added for the big read-mostly data games have: maps and word lists.
+
+**Tankun's words.** "I heard Cyborg can't do data race, why can't it?", "Ah, Ownership is too much to learn", "But
+wait, isn't Ownership just GC with no perf tradeoff? So, can't GC do good too?", "What's your idea, again?", "What does
+that not cover", "What about A?", "Okay, let's say we're in a classroom. 60 mins of class: Cranelift ✅, grade more.
+Let's go.", then, asked "Real threads as workers that send messages, with values that never change readable by all of
+them?", the owner chose: "yea".
