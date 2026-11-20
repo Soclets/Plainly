@@ -127,7 +127,7 @@ impl Lowering<'_> {
         let text = format!(
             "{}\n{}",
             place_heading(self.sources, place),
-            source_snippet(self.sources, place, place.line.to_string().len())
+            source_snippet(self.sources, place, &[], place.line.to_string().len())
         );
         self.sites.push(text);
         self.sites.len() - 1

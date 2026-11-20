@@ -1650,6 +1650,8 @@ impl<'a> Parser<'a> {
     /// between two values (D27, D59), and a negating `-` has none after it (D27). The spacing every example shows
     /// elsewhere isn't decided, so anything else is `NotDesignedYet`.
     fn check_spacing(&mut self) {
+        // Every spacing mistake, as where its `^` goes, its fix, and its `why:`.
+        let mut mistakes: Vec<(Place, Edit, String)> = Vec::new();
         let count = self.tokens.len();
         // `checked[index]` is set once the gap before token `index` has been looked at.
         let mut checked = vec![false; count];
@@ -1712,7 +1714,7 @@ impl<'a> Parser<'a> {
             };
             let first = gap_before.map_or(token.place, |gap| self.tokens[gap - 1].place);
             let last = gap_after.map_or(token.place, |gap| self.tokens[gap].place);
-            self.refuse_with_edit(first.to(last), edit, why);
+            mistakes.push((first.to(last), edit, why.to_string()));
         }
 
         for (index, &already_checked) in checked.iter().enumerate().skip(1) {
@@ -1756,7 +1758,79 @@ impl<'a> Parser<'a> {
                 },
                 replacement: " ".repeat(expected),
             };
-            self.refuse_with_edit(place, edit, &why);
+            mistakes.push((place, edit, why));
+        }
+        for (line, facts) in self.lines.iter().enumerate() {
+            if let Some((column, count)) = facts.trailing_spaces {
+                let place = Place {
+                    file: self.file,
+                    line: line + 1,
+                    column,
+                    length: count,
+                };
+                // trace: D98
+                let edit = Edit {
+                    place,
+                    replacement: String::new(),
+                };
+                mistakes.push((place, edit, "a line never ends with spaces.".to_string()));
+            }
+        }
+        self.report_spacing(mistakes);
+    }
+
+    /// One message per line: a line's only spacing mistake with its own `why:`, or every mistake on a line in one
+    /// message, a `^` under each gap and the whole line fixed (D100).
+    fn report_spacing(&mut self, mut mistakes: Vec<(Place, Edit, String)>) {
+        mistakes.sort_by_key(|(_, edit, _)| (edit.place.line, edit.place.column));
+        let mut index = 0;
+        while index < mistakes.len() {
+            let line = mistakes[index].1.place.line;
+            let count = mistakes[index..]
+                .iter()
+                .take_while(|(_, edit, _)| edit.place.line == line)
+                .count();
+            let group = &mistakes[index..index + count];
+            index += count;
+            if let [(place, edit, why)] = group {
+                self.refuse_with_edit(*place, edit.clone(), why);
+                continue;
+            }
+            // trace: D100
+            let text: Vec<char> = self.source.line_text(line).chars().collect();
+            let mut fixed = text.clone();
+            for (_, edit, _) in group.iter().rev() {
+                let start = (edit.place.column - 1).min(fixed.len());
+                let end = (start + edit.place.length).min(fixed.len());
+                fixed.splice(start..end, edit.replacement.chars());
+            }
+            let first = group[0].1.place.column;
+            let last = group
+                .iter()
+                .map(|(_, edit, _)| edit.place.column + edit.place.length)
+                .max()
+                .unwrap_or(first);
+            let fixed_end = (last as isize - 1 + fixed.len() as isize - text.len() as isize)
+                .max(first as isize - 1);
+            let replacement: String = fixed
+                .get(first - 1..fixed_end as usize)
+                .map(|part| part.iter().collect())
+                .unwrap_or_default();
+            let edit = Edit {
+                place: Place {
+                    file: self.file,
+                    line,
+                    column: first,
+                    length: last - first,
+                },
+                replacement,
+            };
+            let mut message = Message::refused_with_fix(group[0].0, edit).why(
+                "spacing follows one rule: one space around operators and after `,` and `:`, none inside brackets \
+                 or before a call's `(`, never two in a row, and none at the end of a line.",
+            );
+            message.more_places = group[1..].iter().map(|(place, _, _)| *place).collect();
+            self.messages.push(message);
         }
     }
 

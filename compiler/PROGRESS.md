@@ -18,7 +18,8 @@ the test results (`python3 compiler/run_tests.py`).
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- Blank lines anywhere, one at a time (D97); all spacing fixed (D98); names with digits (D99).
+- Blank lines anywhere, one at a time (D97); all spacing fixed (D98), one message per line (D100); names with
+  digits (D99).
 - `be.Whole` reads numbers as players type them (D95), and `ask` ends the program quietly when input runs out (D96).
 - A variable ends with its block (D93); a name in use can't be declared again, and a variable can't take a
   procedure's name (D94).
@@ -138,7 +139,10 @@ mode. Each is marked `// trace: D92`.
 - two parameters with one name; a narrowing written twice; an unknown narrowing of `show_msg` or `be.Text`; anything
   after an `if`'s `else:` part but `end if`;
 - D81's three: two comparisons in a row, an operator after a slide's step, `??` not after a call;
-- D98's spacing, one message per mistake, each `fix:` the line with that one gap corrected. `why:` by kind:
+- D100's message for a line with several spacing mistakes: a `^` under each gap, `fix:` the whole line corrected,
+  and why: spacing follows one rule: one space around operators and after `,` and `:`, none inside brackets or
+  before a call's `(`, never two in a row, and none at the end of a line.
+- D98's spacing, for a line with one mistake: `fix:` the corrected line. `why:` by kind:
   `` `==` has one space on each side. `` (any operator but D85's five, which keep theirs);
   `` `,` and `2` have one space between them. ``; `` no space goes between `(` and `"three"`. ``;
   spaces never come two in a row, outside indentation.; a line never ends with spaces.; a blank line has no spaces

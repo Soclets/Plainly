@@ -72,6 +72,8 @@ pub struct Message {
     /// The fix, when there's exactly one (D54), as a change to the source. `fix:` shows the whole corrected
     /// line, and the change is also used to sort out knock-on errors (D55).
     pub edit: Option<Edit>,
+    /// More places on the same line to mark with `^`, as for every spacing mistake on a line (D100).
+    pub more_places: Vec<Place>,
     /// The fix, when it removes blank lines instead (D97): `count` lines from `first_line`, in the message's file.
     pub removed_lines: Option<RemovedLines>,
     /// `what:`, shown when there's no single fix (D54).
@@ -86,6 +88,7 @@ impl Message {
             kind,
             place,
             edit: None,
+            more_places: Vec::new(),
             removed_lines: None,
             what: None,
             because: None,
@@ -155,7 +158,12 @@ impl Message {
             self.kind.word(),
             place_heading(sources, self.place)
         );
-        text.push_str(&source_snippet(sources, self.place, number_width));
+        text.push_str(&source_snippet(
+            sources,
+            self.place,
+            &self.more_places,
+            number_width,
+        ));
         if let Some(removed) = self.removed_lines {
             text.push_str(&labelled_line("fix", &removed.describe()));
         } else if let Some(edit) = &self.edit {
@@ -176,7 +184,7 @@ impl Message {
                 format!("{} (in {path})", because.sentence)
             };
             text.push_str(&labelled_line("because", &sentence));
-            text.push_str(&source_snippet(sources, because.place, number_width));
+            text.push_str(&source_snippet(sources, because.place, &[], number_width));
         }
         if let Some(why) = &self.why {
             text.push_str(&labelled_line("why", why));
@@ -213,22 +221,36 @@ pub fn place_heading(sources: &[SourceFile], place: Place) -> String {
     )
 }
 
-/// The source line, then `^` under exactly the part in question (D54).
-pub fn source_snippet(sources: &[SourceFile], place: Place, number_width: usize) -> String {
+/// The source line, then `^` under exactly the part in question (D54), and under each of `more` on the same line
+/// (D100).
+pub fn source_snippet(
+    sources: &[SourceFile],
+    place: Place,
+    more: &[Place],
+    number_width: usize,
+) -> String {
     let line_text = sources
         .get(place.file)
         .map(|source| source.line_text(place.line))
         .unwrap_or("");
     let line_length = line_text.chars().count();
-    let start = place.column.saturating_sub(1);
-    // A place just past the end of the line, like a missing `;`, still gets one `^`.
-    let length = place.length.min(line_length.saturating_sub(start)).max(1);
+    let mut marks: Vec<char> = Vec::new();
+    for marked in std::iter::once(&place).chain(more) {
+        let start = marked.column.saturating_sub(1);
+        // A place just past the end of the line, like a missing `;`, still gets one `^`.
+        let length = marked.length.min(line_length.saturating_sub(start)).max(1);
+        if marks.len() < start + length {
+            marks.resize(start + length, ' ');
+        }
+        for mark in &mut marks[start..start + length] {
+            *mark = '^';
+        }
+    }
     format!(
-        " {number:>number_width$} | {line_text}\n {blank:number_width$} | {spaces}{carets}\n",
+        " {number:>number_width$} | {line_text}\n {blank:number_width$} | {marks}\n",
         number = place.line,
         blank = "",
-        spaces = " ".repeat(start),
-        carets = "^".repeat(length),
+        marks = marks.into_iter().collect::<String>(),
     )
 }
 

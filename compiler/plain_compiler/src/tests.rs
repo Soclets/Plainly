@@ -394,3 +394,19 @@ fn d99_names() {
     let beyond_english = main_with(&["let café: Whole = 1;"]);
     assert_eq!(found(&beyond_english), vec![(Kind::NotDesignedYet, 2)]);
 }
+
+#[test]
+fn d100_every_spacing_mistake_on_a_line_is_one_message() {
+    let found = messages(&main_with(&["show_msg( \"three\" ); "]));
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].more_places.len(), 2);
+    let sources = vec![SourceFile::new(
+        "test.plainly".to_string(),
+        main_with(&["show_msg( \"three\" ); "]),
+    )];
+    let fixed = found[0]
+        .edit
+        .as_ref()
+        .map(|edit| crate::message::fixed_line(&sources, edit));
+    assert_eq!(fixed.as_deref(), Some("    show_msg(\"three\");"));
+}

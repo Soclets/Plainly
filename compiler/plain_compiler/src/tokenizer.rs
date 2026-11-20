@@ -118,6 +118,9 @@ pub struct LineFacts {
     pub blank: bool,
     /// Whether its indentation holds a tab.
     pub tab_in_indentation: bool,
+    /// The column and number of spaces at the end of the line, which the parser refuses with the line's other
+    /// spacing mistakes (D98, D100).
+    pub trailing_spaces: Option<(usize, usize)>,
 }
 
 pub struct Tokens {
@@ -207,17 +210,7 @@ fn tokenize_line(
                 index += 1;
             }
             if index == characters.len() {
-                // trace: D98
-                messages.push(
-                    Message::refused_with_fix(
-                        place(start + 1, index - start),
-                        Edit {
-                            place: place(start + 1, index - start),
-                            replacement: String::new(),
-                        },
-                    )
-                    .why("a line never ends with spaces."),
-                );
+                facts.trailing_spaces = Some((start + 1, index - start));
             }
             spaces_before = index - start;
             continue;
