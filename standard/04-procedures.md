@@ -74,4 +74,22 @@ show_msg("Hello, World!");
 show_msg.same_line("Your guess: ");
 ```
 
-**Not decided:** text itself; filling values into text; reading what the player types.
+## Asking
+
+`ask` shows a question, leaves the cursor on its line, waits until the player presses Enter, and gives back what they
+typed, without the Enter (D20):
+
+```
+ask(question)
+```
+
+where `question` is the text shown.
+
+```
+let $typed: Text = ask("Your guess: ");
+```
+
+What's typed always comes back as text, even digits: typing `42` gives `"42"`, not the number 42 (D20).
+
+**Not decided:** text itself; filling values into text; turning text into a number; asking with no question; running
+out of input; reading single key presses.

@@ -582,3 +582,38 @@ end while
 **Why this won.** It's Python's word, and the shape of every other block (D8). Plainly v1 had the same (its D53).
 
 **Tankun's words.** Asked "`while` like that?", the owner chose: "yea".
+
+## D20. `ask` shows a question and gives back what the player types
+
+2026-11-20.
+
+**Chosen.** `ask(question)` shows the question, leaves the cursor on its line, waits until the player presses Enter,
+and gives back what they typed, without the Enter:
+
+```
+let $typed: Text = ask("Your guess: ");
+```
+
+What's typed always comes back as text, even digits: typing `42` gives the text `"42"`, since a keyboard only sends
+characters. Making it a number is a separate step, which can fail.
+
+(`Text`, turning text into a number, asking with no question, running out of input, and reading single key presses
+aren't decided yet.)
+
+**Weighed.**
+- `read_msg()`, pairing with `show_msg`. What a player types isn't a message to anyone.
+- `read_input()`. "Input" is vague: key presses, the mouse and files are input too.
+- `read_line()`, with the question shown first by `show_msg.same_line` (D6). It names what the computer does rather
+  than what the program means, and takes two lines for the common case.
+- A `msg` family, `msg.show(...)` and `msg.ask(...)` (Tankun's idea). A narrowing makes a word more specific (D18's
+  `proc.main`), and `msg.show` isn't a kind of message but an action, so the `.` would change meaning; it also reads
+  noun-first and looks like calling a method on an object named `msg`, the look D4 removed. Grouping by topic belongs
+  to packages, not narrowings.
+
+**Why this won.** From the player's side the game is asking: it shows a question and waits for the answer, one act,
+so one procedure. It reads like English, `let $typed: Text = ask("Your guess: ");`, and the common case needs no
+`.same_line`. Tankun found the word.
+
+**Tankun's words.** "What if they input a number? What about something like `read_input`? Idk. What does this do",
+"Read? It seems more like `ask`?", "What if we made `msg` a family? `msg.ask`, `msg.show`? Lol", then, asked
+"`ask(question)`?", the owner chose: "yea".
