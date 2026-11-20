@@ -121,6 +121,9 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    `cargo test -- --test-threads=3`. (From Cyborg's rule 9.)
 7. **Scratchpad.** Scratch space is for what can be lost. Anything needed later goes in the repository and gets
    committed. This holds for every session, the design session included. (From Cyborg's rule 14.)
+8. **Downloads are free.** A dependency or tool is chosen on maturity, safety, maintenance and speed. A less mature or
+   less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
+   it. (From Cyborg's rule 15.)
 
 ## Prompting
 
