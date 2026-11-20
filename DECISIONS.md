@@ -2723,3 +2723,40 @@ Names, types and numbers in them are filled in from the program:
 | `break` outside a loop (D32) | this `break` isn't inside a loop | | `break` leaves the innermost loop it's in. |
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
+
+## D89. The fourth batch of refusals, and "but" where a sentence sets what's expected against what was found
+
+2026-11-20.
+
+**Chosen.** Where a `what:` sets what's expected against what was found, it says "but", not "and". That changes two
+wordings already approved, and shapes this batch:
+- D87's comparing two types becomes `` `==` compares two values of one type, but this is a `Whole` and a `Text` ``.
+- D88's argument count becomes `` `pick` takes 2 values, but this call gives 1 value ``.
+
+The fourth batch, with names and types filled in from the program:
+
+| Refused | `what:` | `because:` | `why:` |
+|---|---|---|---|
+| a slid value of the wrong type (D5) | `` `f` takes a `Whole` first, but the slid value is a `Text` `` | | a slide passes the value on its left in as the step's first argument. |
+| the value after `??` of the wrong type (D23) | `` the call gives a `Whole`, so the value after `??` must be one too, not a `Text` `` | | a value's type has to match where it's used. |
+| `labels` not on the first line (D25) | a `labels` line can only be the first line of a procedure's body | | a procedure declares its labels on the first line of its body. |
+| a label for a parameter that isn't there (D25) | `` `pick` has no parameter named `lo` `` | | a `labels` line gives labels to the procedure's own parameters. |
+| two labels on one parameter (D25) | `` `low` already has a label `` | | each parameter has at most one label. |
+| one label on two parameters (D25) | `` two parameters have the label `from` `` | | each label names one parameter, so a call can say which value is which. |
+| `-` on something that isn't a number (D27) | `` `-` makes a number negative, but this is a `Text` `` | | a `-` with no space after it makes a number negative. |
+| a space after a negating `-` (D27) | (a `fix:`) | | a `-` that makes a value negative has no space after it. |
+| `+`, `-` or `*` on anything but two `Whole`s (D27, D59) | `` `+` works on two `Whole`s, but this is a `Bool` and a `Whole` `` | | `+`, `-` and `*` are only for numbers. |
+| a `Bool` joined with `&` (D28) | `` `&` joins text, but this is a `Bool` `` | | `&` joins two pieces of text, and anything else becomes text only where `be.Text` says so. |
+| `show_msg.same_line.fmt` (D31) | (a `fix:` with `show_msg.fmt.same_line`) | | narrowings go strongest first: `.fmt` changes what's shown, `.same_line` only where it ends. |
+| the wrong parameter form (D61) | (a `fix:` with the other form) | | parameters sharing one type write it once, in front, when there are two or more; otherwise each writes its own. |
+| both parameter forms in one header (D61) | a header writes one type in front for every parameter, or a type after each, never both | | parameters sharing one type write it once, in front; otherwise each writes its own. |
+| `&` next to maths without brackets (D72) | `` `&` is next to maths without brackets, so it isn't clear which goes first `` | the maths is here | where maths doesn't say which goes first, `( )` shows it. |
+
+**Weighed.**
+- "and", as drafted. It reads as adding a second fact rather than as the mismatch that's the error. Where "and" adds,
+  as in "`+` is only for numbers, and `&` joins text", it stays.
+
+**Why this won.** The message is about a mismatch, and "but" says so. Tankun spotted it.
+
+**Tankun's words.** "I think some may be using "and" wrongly, instead it should be "but"?", then, asked "With those
+changes, does the fourth batch read right, and should the two approved ones change too?", the owner chose: "yea\".
