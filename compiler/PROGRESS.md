@@ -18,7 +18,7 @@ the test results (`python3 compiler/run_tests.py`).
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- `be.Whole` reads numbers as players type them (D95).
+- `be.Whole` reads numbers as players type them (D95), and `ask` ends the program quietly when input runs out (D96).
 - A variable ends with its block (D93); a name in use can't be declared again, and a variable can't take a
   procedure's name (D94).
 - `plainly compile` replaces `plainly build` (D91), and messages say "compile time" and "runtime" (D90).
@@ -80,7 +80,7 @@ The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard i
 place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
 two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; a call whose value isn't used; `??` on a call that can't fail; label order;
-sliding into a labelled first parameter; `.fmt` given anything but text written in the call; running out of input; `random` with `from:` above `to:`; types other
+sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
 
 ## What `NotBuiltYet` covers
@@ -261,8 +261,8 @@ uses a placeholder until it's decided.
   `NotDesignedYet`.
 - **Q13. Answered by D95:** spaces around the number are ignored, and a `+` or `-` and leading zeros are fine;
   anything else fails, a number too big or too small for a `Whole` included. The failure's name is still open.
-- **Q14. Running out of input** in `ask` (chapter 4 says it isn't decided), and input that ends without Enter after
-  the last answer: both `NotDesignedYet` at runtime.
+- **Q14. Answered by D96:** when input runs out, `ask` ends the program quietly with status 0, and a last line with
+  no Enter still counts as an answer.
 - **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone; and `?? ignore` on a call that gives
   a value.
 - **Q16. Code after `break;` in the same block.** D57 refuses code after `return`, and D9 code after an `if` that can

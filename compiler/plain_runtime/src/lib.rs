@@ -219,7 +219,7 @@ pub unsafe extern "C" fn plainly_show_msg_same_line(text: *const u8) {
 }
 
 /// `ask`: shows the question, leaves the cursor on its line, waits for Enter, and gives back what was typed,
-/// without the Enter (D20).
+/// without the Enter (D20). When input has run out, the program ends quietly (D96).
 ///
 /// # Safety
 ///
@@ -237,14 +237,14 @@ pub unsafe extern "C" fn plainly_ask(
     let mut line = Vec::new();
     let read = std::io::stdin().lock().read_until(b'\n', &mut line);
     match read {
+        // No more input: the program ends right here, quietly, with status 0 (D96).
+        // trace: D96
         Ok(0) => {
-            stop_not_designed_yet(site, "running out of input isn't decided".to_string(), None)
+            if std::io::stdout().flush().is_err() {
+                output_failed();
+            }
+            std::process::exit(0);
         }
-        Ok(_) if !line.ends_with(b"\n") => stop_not_designed_yet(
-            site,
-            "input ending without Enter after the last answer isn't decided".to_string(),
-            None,
-        ),
         Ok(_) => {}
         Err(_) => stop_not_designed_yet(
             site,
@@ -252,9 +252,12 @@ pub unsafe extern "C" fn plainly_ask(
             None,
         ),
     }
-    line.pop();
-    if line.ends_with(b"\r") {
+    // A last line with no Enter after it still counts as an answer (D96).
+    if line.ends_with(b"\n") {
         line.pop();
+        if line.ends_with(b"\r") {
+            line.pop();
+        }
     }
     if std::str::from_utf8(&line).is_err() {
         stop_not_designed_yet(
