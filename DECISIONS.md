@@ -262,3 +262,41 @@ indentation. A missing closer gets a clear refusal instead of a silent change of
 required for looks, as a decision of its own. This is Plainly v1's shape (its D31, D35).
 
 **Tankun's words.** Asked "Blocks open with `:` and close with `end` plus what they close?", the owner chose: "yea".
+
+## D9. After an `if` where any way leaves, nothing follows `end if`
+
+2026-11-20.
+
+**Chosen.** When any way through an `if` leaves, by `return`, `break` or a failure, nothing may follow its `end if`
+in the same block. Code that should run afterwards goes in the ways that don't leave. That covers:
+- every way leaving with no `else`, the classic guard clause;
+- only some ways leaving, where the code after `end if` would run only after the others;
+- every way leaving, `else` included, where the code after `end if` could never run.
+
+Each is refused while building.
+
+```
+proc greet($name: Text):
+    if $name == "":
+        return;
+    else:
+        show_msg("Hi, " & $name & "!");
+    end if
+end proc greet
+```
+
+(`==` on text, a bare `return;`, `&`, and the messages' wording aren't decided yet.)
+
+**Weighed.**
+- Guard clauses, as in Python and most languages: `if $name == "": return; end if` with the rest after. The habit
+  most learners meet elsewhere.
+- Plainly v1's D50 alone, refusing only the first case and leaving the other two open, as v1 did.
+
+**Why this won.** A guard clause looks like a procedure doing two things in a row, when it does one or the other;
+with `else`, the paths read as alternatives. Both shapes compile to the same test and jump, so it costs nothing at run
+time. Covering all three cases at once leaves no shape where code after an `if` runs only sometimes, or never. This is
+Plainly v1's D50 and Cyborg's D430, completed. Long guard chains become flat `else if` chains.
+
+**Tankun's words.** Tankun spotted D8's first example breaking this ("Woah." with the example, then "Cyborg design
+claude has encountered this problem before"). Asked "After an `if` where any way leaves, nothing follows `end if`?",
+the owner chose: "yea".
