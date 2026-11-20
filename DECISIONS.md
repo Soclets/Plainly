@@ -297,6 +297,5 @@ with `else`, the paths read as alternatives. Both shapes compile to the same tes
 time. Covering all three cases at once leaves no shape where code after an `if` runs only sometimes, or never. This is
 Plainly v1's D50 and Cyborg's D430, completed. Long guard chains become flat `else if` chains.
 
-**Tankun's words.** Tankun spotted D8's first example breaking this ("Woah." with the example, then "Cyborg design
-claude has encountered this problem before"). Asked "After an `if` where any way leaves, nothing follows `end if`?",
+**Tankun's words.** Tankun spotted D8's first example breaking this: has code. Asked "After an `if` where any way leaves, nothing follows `end if`?",
 the owner chose: "yea".
