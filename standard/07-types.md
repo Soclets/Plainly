@@ -137,6 +137,24 @@ show_msg("She said \"hi\".");
 
 **Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; empty text; comparing text; lists.
 
+## Lists
+
+`List<Type>` is a list of one type, written in `[ ]` with commas (D3, D75):
+
+```
+var students: List<Text> = ["Fern", "Plern", "Churn"];
+let first: Text = students[pos: 1];
+let also_first: Text = students[offset: 0];
+```
+
+- **An item is reached with `pos:`, counting from 1, or `offset:`, counting from 0.** A bare number is refused (D75).
+- **A bad position is a failed check** that stops the program, or is refused where the checker can see it (D46,
+  D75).
+
+`pos` is short for position (D2).
+
+**Not decided:** empty lists; adding and removing; length; changing an item; going through a list.
+
 ## Converting
 
 A value is converted with `be` narrowed by the type it becomes (D22):

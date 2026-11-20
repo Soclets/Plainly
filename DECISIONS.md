@@ -2338,3 +2338,37 @@ fits Plainly's `:` and `end` shape and fixes `/* */`'s known bug. Tankun designe
 
 **Tankun's words.** Proposed instead of `#` (has code); then, asked "`//`, `///` before a declaration, and named
 `comment name:` blocks?", the owner chose: "yea".
+
+## D75. Lists: `List<Type>`, written in `[ ]`, with items reached by `pos:` or `offset:`
+
+2026-11-20.
+
+**Chosen.**
+
+```
+var students: List<Text> = ["Fern", "Plern", "Churn"];
+let first: Text = students[pos: 1];
+let also_first: Text = students[offset: 0];
+```
+
+- **`List<Type>` is a list of one type,** written in `[ ]` with commas (D3).
+- **An item is reached with a label saying how it counts,** with no default:
+  - `pos:`, short for position (D2), counts as people do, from 1;
+  - `offset:` counts steps from the start, from 0.
+
+  A bare `students[1]` is refused.
+- **A bad position is a failed check** that stops the program, like overflow (D46): `pos: 0`, or `pos: 4` in a list
+  of 3. Where the checker can see it while building, it's refused instead.
+
+(Empty lists, adding and removing items, length, changing an item, and going through a list aren't decided yet.)
+
+**Weighed.**
+- Counting from 0 with a bare number, as Python and C do. It's the off-by-one trap, and Plainly is for beginners.
+- Counting from 1 with a bare number, as Lua does. Anyone moving to another language then trips the other way.
+- One label only. `pos:` alone suits people, but offsets are what arithmetic on positions needs, like the middle of a
+  list or wrapping with `rem.floor`.
+
+**Why this won.** The label says how the number counts, so it can't be misread either way, and both ways stay
+available. This is multifinity's sketch, as Plainly v1 (its D15) and Cyborg do it.
+
+**Tankun's words.** Asked "Lists like that, with `pos:` and `offset:` and no default?", the owner chose: "yea".
