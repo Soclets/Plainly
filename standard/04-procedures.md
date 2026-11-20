@@ -23,8 +23,16 @@ where `...` stands for the procedure's body.
 
 A procedure that gives back a value says so at the end of its header, with `returns` and the type (D37).
 
-**Not decided:** how a parameter is written; how a procedure gives back its value in its body; a procedure that gives
-nothing back.
+A procedure that gives nothing back writes no `returns` (D38):
+
+```
+proc greet($name: Text):
+```
+
+Using what such a procedure gives as a value is refused (D38).
+
+**Not decided:** how a parameter is written; how a procedure gives back its value in its body; how failures are listed
+in a header.
 
 ## Procedures written in Rust
 

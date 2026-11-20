@@ -1101,3 +1101,33 @@ in the header aren't decided yet.)
 procedure takes and gives. It's Plainly v1's word.
 
 **Tankun's words.** In answer to D36's question: "yea. `returns` locked".
+
+## D38. A procedure that gives nothing back writes no `returns`
+
+2026-11-20.
+
+**Chosen.** A header writes `returns` only when the procedure gives back a value. One that gives nothing back writes
+nothing there, and if it can fail, its failures follow on their own, with no `returns` and no `or`:
+
+```
+proc.main:
+proc greet($name: Text):
+proc save_game($state: Text) fails disk_full:
+proc load_level($name: Text) returns Level or fails not_found:
+```
+
+(The word `fails` and how failures are listed were placeholders here, and aren't decided yet; nor is how a procedure
+leaves early when it gives nothing back.)
+
+**Weighed.**
+- `returns nothing`, always, as Plainly v1's D100 chose, so every header reads "returns *this* or fails *that*" and a
+  learner meets the difference between doing something and giving something back. Every header in every game pays
+  for it, and v2's D4 writes only what's there.
+
+**Why this won.** It follows D4: a definition writes only what's there, so `proc.main:` and the many procedures that
+only do something stay short. The difference between doing and giving back can still be taught where someone trips on
+it: using what such a procedure gives as a value is refused, with a message saying it gives nothing back. This is
+Plainly v1's D46 before its D100.
+
+**Tankun's words.** "`returns nothing or fail`? When there's void & fail?", then, asked "A procedure that gives
+nothing back writes no `returns`, and `fails` alone when it can fail?", the owner chose: "yes".
