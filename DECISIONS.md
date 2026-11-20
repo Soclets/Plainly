@@ -3598,7 +3598,8 @@ usage:
   ...
 ```
 
-The lines follow the order of the command as written, with anything missing, like a mode, last.
+The lines follow the order of the command as written, with anything missing, like a mode, last. (Changed by D123: with an unknown mode, the
+missing-mode line is left out.)
 
 **Weighed.**
 - Only the first mistake, as PlainCompiler showed until now, checking in an order it chose. A second mistake shows only
@@ -3759,3 +3760,26 @@ Amounts use the unit that reads best: bytes, KiB, MiB or GiB.
 
 **Tankun's words.** Asked "Should D115's `when:` say how much more was needed, how much was in use, and the limit, in
 one line for both cases?", the owner chose: "yea".
+
+## D123. With an unknown mode, the missing-mode line is left out
+
+2026-11-20.
+
+**Chosen.** When a command has an unknown mode, as in `plainly run a.plainly --fast`, D116 shows only the unknown-mode
+line, not D92's missing-mode line as well:
+
+```
+plainly: `--fast` isn't a mode; the modes are `--working` and `--final`
+```
+
+Every other mistake still gets its own line (D116).
+
+**Weighed.**
+- Both lines, as D116 gave literally. Both are true, but the second repeats the first and makes one mistake look like
+  two.
+
+**Why this won.** The writer tried to give a mode and got its name wrong; the unknown-mode line already names the modes
+there are.
+
+**Tankun's words.** Asked "Should the missing-mode line be left out when the command has an unknown mode?", the owner
+chose: "yea".
