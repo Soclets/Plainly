@@ -18,7 +18,7 @@ happened; this standard says what the rules are today (D12).
 ## Chapters
 
 1. [Terms](01-terms.md)
-2. [Lines and blocks](02-lines-and-blocks.md): `;`, `:` and `end`, and indentation
+2. [Lines and blocks](02-lines-and-blocks.md): `;`, `:` and `end`, indentation, and files
 3. [Words](03-words.md): keywords, names and brackets
 4. [Procedures](04-procedures.md): definitions, calls, `proc.main`, slides, `show_msg` and `ask`
 5. [Control flow](05-control-flow.md): `if`, comparisons, `while`, and what may follow an `if`

@@ -1035,3 +1035,18 @@ if $hp at_least 1 and $lives > 0 or $cheat == true:
 This is Plainly v1's D36, D37 and D92.
 
 **Tankun's words.** Asked "`and`, `or` and `not` like that?", the owner chose: "yea".
+
+## D35. Plainly files end in `.plainly`
+
+2026-11-20.
+
+**Chosen.** A Plainly file's name ends in `.plainly`, as in `game.plainly`.
+
+**Weighed.**
+- A short extension like `.pl`, taken by Perl, or `.pn`, which says nothing.
+
+**Why this won.** It names the language, so people and editors know what a file is; nothing else uses it, so GitHub
+and editors can map it to Plainly without a clash; and it's easy to search for. It's long, but typed rarely. This is
+Plainly v1's D78.
+
+**Tankun's words.** Asked "`game.plainly`?", the owner chose: "yea. Where's families? And making a extern proc"

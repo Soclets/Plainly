@@ -44,4 +44,8 @@ is 4 spaces. Any other indentation, a tab included, is refused while building, w
 
 Since every block ends with its closer, indentation never decides where a block ends (D8, D10).
 
-**Not decided:** comments; blank lines; how a statement's later lines are indented; the file's extension.
+**Not decided:** comments; blank lines; how a statement's later lines are indented.
+
+## Files
+
+A Plainly file's name ends in `.plainly`, as in `game.plainly` (D35).
