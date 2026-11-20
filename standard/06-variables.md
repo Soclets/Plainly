@@ -39,5 +39,16 @@ $tries = $tries + 1;
 - **`=` on a `let` is refused,** since a `let` never changes (D13, D14).
 - **`=` never appears inside a condition,** so `if $tries = 3:` is refused (D14).
 
-**Not decided:** shorthand like `+=`; constants known while building, like `const`; the types themselves; declaring
+## `copy` and `share`
+
+When a list or a record is given to a new name, the line says `copy` or `share`, with no default (D49):
+
+```
+var $b: List<Whole> = copy $a;
+var $c: List<Whole> = share $a;
+```
+
+Changing `$b` leaves `$a` alone; changing `$c` changes `$a`. A plain value like a `Whole` needs neither word (D49).
+
+**Not decided:** whether arguments and changes with `=` need a word; shorthand like `+=`; constants known while building, like `const`; the types themselves; declaring
 a variable without a first value.

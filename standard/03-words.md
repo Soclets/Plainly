@@ -30,6 +30,7 @@ message".
 | `fam` | family | D2, D41 |
 | `handler` | | D42 |
 | `include` | | D43 |
+| `copy`, `share` | | D49 |
 | `fails`, `or` | | D39 |
 
 **Not decided:** every other keyword.

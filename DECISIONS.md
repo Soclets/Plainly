@@ -1480,3 +1480,34 @@ though. What's share?", "What's Hylo's", "What is share for, though?", "What abo
 needed?", "So, what about `share` & `copy` with GC? What kind of GC, though. I would take the more flexible kind",
 then, asked "Go-style GC (non-moving, collecting while the program runs), with `copy` and `share` required when
 assigning a list or record?", the owner chose: "yea".
+
+## D49. Assigning a list or record says `copy` or `share`
+
+2026-11-20.
+
+**Chosen.** When a list or a record is given to a new name, the line says whether that name gets its own copy or
+shares the original, and there's no default:
+
+```
+var $b: List<Whole> = copy $a;
+var $c: List<Whole> = share $a;
+```
+
+Changing `$b` leaves `$a` alone. Changing `$c` changes `$a`, since they're two names for one list, and the word
+`share` on that line says so. A plain value like a `Whole` needs neither word, since copying and sharing it look the
+same. `copy` really copies: the garbage collector (D48) keeps no counts to make it lazy.
+
+(Lists, records, `List<…>`, whether arguments and changes with `=` need a word, and copying cost aren't decided yet.)
+
+**Weighed.**
+- Values only, with no `share`, as in Hylo. Nothing can be aliased, but things that really are one thing, like the
+  player every monster targets, must be referred to by something like a number and looked up.
+- Sharing by default, as in Python, where `b = a` makes two names for one list. Changing one variable then changes
+  another with nothing on the page to say so, a classic beginner surprise.
+- Copying by default. Hides when a large copy happens.
+
+**Why this won.** Sharing is there when it's really meant, and both cases are visible on the line that makes them,
+so "I changed `$b` and `$a` changed too" can only happen where `share` is written. This is Plainly v1's D32, which
+Tankun brought back here ("What about RC with `share` and `copy` when needed?").
+
+**Tankun's words.** Decided with D48, in the same answer (quoted there).
