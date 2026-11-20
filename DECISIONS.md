@@ -2616,3 +2616,30 @@ refused: game.plainly:4:29, line 4 column 29
 indentation fix needs the whole line anyway. It's what the compiler session drafted (its Q18).
 
 **Tankun's words.** Asked "`fix:` always shows the whole corrected line?", the owner chose: "yea".
+
+## D85. The wording of the first batch of refusals: lines, blocks and variables
+
+2026-11-20.
+
+**Chosen.** These messages, drafted by the compiler session in D54's layout, each with its `fix:` showing the whole
+corrected line (D84) where there's one:
+
+| Refused | `what:` | `why:` |
+|---|---|---|
+| a missing `;` (D7) | (a `fix:`) | every statement ends with `;`. |
+| a wrong closer (D8) | (a `fix:`) | a closer is `end` and what it closes. |
+| `;` after a closer (D8) | (a `fix:`) | a closer stands alone, with no `;`. |
+| a missing closer (D8) | `` `end if` is missing before this line `` | every block ends with `end` and what it closes. |
+| a missing `:` on an opening line (D8) | (a `fix:`) | a block's opening line ends with `:`. |
+| wrong indentation, or a tab (D10) | (a `fix:`) | each level of indentation is 4 spaces, and tabs aren't used. |
+| a declaration with no type (D13) | `` `x` needs its type, written after a `:` `` | a declaration always writes the variable's type. |
+| `=` on a `let` (D14) | `` `lives` can't be given a new value `` | only a `var` can be given a new value. |
+| `=` in a condition (D14) | (a `fix:` with `==`) | `=` gives a variable a value, and is never part of a condition; `==` compares. |
+| a missing space around `<`, `>`, `+`, `-` or `*` (D17, D27, D59) | (a `fix:`) | `<`, `>`, `+`, `-` and `*` between two values have a space on each side. |
+| spaces around a narrowing's `.` (D18) | (a `fix:`) | a narrowing's `.` touches the words on both sides. |
+| text in single quotes (D21) | (a `fix:`) | text is written in double quotes, never single ones like `'hi'`. |
+
+Three drafts shown the first time but not in the table answered here go in the next batch: the `because:` line for `=`
+on a `let`, the missing closer at the end of a file, and a missing `:` or `=` in a declaration.
+
+**Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no.".
