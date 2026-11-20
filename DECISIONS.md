@@ -2853,3 +2853,31 @@ The parser's three messages have no `why:`, since there's no rule to name beyond
 
 **Tankun's words.** Their questions about the first showing are quoted in D90; then, asked "Do any of those read
 wrong?", the owner chose: "no".
+
+## D93. A variable declared inside a block ends with the block
+
+2026-11-20.
+
+**Chosen.** Whatever is declared inside a block (an `if`'s way, an `else`, a loop's body, an `otherwise` case, a
+handler's case) ends where that block ends:
+
+```
+if lives > 0:
+    let message: Text = "Still alive";
+    show_msg(message);
+end if
+show_msg(message);
+```
+
+The last line is refused with D92's "there's no variable named `message` here". After the block, the same name can be
+declared again, since that's a new variable. A `var` declared outside and changed inside keeps its new value.
+
+**Weighed.**
+- Variables lasting after their block, as in Python. If the block didn't run, the variable never got a value, so the
+  compiler would have to prove every way through set it, and a beginner would have to learn why it sometimes exists
+  afterwards.
+
+**Why this won.** It's what C, Rust, Java and Cyborg do, and Plainly v1's D102, where a variable leaking out of an `if`
+crashed v1's oracle. The compiler session asked (its Q11).
+
+**Tankun's words.** Asked "Variables declared in a block end with the block?", the owner chose: "yea".

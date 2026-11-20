@@ -21,6 +21,12 @@ var tries: Whole = 0;
 - **`var`:** the value can change. `var` is short for variable (D2, D13).
 - **The type is always written,** never worked out from the value (D13).
 
+## Blocks
+
+A variable declared inside a block (an `if`'s way, an `else`, a loop's body, an `otherwise` case) ends where the block
+ends. After it, the name can be declared again as a new variable, and a `var` from outside that was changed inside
+keeps its new value (D93).
+
 ## Changing
 
 A `var` gets a new value with its name, `=` and the value, as a statement of its own (D14):
