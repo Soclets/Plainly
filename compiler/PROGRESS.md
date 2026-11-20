@@ -52,6 +52,52 @@ Milestone 2 isn't set yet; that's Tankun's call. Decided pieces that would come 
 - `final` mode (D46), `plainly oracle` (D50), the cache and parallel compiling (D65);
 - the real PlainGC, ZGC-style (D69), its own piece of work.
 
+## Milestone 2: PlainGC, ZGC-style (D69)
+
+The prompt is `design/plaingc-prompt.md`. PlainGC replaces the never-freeing first version behind the same interface,
+and the compiler depends on nothing but that interface.
+
+### Steps
+
+1. **Stop-the-world mark and compact.** Not started. In detail below.
+2. **Moving with a load barrier:** PlainCompiler emits a barrier on every reference read, and forwarding finds a moved
+   object from an old reference.
+3. **Marking while the program runs.**
+4. **Moving while the program runs.**
+5. **Handles for `extern.rust` code,** once the design session says how they work.
+
+### Step 1 in detail
+
+- **Objects.** Every object starts with one header word: its kind and its payload's length. Two kinds for now:
+  *bytes*, holding no references (`Text`), and *references*, whose payload is all references (for the unit tests now,
+  lists later). The collector finds every reference inside an object from its kind alone.
+- **The heap is pages,** as ZGC's is: small objects are bump-allocated in 256 KiB pages; an object over 32 KiB gets a
+  page of its own and is never moved, as ZGC treats large pages. Each page has its own mark bits.
+- **Roots come from Cranelift's stack maps.** PlainCompiler marks every `Text` local as needing a stack map, so
+  Cranelift keeps it in a stack slot across each call and reloads it afterwards. After compiling, it writes a table
+  of every call site's return address, frame size and reference slots into the program, in a format PlainGC's
+  interface defines, and hands the table to the runtime at start. A collection walks the frame-pointer chain from
+  itself up to `proc.main`, and for each return address in the table reads and rewrites those slots. Cranelift is
+  set to keep frame pointers.
+- **A collection** stops the program (it has one thread for now), marks everything reachable from the roots, then
+  compacts: it evacuates live objects out of sparse pages into fresh ones, keeping a forwarding table per evacuated
+  page, rewrites every root and every reference inside live objects, and frees the evacuated and empty pages.
+- **One heap behind one lock,** so worker threads (D68) can share it later without redoing this.
+- **Collect-often mode:** with `PLAINGC_STRESS=1` in the environment, PlainGC collects at every allocation and
+  evacuates every page. Plainly programs can't read the environment, so no program can see it.
+- **Tests:** Rust unit tests for objects, allocation, marking, moving and forwarding with explicit roots; stress
+  programs in `compiler/gc_tests/` that allocate heavily and check every value; and every test in `tests/` run in
+  collect-often mode as well.
+
+### Placeholders until the design session decides (never something a program can rely on)
+
+- **When a collection starts (the pacer):** after allocating as many bytes as were live after the last collection,
+  and at least 4 MiB.
+- **How much memory the heap may use:** no limit beyond the system's.
+- **When memory runs out:** the existing `NotDesignedYet` message, status 3.
+- **Which pages are compacted:** pages less than 75% live.
+- **A bug in PlainGC itself:** `internal error:` with status 7 (D82), its wording a draft.
+
 ## How to run it
 
 ```
