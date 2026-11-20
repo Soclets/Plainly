@@ -95,12 +95,12 @@ pub enum IrStep {
         to: LocalId,
         value: LocalId,
     },
-    /// Reads a `Whole` from text (D22). `succeeded` says whether it could; when it couldn't, `to` holds nothing.
+    /// Reads a `Whole` from text (D22, D95). `succeeded` says whether it could; when it couldn't, `to` holds
+    /// nothing.
     TextToWhole {
         to: LocalId,
         succeeded: LocalId,
         value: LocalId,
-        site: SiteId,
     },
     Call {
         to: Option<LocalId>,

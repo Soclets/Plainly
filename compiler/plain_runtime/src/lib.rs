@@ -146,30 +146,16 @@ pub extern "C" fn plainly_whole_to_text(value: i64) -> *const u8 {
     new_text(value.to_string().as_bytes())
 }
 
-/// `be.Whole` of text (D22). Writes the number to `result` and gives 1, or gives 0 when the text isn't a whole
-/// number. Forms of text the standard doesn't decide stop the program with `NotDesignedYet`.
+/// `be.Whole` of text (D22, D95). Writes the number to `result` and gives 1, or gives 0 when the text isn't a
+/// whole number that fits.
 ///
 /// # Safety
 ///
-/// `text` must be a `Text` made by this runtime, `result` must point to 8 writable bytes, and `site` must point to
-/// `site_length` bytes of UTF-8 that stay valid.
+/// `text` must be a `Text` made by this runtime, and `result` must point to 8 writable bytes.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn plainly_text_to_whole(
-    text: *const u8,
-    result: *mut i64,
-    site: *const u8,
-    site_length: i64,
-) -> u8 {
-    // SAFETY: the caller promises `text` is a text from this runtime and `site` is valid.
-    let (bytes, site) = unsafe { (text_bytes(text), site_text(site, site_length)) };
-    let value = match read_whole(bytes) {
-        WholeReading::Number(value) => Some(value),
-        WholeReading::NotANumber => None,
-        WholeReading::NotDesigned(what) => {
-            let when = format!("the text was \"{}\"", String::from_utf8_lossy(bytes));
-            stop_not_designed_yet(site, what.to_string(), Some(when))
-        }
-    };
+pub unsafe extern "C" fn plainly_text_to_whole(text: *const u8, result: *mut i64) -> u8 {
+    // SAFETY: the caller promises `text` is a text from this runtime.
+    let value = read_whole(unsafe { text_bytes(text) });
     if !result.is_null() {
         // SAFETY: the caller promises `result` points to 8 writable bytes.
         unsafe { result.write(value.unwrap_or(0)) };
@@ -177,58 +163,21 @@ pub unsafe extern "C" fn plainly_text_to_whole(
     u8::from(value.is_some())
 }
 
-enum WholeReading {
-    Number(i64),
-    NotANumber,
-    /// The standard doesn't say whether this text is a number.
-    NotDesigned(&'static str),
-}
-
-/// Reads a whole number written as digits, with `-` in front for a negative one. How whole numbers are written
-/// isn't decided beyond that, so text that's nearly one stops as `NotDesignedYet` rather than being guessed at.
-fn read_whole(bytes: &[u8]) -> WholeReading {
-    let digits = bytes.strip_prefix(b"-").unwrap_or(bytes);
-    let all_digits = |part: &[u8]| !part.is_empty() && part.iter().all(u8::is_ascii_digit);
-    if all_digits(digits) {
-        if digits.len() > 1 && digits[0] == b'0' || bytes == b"-0" {
-            return WholeReading::NotDesigned(
-                "whether `be.Whole` reads a number written with extra zeros in front isn't decided",
-            );
-        }
-        return match std::str::from_utf8(bytes)
-            .ok()
-            .and_then(|text| text.parse::<i64>().ok())
-        {
-            Some(value) => WholeReading::Number(value),
-            None => WholeReading::NotDesigned(
-                "going past `Whole`'s range isn't decided, and this number is outside it",
-            ),
-        };
+/// Reads a whole number as players type it (D95): spaces around it are ignored, and a `+` or `-` in front and
+/// leading zeros are fine. Anything else, or a number too big or too small for a `Whole`, gives `None`, a failure.
+fn read_whole(bytes: &[u8]) -> Option<i64> {
+    // trace: D95
+    let start = bytes.iter().position(|&byte| byte != b' ')?;
+    let end = bytes.iter().rposition(|&byte| byte != b' ')? + 1;
+    let number = &bytes[start..end];
+    let digits = number
+        .strip_prefix(b"-")
+        .or_else(|| number.strip_prefix(b"+"))
+        .unwrap_or(number);
+    if digits.is_empty() || !digits.iter().all(u8::is_ascii_digit) {
+        return None;
     }
-    let trimmed = bytes.trim_ascii();
-    if trimmed.len() != bytes.len() && all_digits(trimmed.strip_prefix(b"-").unwrap_or(trimmed)) {
-        return WholeReading::NotDesigned(
-            "whether `be.Whole` reads a number with spaces around it isn't decided",
-        );
-    }
-    if let Some(rest) = bytes.strip_prefix(b"+")
-        && all_digits(rest)
-    {
-        return WholeReading::NotDesigned(
-            "whether `be.Whole` reads a number written with `+` isn't decided",
-        );
-    }
-    let separated = digits.first().is_some_and(u8::is_ascii_digit)
-        && digits.last().is_some_and(u8::is_ascii_digit)
-        && digits
-            .iter()
-            .all(|&byte| byte.is_ascii_digit() || byte == b'_' || byte == b',');
-    if separated {
-        return WholeReading::NotDesigned(
-            "whether `be.Whole` reads a number with `_` or `,` between its digits isn't decided",
-        );
-    }
-    WholeReading::NotANumber
+    std::str::from_utf8(number).ok()?.parse().ok()
 }
 
 // ----- Showing and asking -----
@@ -440,29 +389,36 @@ mod tests {
     use super::*;
 
     fn read(text: &str) -> Option<i64> {
-        match read_whole(text.as_bytes()) {
-            WholeReading::Number(value) => Some(value),
-            _ => None,
-        }
+        read_whole(text.as_bytes())
     }
 
     #[test]
-    fn d22_reads_whole_numbers() {
+    fn d95_reads_whole_numbers_as_players_type_them() {
         assert_eq!(read("41"), Some(41));
+        assert_eq!(read(" 42"), Some(42));
+        assert_eq!(read("42 "), Some(42));
         assert_eq!(read("-7"), Some(-7));
-        assert_eq!(read("0"), Some(0));
+        assert_eq!(read("+5"), Some(5));
+        assert_eq!(read("007"), Some(7));
+        assert_eq!(read("-0"), Some(0));
         assert_eq!(read("9223372036854775807"), Some(i64::MAX));
         assert_eq!(read("-9223372036854775808"), Some(i64::MIN));
-        assert!(matches!(read_whole(b"abc"), WholeReading::NotANumber));
-        assert!(matches!(read_whole(b""), WholeReading::NotANumber));
-        assert!(matches!(read_whole(b"4x"), WholeReading::NotANumber));
-        assert!(matches!(read_whole(b" 42"), WholeReading::NotDesigned(_)));
-        assert!(matches!(read_whole(b"+5"), WholeReading::NotDesigned(_)));
-        assert!(matches!(read_whole(b"007"), WholeReading::NotDesigned(_)));
-        assert!(matches!(
-            read_whole(b"9223372036854775808"),
-            WholeReading::NotDesigned(_)
-        ));
+        for failing in [
+            "abc",
+            "",
+            "   ",
+            "4 2",
+            "4.5",
+            "1,000",
+            "1_000",
+            "+-5",
+            "- 7",
+            "\t42",
+            "9223372036854775808",
+            "-9223372036854775809",
+        ] {
+            assert_eq!(read(failing), None, "{failing:?}");
+        }
     }
 
     #[test]

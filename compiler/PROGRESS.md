@@ -18,6 +18,7 @@ the test results (`python3 compiler/run_tests.py`).
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
+- `be.Whole` reads numbers as players type them (D95).
 - A variable ends with its block (D93); a name in use can't be declared again, and a variable can't take a
   procedure's name (D94).
 - `plainly compile` replaces `plainly build` (D91), and messages say "compile time" and "runtime" (D90).
@@ -79,8 +80,7 @@ The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard i
 place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
 two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; a call whose value isn't used; `??` on a call that can't fail; label order;
-sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `be.Whole` on text like
-` 42`, `+5`, `007` or a number out of range; running out of input; `random` with `from:` above `to:`; types other
+sliding into a labelled first parameter; `.fmt` given anything but text written in the call; running out of input; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
 
 ## What `NotBuiltYet` covers
@@ -259,10 +259,8 @@ uses a placeholder until it's decided.
 - **Q12. Answered by D94:** a name in use can't be declared again, and a variable can't take a procedure's name;
   both refused. A program's procedure named like a library one (`ask`, `random`, `show_msg`) is still
   `NotDesignedYet`.
-- **Q13. Which text `be.Whole` reads.** Digits with an optional `-` in front are read, and anything that isn't nearly a
-  number fails, as `abc` does (D22). These stop with `NotDesignedYet` at runtime: spaces around the number
-  (`" 42"`), a `+` (`"+5"`), extra zeros in front (`"007"`, `"-0"`), `_` or `,` between digits, and a number outside
-  `Whole`'s range. Empty text (a player pressing Enter at once) fails.
+- **Q13. Answered by D95:** spaces around the number are ignored, and a `+` or `-` and leading zeros are fine;
+  anything else fails, a number too big or too small for a `Whole` included. The failure's name is still open.
 - **Q14. Running out of input** in `ask` (chapter 4 says it isn't decided), and input that ends without Enter after
   the last answer: both `NotDesignedYet` at runtime.
 - **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone; and `?? ignore` on a call that gives

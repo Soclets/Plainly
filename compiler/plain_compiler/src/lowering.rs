@@ -369,12 +369,10 @@ impl Lowering<'_> {
                 let value = self.lower_value(text)?;
                 let to = self.new_local_for(call)?;
                 let succeeded = self.new_local(IrType::Bool);
-                let site = self.site(call.place);
                 self.push(IrStep::TextToWhole {
                     to,
                     succeeded,
                     value,
-                    site,
                 });
                 let use_fallback = self.new_block();
                 let after = self.new_block();

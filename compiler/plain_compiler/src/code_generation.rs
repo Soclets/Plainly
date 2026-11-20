@@ -129,11 +129,7 @@ fn declare_runtime(
         text_from_bytes: declare("plainly_text_from_bytes", &[pointer, whole], &[pointer])?,
         text_join: declare("plainly_text_join", &[pointer, pointer], &[pointer])?,
         whole_to_text: declare("plainly_whole_to_text", &[whole], &[pointer])?,
-        text_to_whole: declare(
-            "plainly_text_to_whole",
-            &[pointer, pointer, pointer, whole],
-            &[bool_type],
-        )?,
+        text_to_whole: declare("plainly_text_to_whole", &[pointer, pointer], &[bool_type])?,
         show_msg: declare("plainly_show_msg", &[pointer], &[])?,
         show_msg_same_line: declare("plainly_show_msg_same_line", &[pointer], &[])?,
         ask: declare("plainly_ask", &[pointer, pointer, whole], &[pointer])?,
@@ -553,7 +549,6 @@ impl Emitter<'_, '_> {
                 to,
                 succeeded,
                 value,
-                site,
             } => {
                 let text = self.get(*value)?;
                 let slot = self.builder.create_sized_stack_slot(StackSlotData::new(
@@ -565,9 +560,7 @@ impl Emitter<'_, '_> {
                     .builder
                     .ins()
                     .stack_addr(self.generator.pointer, slot, 0);
-                let (site_address, site_length) = self.site(*site)?;
-                let result =
-                    self.call_value(text_to_whole, &[text, address, site_address, site_length])?;
+                let result = self.call_value(text_to_whole, &[text, address])?;
                 let number =
                     self.builder
                         .ins()
