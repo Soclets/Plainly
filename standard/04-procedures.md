@@ -19,6 +19,8 @@ proc roll_dice returns Whole:
 end proc roll_dice
 ```
 
+where `...` stands for the procedure's body.
+
 **Not decided:** how a parameter is written; `returns` and the types; how a procedure gives back its value; a
 procedure that gives nothing back.
 

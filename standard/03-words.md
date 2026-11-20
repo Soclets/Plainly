@@ -20,7 +20,7 @@ message".
 A variable's name starts with `$`: `$name`, `$secret` (D11). So a variable is never mistaken for a keyword or a call,
 and new keywords never break existing names.
 
-A procedure's name is a plain word, like `larger` or `roll_dice`, with no mark.
+A procedure's name is a plain word, like `larger` or `roll_dice`, with no mark (D11).
 
 **Not decided:** which characters a name may hold; how words in a name are joined.
 

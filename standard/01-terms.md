@@ -19,7 +19,7 @@ The words this standard uses, each defined before a chapter relies on it.
 - **Name:** a word a program chooses, for a variable or a procedure.
 - **Variable:** a named place holding a value, with a name starting with `$`, as in `$score`.
 - **Value:** a piece of data, like a number or a piece of text.
-- **Type:** the kind of a value, like a whole number or text, written with a capital letter.
+- **Type:** the kind of a value, like a whole number or text.
 - **Narrowing:** a word after a `.` that makes another word more specific, as `.main` makes `proc` mean the procedure
   the program starts with, and `.same_line` makes `show_msg` leave its line open.
 
