@@ -108,6 +108,11 @@ Keep `compiler/PROGRESS.md` up to date as you go: what runs, what's next, which 
 wording, and every open question for the design session. Commit after each working step, in the format `CLAUDE.md`
 gives (for example `feature.compiler.parser: ...`), and push. After a compaction or in a fresh session, start by
 reading `compiler/PROGRESS.md`, `git log`, and the test results, before anything else.
+
+The design session works in this same folder at the same time, on `DECISIONS.md`, `standard/`, `tests/` and `design/`.
+So commit only your own files, naming them (`git add compiler/...`), never `git add -A` or `git add .`, and never
+change or revert files outside `compiler/`. If a push is refused because the design session pushed first, run
+`git pull --rebase` and push again.
 </keeping_state>
 
 <working_with_others>
