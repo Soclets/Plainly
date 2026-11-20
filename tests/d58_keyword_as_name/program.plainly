@@ -1,0 +1,3 @@
+proc.main:
+    let if: Whole = 3;
+end proc.main

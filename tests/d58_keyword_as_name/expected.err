@@ -1,0 +1,5 @@
+refused: program.plainly:2:9, line 2 column 9
+ 2 |     let if: Whole = 3;
+   |         ^^
+ what:    `if` is a keyword, so it can't be a name
+ why:     a name can't be one of Plainly's own words.

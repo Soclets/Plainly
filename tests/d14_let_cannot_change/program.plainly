@@ -1,0 +1,4 @@
+proc.main:
+    let lives: Whole = 3;
+    lives = lives - 1;
+end proc.main
