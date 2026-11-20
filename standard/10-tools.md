@@ -7,7 +7,21 @@ Cranelift, with no bytecode and no JIT. Running a program compiles it to a tempo
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
-**Not decided:** the command's name and its parts; the oracle's language.
+**Not decided:** the oracle's language.
+
+## The command
+
+```
+plainly run game.plainly --working
+plainly build game.plainly --final
+plainly check game.plainly
+plainly oracle game.plainly
+```
+
+- **`run`** builds to a temporary file and runs it; **`build`** makes the file to ship. Both need a mode (D46, D50).
+- **`check`** reports what's refused without building, and needs no mode (D50).
+- **`oracle`** runs the file on the oracle, the separate reference implementation, printing exactly what the compiled
+  program would. `plainly` forwards to the oracle's own program (D50).
 
 ## Memory
 

@@ -1511,3 +1511,46 @@ so "I changed `$b` and `$a` changed too" can only happen where `share` is writte
 Tankun brought back here ("What about RC with `share` and `copy` when needed?").
 
 **Tankun's words.** Decided with D48, in the same answer (quoted there).
+
+## D50. The command is `plainly`, with `run`, `build`, `check` and `oracle`
+
+2026-11-20.
+
+**Chosen.**
+
+```
+plainly run game.plainly --working
+plainly build game.plainly --final
+plainly check game.plainly
+plainly oracle game.plainly
+```
+
+- `run` builds to a temporary file and runs it (D45); `build` makes the file to ship; both need a mode (D46).
+- `check` only reports what's refused, without building, so it needs no mode.
+- `oracle` runs the file on the oracle, the separate reference implementation, printing exactly what the compiled
+  program would, with the same exit status. It needs no mode: it never builds, and keeps every check. `plainly`
+  forwards to the oracle's own program, as `git something` runs a separate `git-something`, so the oracle stays
+  separate code (D12); if it isn't installed, `plainly oracle` says how to get it. `plainly help` lists it as the
+  reference implementation, for testing.
+
+(A formatter isn't needed, since D10 refuses wrong indentation. Commands for tests or new projects, and the messages,
+aren't decided yet.)
+
+**Weighed.**
+- `apy`, after the compiler, as Plainly v1 had. A second name to learn, and "APY" is a finance term crowding search
+  results.
+- The oracle as its own command, `plainoracle game.plainly`, as in Plainly v1, to keep it away from beginners. Tankun
+  asked "Why not `plainly oracle`?": one name for all of Plainly's tools, with forwarding keeping the oracle separate
+  and optional, and the help text saying what it's for.
+
+**Why this won.** Everything is under the language's own name. The oracle's users are the test suite, compiler
+developers, the web playground and bug reports, and `plainly oracle` serves all of them without making it part of the
+compiler.
+
+**Tankun's words.** "With `plainly oracle`?", "Why would they use it, then?", "So, how is the oracle gonna be tested?",
+"Yeah, no shit, sherlock. But what the fuck do you say to run it", "Why not `plainly oracle`?", then, asked "`plainly`
+with `run`, `build`, `check` and `oracle`, where `oracle` forwards to the separate oracle program?", the owner chose:
+"yea. Names:
+PlainCompiler
+_Oracle
+_GC" (the names are D51).
