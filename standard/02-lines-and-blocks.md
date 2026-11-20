@@ -44,7 +44,29 @@ is 4 spaces. Any other indentation, a tab included, is refused while building, w
 
 Since every block ends with its closer, indentation never decides where a block ends (D8, D10).
 
-**Not decided:** comments; blank lines; how a statement's later lines are indented.
+## Comments
+
+- **`//` comments to the end of the line** (D74).
+- **`///` is a doc comment** on the lines right before a declaration; one with no declaration after it is refused
+  (D74).
+- **`comment name:` to `end comment name` is a block comment.** Everything between is ignored, and it ends only at its
+  own `end comment` with its name, so comment blocks can sit inside each other (D74).
+
+```
+/// Gives the larger of two whole numbers.
+proc larger(Whole a, b) returns Whole:
+    // the tie goes to b
+    ...
+end proc larger
+
+comment old_scoring:
+    let bonus: Whole = tries * 10;
+end comment old_scoring
+```
+
+where `...` stands for the procedure's body.
+
+**Not decided:** blank lines; how a statement's later lines are indented.
 
 ## Files
 

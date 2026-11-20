@@ -2292,3 +2292,49 @@ The first slides `a + 1`, the second the joined text. `( )` around the left side
 the same way.
 
 **Tankun's words.** Asked "`|>` comes last, after maths, `&`, comparisons and logic?", the owner chose: "yea".
+
+## D74. Comments: `//`, `///` before a declaration, and named `comment name:` blocks
+
+2026-11-20.
+
+**Chosen.**
+
+```
+/// Gives the larger of two whole numbers.
+proc larger(Whole a, b) returns Whole:
+    // the tie goes to b
+    if a > b:
+        return a;
+    else:
+        return b;
+    end if
+end proc larger
+
+comment old_scoring:
+    let bonus: Whole = tries * 10;
+    show_msg.fmt("Bonus: {bonus}");
+end comment old_scoring
+```
+
+- **`//` comments to the end of the line,** on a line of its own or after a statement.
+- **`///` is a doc comment,** on the lines right before a declaration, which editors show and a docs tool can collect.
+  A `///` with no declaration after it is refused.
+- **`comment name:` to `end comment name` is a block comment,** shaped like every other block (D8). Everything between
+  is ignored, broken code included, and the comment ends only at its own `end comment` with its name, so comment
+  blocks can sit inside each other and a stray line can't end one early. Its opening and closing lines follow D10's
+  indentation; what's between can be anything.
+- Inside text, `//` is just characters: `show_msg("a // b")` shows `a // b`.
+
+(What a docs tool makes of `///`, and which declarations take one, aren't decided yet.)
+
+**Weighed.**
+- `#`, as Python has, which the design claude proposed since `#` was free after D58. Tankun's set does more for the
+  same learning.
+- C's `/* */` block comments. They can't nest, and a stray `*/` inside ends one early.
+- No block comments, several `//` lines instead. Switching off a stretch of code means editing every line.
+
+**Why this won.** Each kind has one job: a note, a doc for a declaration, or a stretch switched off. The named block
+fits Plainly's `:` and `end` shape and fixes `/* */`'s known bug. Tankun designed the set.
+
+**Tankun's words.** Proposed instead of `#` (has code); then, asked "`//`, `///` before a declaration, and named
+`comment name:` blocks?", the owner chose: "yea".

@@ -33,6 +33,7 @@ message".
 | `rem` | remainder | D2, D71 |
 | `handler` | | D42 |
 | `include` | | D43 |
+| `comment` | | D74 |
 | `copy`, `share` | | D49 |
 | `fails`, `or` | | D39 |
 
@@ -69,6 +70,7 @@ own (D60).
 | Symbol | Meaning | Decided in |
 |---|---|---|
 | `;` | ends a statement | D7 |
+| `//`, `///` | a comment to the end of the line; a doc comment before a declaration | D74 |
 | `:` | ends an opening line | D8 |
 | `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
 | `.` | narrows, touching the words on both sides | D4, D6, D18 |
