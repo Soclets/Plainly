@@ -11,14 +11,14 @@ the test results (`python3 compiler/run_tests.py`).
 - **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
-- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 33 Rust unit tests pass, among them one
+- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 34 Rust unit tests pass, among them one
   per refusal, named after its decision (`plain_compiler/src/tests.rs`); they check what's refused and where, never
   the wording.
 - Every stage of D62 exists: tokenizer and parser (syntax tree), checker (typed tree), lowering (Plainly IR), code
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- Follows the decisions up to D78: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
+- Follows the decisions up to D80: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
 ## Milestone 1: every test and the guessing game, in `working` mode
@@ -83,7 +83,7 @@ than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
 
 Decided, but not in this milestone: `--final` mode, `plainly oracle`, families (`fam`), `extern.rust`, failures in a
 header (`fails`), `?`, `?? ignore`, `?? crash`, `otherwise:`, `case`, `instead`, `include`, handlers and `.*`; `/`,
-`div` and `rem` (D70, D71); comments (D74); lists (D75); methods (D77); `copy` and `share` (D49).
+`div` and `rem` (D70, D71); comments (D74); lists (D75), their facts like `.len` (D79) and items (D80); methods (D77); `copy` and `share` (D49).
 
 ## Messages waiting for wording (D54)
 

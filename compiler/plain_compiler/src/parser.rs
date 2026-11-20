@@ -1476,6 +1476,14 @@ impl<'a> Parser<'a> {
                 "`?`, passing a failure up (D23), isn't built yet".to_string(),
             ));
         }
+        if self.at_symbol(Symbol::OpenSquare) && self.current().spaces_before == 0 {
+            self.set_role(Role::CallOpen);
+            return Err(self.not_built_here(
+                self.current().place,
+                "lists and their items, as in `list[pos: 1]` (D75, D80), aren't built yet"
+                    .to_string(),
+            ));
+        }
         Ok(expression)
     }
 

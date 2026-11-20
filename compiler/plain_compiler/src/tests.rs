@@ -255,3 +255,16 @@ fn d73_a_slide_takes_everything_on_its_left() {
         vec![]
     );
 }
+
+#[test]
+fn d79_d80_list_facts_and_items_are_not_built_yet() {
+    let program = main_with(&[
+        "var n: Whole = 3;",
+        "show_msg(be.Text(n.len));",
+        "n[pos: 1] = 2;",
+    ]);
+    assert_eq!(
+        found(&program),
+        vec![(Kind::NotBuiltYet, 3), (Kind::NotBuiltYet, 4)]
+    );
+}

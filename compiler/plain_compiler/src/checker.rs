@@ -890,6 +890,15 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     Checked::unknown(place)
                 }
             },
+            ExpressionKind::BareNarrowed(callee)
+                if self.lookup(&callee.words[0].text).is_some() =>
+            {
+                self.messages.push(Message::not_built_yet(
+                    place,
+                    "facts about a value, like a list's `.len` (D79), aren't built yet",
+                ));
+                Checked::unknown(place)
+            }
             ExpressionKind::BareNarrowed(callee) => {
                 self.messages.push(
                     Message::refused(
