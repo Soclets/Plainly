@@ -32,4 +32,20 @@ refused: game.plainly:5:5, line 5 column 5
 5. **A broken block opener:** checking carries on into the body if it's clear what was meant, and stops there if it
    isn't (D55).
 
-**Not decided:** each message's wording; how columns are counted in text beyond plain English letters; exit statuses.
+**Not decided:** each message's wording; how columns are counted in text beyond plain English letters.
+
+## Exit statuses
+
+| Status | When |
+|---|---|
+| 0 | the program ran to its end |
+| 1 | it was refused while building |
+| 2 | the file couldn't be read |
+| 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
+| 4 | a check failed while running |
+| 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
+
+`NotBuiltYet` is for something decided but not built, and `NotDesignedYet` for something no decision covers. They use
+the same layout, with their name as the kind (D56).
+
+**Not decided:** what a failure leaving `proc.main` shows.

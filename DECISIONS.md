@@ -1698,3 +1698,33 @@ too?", then, asked "That message layout, with `because:` showing its line?", the
 mistake. This is Plainly v1's D58 and D62, Cyborg's rules, and what v1's PlainOracle did.
 
 **Tankun's words.** "Where's Anti Cascade?", then, asked "Those five anti-cascade rules?", the owner chose: "yea".
+
+## D56. Exit statuses
+
+2026-11-20.
+
+**Chosen.**
+
+| Status | When |
+|---|---|
+| 0 | the program ran to its end |
+| 1 | it was refused while building |
+| 2 | the file couldn't be read |
+| 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
+| 4 | a check failed while running, like overflow (D46) |
+| 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose (D23) |
+
+`NotBuiltYet` is for something decided but not built yet, and `NotDesignedYet` for something no decision covers yet.
+They're the implementations' own limits, not Plainly errors, and use D54's layout with their name as the kind.
+
+(What a failure leaving `proc.main` shows, and how `NotBuiltYet` and `NotDesignedYet` are worded, aren't decided yet.)
+
+**Weighed.**
+- One status for every kind of failure, as many programs do. A test couldn't tell "refused" from "crashed" without
+  reading the message.
+- Status 4 for a deliberate crash too. A failed check is a bug; giving up on purpose isn't.
+
+**Why this won.** Each kind of ending has its own number, so tests and scripts can tell them apart. 1 to 4 are Plainly
+v1's D71 and D82; 5 is new, since v1 never decided it.
+
+**Tankun's words.** Asked "Those six exit statuses?", the owner chose: "yea".
