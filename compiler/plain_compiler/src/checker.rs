@@ -191,6 +191,7 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
                     format!("two parameters are named `{}`", parameter.name.text),
                 )
                 .because("the first is here", earlier.name.place)
+                // trace: D102
                 .why("each parameter needs its own name."),
             );
         }
@@ -438,6 +439,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 Message::refused(place, format!("`{name}` is already a procedure's name"))
                     .because(format!("the procedure `{name}` is declared here"), declared)
                     .why(format!(
+                        // trace: D102
                         "a variable can't take a procedure's name, since `{name}` and `{name}()` would look alike."
                     )),
             );
@@ -451,6 +453,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             self.messages.push(
                 Message::refused(place, format!("there's no variable named `{name}` here"))
                     .because(
+                        // trace: D102
                         format!("`{name}` is declared inside a block that has ended"),
                         declared,
                     )
@@ -557,6 +560,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             format!("`{}` is already in use here", name.text),
                         )
                         .because(format!("`{}` is declared here", name.text), earlier)
+                        // trace: D102
                         .why("a name in use can't be declared again; two things get two names."),
                     );
                 } else {
@@ -1579,7 +1583,8 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             word.place,
                             format!("`show_msg` has no narrowing `.{narrowing}`"),
                         )
-                        .why("`show_msg` is narrowed by `.fmt` and `.same_line`."),
+                        // trace: D102
+                        .why(narrowings_why("show_msg", &["fmt", "same_line"])),
                     );
                     self.check_arguments_alone(slid, arguments);
                     return Checked::unknown(place);
@@ -1588,6 +1593,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             if *seen {
                 self.messages.push(
                     Message::refused(word.place, format!("`.{narrowing}` is written twice"))
+                        // trace: D102
                         .why("each narrowing is written once."),
                 );
                 self.check_arguments_alone(slid, arguments);
@@ -1690,9 +1696,20 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 self.messages.push(
                     Message::refused(
                         callee.place,
-                        format!("there's no procedure named `{}`", callee.written()),
+                        format!(
+                            "`be.{target}` has no narrowing `.{}`",
+                            rest.first().copied().unwrap_or_default()
+                        ),
                     )
-                    .why("`be.Text` is narrowed only by `.fmt`."),
+                    // trace: D102
+                    .why(narrowings_why(
+                        &format!("be.{target}"),
+                        if target_type == Type::Text {
+                            &["fmt"]
+                        } else {
+                            &[]
+                        },
+                    )),
                 );
                 self.check_arguments_alone(slid, arguments);
                 return Checked::unknown(place);
@@ -1890,6 +1907,19 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             pieces.push(FormatPiece::Text(plain));
         }
         (!refused).then_some(pieces)
+    }
+}
+
+/// The `why:` for an unknown narrowing, listing the word's narrowings (D102).
+fn narrowings_why(word: &str, narrowings: &[&str]) -> String {
+    let listed: Vec<String> = narrowings
+        .iter()
+        .map(|narrowing| format!("`.{narrowing}`"))
+        .collect();
+    match listed.as_slice() {
+        [only] => format!("`{word}`'s only narrowing is {only}."),
+        [first @ .., last] => format!("`{word}`'s narrowings are {} and {last}.", first.join(", ")),
+        [] => format!("`{word}` has no narrowings."),
     }
 }
 

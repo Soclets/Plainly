@@ -1006,6 +1006,7 @@ impl<'a> Parser<'a> {
                             self.current().place,
                             "nothing can follow an `if`'s `else:` part but `end if`",
                         )
+                        // trace: D102
                         .why("an `if` has at most one `else:`, and it comes last."),
                     );
                     self.stopped = true;
@@ -1109,6 +1110,7 @@ impl<'a> Parser<'a> {
                     self.current().place,
                     "`??` here doesn't follow a call that can fail",
                 )
+                // trace: D102
                 .why("`??` deals with the failure of the call right before it."),
             );
             return Err(Skip);
@@ -1131,7 +1133,7 @@ impl<'a> Parser<'a> {
             ));
         }
         if self.at_binary_operator() {
-            // trace: D81
+            // trace: D81, D102
             let why = "a slide's step is a procedure, so an operator after it goes outside brackets around the slide.";
             let message = match self.written_at(place) {
                 Some(text) if place.line == self.current().place.line => Message::refused_with_fix(
@@ -1307,7 +1309,9 @@ impl<'a> Parser<'a> {
             .is_some_and(BinaryOperator::is_comparison)
         {
             // trace: D81
-            let why = "two comparisons in a row are refused; `and` joins them, naming the middle value twice.";
+            // trace: D102
+            let why = "a comparison sets two values against each other; `and` joins two comparisons, naming the middle \
+                       value twice.";
             let message = match self.written_at(right.place) {
                 Some(middle) if right.place.line == operator_place.line => {
                     let end = Place {
@@ -1744,10 +1748,13 @@ impl<'a> Parser<'a> {
             };
             let (first, second) = (as_written(before), as_written(after));
             let why = if expected == 0 {
+                // trace: D102
                 format!("no space goes between `{first}` and `{second}`.")
             } else if gap == 0 {
+                // trace: D102
                 format!("`{first}` and `{second}` have one space between them.")
             } else {
+                // trace: D102
                 "spaces never come two in a row, outside indentation.".to_string()
             };
             let edit = Edit {
@@ -1773,6 +1780,7 @@ impl<'a> Parser<'a> {
                     place,
                     replacement: String::new(),
                 };
+                // trace: D102
                 mistakes.push((place, edit, "a line never ends with spaces.".to_string()));
             }
         }
@@ -1826,6 +1834,7 @@ impl<'a> Parser<'a> {
                 replacement,
             };
             let mut message = Message::refused_with_fix(group[0].0, edit).why(
+                // trace: D102
                 "spacing follows one rule: one space around operators and after `,` and `:`, none inside brackets \
                  or before a call's `(`, never two in a row, and none at the end of a line.",
             );
@@ -1862,6 +1871,7 @@ impl<'a> Parser<'a> {
                         },
                         format!("{extra} extra blank line{plural}, after the one on line {line}"),
                     )
+                    // trace: D102
                     .why("one blank line is enough to separate the parts of a program."),
                 );
             }
@@ -1897,7 +1907,7 @@ fn decided_spacing(token: &Token, role: Role) -> Option<String> {
         );
     }
     if role == Role::BinaryOperator {
-        // trace: D98
+        // trace: D98, D102
         return Some(format!("`{}` has one space on each side.", token.written()));
     }
     None
@@ -1952,7 +1962,8 @@ fn arithmetic_place(expression: &Expression) -> Option<Place> {
 /// with `_` only between words, as in `player2` or `hp_max_2`.
 fn name_problem(text: &str) -> Option<&'static str> {
     if text.chars().any(|letter| letter.is_ascii_uppercase()) {
-        Some("has a capital letter, and names have none")
+        // trace: D102
+        Some("has a capital letter, but names have none")
     } else if text.starts_with(|first: char| first.is_ascii_digit()) {
         Some("starts with a digit")
     } else if text.starts_with('_') {

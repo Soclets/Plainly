@@ -184,6 +184,7 @@ fn tokenize_line(
                         replacement: String::new(),
                     },
                 )
+                // trace: D102
                 .why("a blank line has no spaces on it."),
             );
         }

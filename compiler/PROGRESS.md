@@ -259,33 +259,17 @@ type (D23); the four `labels` messages (D25); `-` on something that isn't a numb
 wrong type; the parser's three messages; overflow at runtime (D46); `internal error:`, `can't read:` and the missing
 mode. Each is marked `// trace: D92`.
 
+**Approved in D102,** the sixth batch's first part: two parameters with one name; a narrowing written twice; an
+unknown narrowing, whose `why:` lists the word's narrowings ("`show_msg`'s narrowings are `.fmt` and `.same_line`.",
+"`be.Text`'s only narrowing is `.fmt`."); anything after `else:` but `end if`; D81's three; D94's two, parameters
+counting as variables; D93's `because:`; the knock-on `because:` (D83); bad names, with "but" (D99); extra blank
+lines (D97, D101); and spacing (D98, D100). Each is marked `// trace: D102`.
+
 **Still waiting for wording:**
-- two parameters with one name; a narrowing written twice; an unknown narrowing of `show_msg` or `be.Text`; anything
-  after an `if`'s `else:` part but `end if`;
-- D81's three: two comparisons in a row, an operator after a slide's step, `??` not after a call;
-- D100's message for a line with several spacing mistakes: a `^` under each gap, `fix:` the whole line corrected,
-  and why: spacing follows one rule: one space around operators and after `,` and `:`, none inside brackets or
-  before a call's `(`, never two in a row, and none at the end of a line.
-- D98's spacing, for a line with one mistake: `fix:` the corrected line. `why:` by kind:
-  `` `==` has one space on each side. `` (any operator but D85's five, which keep theirs);
-  `` `,` and `2` have one space between them. ``; `` no space goes between `(` and `"three"`. ``;
-  spaces never come two in a row, outside indentation.; a line never ends with spaces.; a blank line has no spaces
-  on it. A word followed by a spaced `(`, as in `show_msg ("a")`, is read as a call, so its space is refused like
-  any other.
-- D99's names: what: `` `Score` has a capital letter, and names have none `` (or `` starts with a digit ``,
-  `` starts with `_` ``, `` ends with `_` ``, `` has two `_` in a row ``); why: a name is lowercase letters and digits,
-  starting with a letter, with `_` only between words.
-- D97's blank lines in a row, with no `fix:` (D101): what: `2 extra blank lines, after the one on line 3`; why: one
-  blank line is enough to separate the parts of a program.
-- D94's two: a name declared again while in use (what: `` `guess` is already in use here ``; because: `` `guess` is
-  declared here ``; why: a name in use can't be declared again; two things get two names.), and a variable or
-  parameter with a procedure's name (what: `` `roll` is already a procedure's name ``; because: `` the procedure
-  `roll` is declared here ``; why: `` a variable can't take a procedure's name, since `roll` and `roll()` would look
-  alike. ``);
-- the `because:` on a variable used after its block (D93): `` `note` is declared inside a block that has ended ``,
-  with the declaration shown;
-- the `because:` on a knock-on error (D83): "it follows from the error at line N column M";
-- `internal error:`'s first line, "PlainCompiler itself went wrong, not your program";
+- a word with no narrowings, drafted on D102's pattern as "`be.Whole` has no narrowings.";
+- `internal error:`'s first line, "PlainCompiler itself went wrong, not your program", and PlainGC's: "PlainGC
+  itself went wrong, not your program", with why: "this is a bug in PlainGC. Please report it at
+  https://github.com/Soclets/Plainly/issues, with the program that caused it.";
 - the other command mistakes: no command, `x` isn't a command, no file, two files, two modes, `check` needs no mode,
   `x` isn't a mode; and `can't read:` with "a Plainly file's name ends in `.plainly`" or "it isn't UTF-8 text";
 - every `NotBuiltYet` and `NotDesignedYet` message's `what:`, at compile time and at runtime (D56 leaves their wording

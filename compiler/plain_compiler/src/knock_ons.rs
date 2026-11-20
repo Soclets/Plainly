@@ -99,6 +99,7 @@ pub fn sort_out(
         }
         message.because = Some(Because {
             sentence: format!(
+                // trace: D102
                 "it follows from the error at line {} column {}",
                 first_place.line, first_place.column
             ),
