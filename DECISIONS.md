@@ -2021,7 +2021,7 @@ Without an editor, `plainly run` compiles on demand, in parallel, with the cache
 without slowing you down; when you're waiting, everything goes to the build. Keying the cache by fingerprint is how
 Cyborg's `okay` keeps cached builds exactly equal to fresh ones.
 
-**Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (the "no" answered the question about
-threads in the language, still to settle), "Let me answer compiling first. By background I meant that it compiles on
+**Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (what the "no" answered, about threads in
+the language, is still to be checked), "Let me answer compiling first. By background I meant that it compiles on
 another thread while you work", "Background compiling is on another thread, but not para", then, asked "Background
 compiling on one thread while you edit, parallel when you run or build, and a shared cache?", the owner chose: "yea".
