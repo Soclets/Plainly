@@ -9,7 +9,8 @@ The web playground runs the oracle compiled to WebAssembly (D45).
 
 PlainOracle, the reference implementation, is written in C (D52).
 
-**Not decided:** PlainOracle's C standard, compiler and guard rails.
+It's C23, compiled with Clang with every warning on, and every test run is under AddressSanitizer and
+UndefinedBehaviorSanitizer (D53).
 
 ## The command
 

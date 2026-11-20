@@ -1602,3 +1602,24 @@ share code or bugs (D12).
 SPARK, though", "C or C++ for PlainOracle, if there's two options only", "C for PlainOracle, and I'm not kidding.",
 then, asked for the reason, "My reason for C is that I wanted to see how much problems C would cause, so make sure to
 record them."
+
+## D53. PlainOracle is careful modern C: C23, Clang, every warning, and sanitizers on every test run
+
+2026-11-20.
+
+**Chosen.** PlainOracle is written the way a serious C project is today:
+- C23, so overflow is checked with the standard `ckd_add`, `ckd_sub` and `ckd_mul`;
+- compiled with Clang, with every warning on and warnings treated as errors;
+- every test run under AddressSanitizer (memory errors) and UndefinedBehaviorSanitizer (undefined behaviour).
+
+Everything these guard rails catch is still logged in `design/c-problems.md` (D52).
+
+**Weighed.**
+- Plain C, with no guard rails. It would mostly measure how many bugs slip through unwatched, which says more about the
+  setup than about C.
+
+**Why this won.** D52's experiment measures what C costs as it's really written, and the log then shows both what C
+gets wrong and what it takes to catch it.
+
+**Tankun's words.** Asked "Careful modern C (C23, Clang, all warnings, sanitizers on every test run), with everything
+the guard rails catch still logged?", the owner chose: "yea. We have naming rules already, right?"
