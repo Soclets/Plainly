@@ -56,8 +56,10 @@ PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69
 - **`extern.rust` code holds handles** to Plainly values, not plain pointers. A handle lasts for one call, and its
   direct look at a value can't cross a collection, both checked by Rust's borrow checker; a kept handle holds a value
   beyond one call, as a root (D105).
+- **A collection starts just early enough to finish before the heap's limit,** as ZGC's pacer does, from how fast the
+  program allocates and how long a collection takes (D113).
 
-**Not decided:** the order of building it.
+**Not decided:** the heap's limit; whether the pacer has settings; what happens when memory runs out.
 
 ## Build modes
 

@@ -3489,3 +3489,30 @@ knows to tell whoever made it.
 
 **Tankun's words.** "Whyb Doesn't say what to do, though.", then, asked "Should D111's `why:` say where in the Rust it
 went wrong, and to fix it there or report it to whoever wrote it?", the owner chose: "yea".
+
+## D113. PlainGC's pacer is ZGC's: it starts each collection just early enough to finish before the heap's limit
+
+2026-11-20.
+
+**Chosen.** PlainGC decides when to start a collection the way ZGC's pacer does:
+- it measures how fast the program allocates, and how long a collection takes;
+- it predicts when the heap would reach its limit at that speed;
+- it starts a collection just early enough to finish before then, with a safety margin;
+- it collects early a few times while it has no measurements yet (warm-up), and now and then while the program is
+  quiet, so unused memory isn't held for long.
+
+(The heap's limit isn't decided yet; until it is, the pacer aims at a labelled placeholder. Whether the pacer has any
+settings isn't decided either.)
+
+**Weighed.**
+- Start once the program has allocated as much as was in use after the last collection, and at least 4 MiB, as Go's
+  collector does by default and as PlainCompiler's placeholder did. It scales by itself, needs no limit, and is far less
+  to build; the design claude first recommended it, since a terminal game never comes near a limit.
+
+**Why this won.** The pacer is invisible to users, so it's the builder's choice, and building ZGC's is part of the fun
+of making PlainGC real (D69). It also keeps memory use bounded, rather than letting it grow to twice what's in use.
+
+**Tankun's words.** Shown the Go-style rule as the recommendation, Tankun said: "Bro, ZGC sounds fun". Then, asked
+"Should PlainGC's pacer be ZGC's: measure how fast the program allocates and how long a collection takes, and start each
+collection just early enough to finish before the heap's limit?", the owner chose: "yea. What's the setting?" (the
+question about settings is the next one).
