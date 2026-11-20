@@ -3609,3 +3609,26 @@ an implementation to choose.
 
 **Tankun's words.** Asked "Should a command with several mistakes show all of them, one line each, before the usage?",
 the owner chose: "yea".
+
+## D117. A line after `break;` in the same block is refused, as one after `return` is
+
+2026-11-20.
+
+**Chosen.** A line after `break;` in the same block can never run, so it's refused, as D57 refuses a line after
+`return`, with D88's wording and `break` in place of `return`:
+
+```
+ what:    this line comes after a `break` in the same block, so it can never run
+ because: the `break` is here
+ why:     nothing may follow `break` in the same block.
+```
+
+**Weighed.**
+- Allowing it. The line would sit in the program looking as if it runs, and never would.
+
+**Why this won.** `break` leaves the block as surely as `return` does, so the same rule and the same message cover
+both.
+
+**Tankun's words.** Asked "Should a line after `break;` in the same block be refused like one after `return`, with the
+same wording?", the owner chose: "yea. So, what would `final` optimize? And does PlainCompiler have para, concur,
+cache, background yet?" (the questions are answered in chat, not decisions).

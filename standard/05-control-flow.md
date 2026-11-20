@@ -84,7 +84,7 @@ end while
 ## `break`
 
 `break;` leaves the innermost loop it's in. There's no `continue`: ending one pass early is an `if` around the rest
-(D32).
+(D32). Nothing may follow `break;` in the same block, as nothing may follow `return` (D57, D117).
 
 ```
 while tries < 7:
