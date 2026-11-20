@@ -11,4 +11,4 @@
 
 ## Btw
 
-Plainly uses PlainCompiler and PlainGC.
+Please don't expect high performance, I estimate its runtime performance on around Bash in this message.
