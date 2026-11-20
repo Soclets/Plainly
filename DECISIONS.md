@@ -2048,3 +2048,38 @@ and enemies moving on their own, and designing it in from the start avoids bolti
 **Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (quoted in D65 too), "What is the
 diff?", then, asked "Should Plainly programs themselves run one step at a time in v2, with threads in the language
 left for later?", the owner chose: "We should have".
+
+## D67. Tasks taking turns on one thread are the everyday way to run things at once; real threads are opt-in
+
+2026-11-20.
+
+**Chosen.** Running several things at once (D66) comes in two kinds:
+1. **Tasks on one thread, the everyday way:** several tasks take turns, and each hands over only at points it chooses,
+   like waiting for a key or a timer. Only one runs at any moment, so nothing changes behind a task's back, and the
+   turns go in the same order every run.
+2. **Real threads on several cores, opt-in,** for when a game needs more speed, like a chess-style search. Only those
+   who choose them meet their risks.
+
+```
+proc play_music:
+    while true:
+        play_note("C");
+        wait(seconds: 1);
+    end while
+end proc play_music
+```
+
+(The words for starting a task and handing over, and how real threads share or send values, aren't decided yet.)
+
+**Weighed.**
+- Real threads only, as the first framing assumed. Every program wanting music beside a game would meet data races.
+- Tasks only. A game needing several cores, like a search, couldn't have them.
+
+**Why this won.** Tankun's idea: people who don't want to learn threads use tasks, which can't race and give the same
+result every run, as Unity's coroutines, Lua's coroutines and JavaScript's `async` already do for games. Threads stay
+there for speed, with their risks landing only on those who reach for them.
+
+**Tankun's words.** "Does ZGC-style GC help?", "What does A give?", "What big data could Terminal games have?",
+"ZGC-style GC + A seems very fun", "Lol, Plainly v1 was just abandoned because I didn't get to the fun stuff being
+real, ZGC and comoiler", "Can't people who don't wanna learn threads just do "concurrent" single thread?", then, asked
+"Tasks on one thread as the everyday way, with real threads opt-in for speed?", the owner chose: "yea".

@@ -103,9 +103,13 @@ end while
 
 ## Running several things at once
 
-A Plainly program can run several parts of itself at once (D66).
+A Plainly program can run several parts of itself at once (D66), in two ways (D67):
 
-**Not decided:** how it's written; how parts talk to each other; what may be shared between them.
+1. **Tasks on one thread, the everyday way:** tasks take turns, each handing over only at points it chooses, like
+   waiting for a key or a timer, so nothing changes behind a task's back and the turns go the same way every run.
+2. **Real threads on several cores, opt-in,** for speed.
+
+**Not decided:** the words for starting a task and handing over; how real threads share or send values.
 
 ## After an `if` that leaves
 
