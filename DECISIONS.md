@@ -2565,3 +2565,31 @@ from a bug in the program it ran. The compiler session found both gaps.
 
 **Tankun's words.** Asked "Exit statuses 6 for a wrong command, and 7 for a bug in Plainly's own tools?", the owner
 chose: "yea".
+
+## D83. Knock-on errors are shown as their own messages, each with `because:` pointing back
+
+2026-11-20.
+
+**Chosen.** D55's rule 4 works this way: when the first error's single fix, applied in memory, makes later errors
+disappear, each of those is still shown as a message of its own, with a `because:` line pointing back to the first
+error:
+
+```
+refused: game.plainly:7:9, line 7 column 9
+ ...
+ because: it follows from the error at line 3 column 5
+```
+
+(The exact wording of that `because:` line isn't decided yet.)
+
+**Weighed.**
+- Folding them into the first error's message, as "2 more errors follow from this one". Shorter, but it hides where
+  the later trouble is.
+
+**Why this won.** A beginner still sees every line affected, and the `because:` tells them to fix the first error
+before the rest, rather than starting at the last and getting confused. It's the compiler session's reading of D55,
+and what Cyborg does.
+
+**Tankun's words.** Asked "Knock-on errors shown as their own messages, each with `because:` pointing back to the
+first?", the owner chose: "yea"; then, asked to check which of two options that meant, the first, the owner chose:
+"yea".

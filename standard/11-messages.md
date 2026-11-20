@@ -28,7 +28,8 @@ refused: game.plainly:5:5, line 5 column 5
 2. **A refused declaration still creates its variable** with its written type (D54, D55).
 3. **A refused expression's type becomes unknown,** and nothing is refused for using an unknown value (D55).
 4. **Knock-on errors are sorted out:** the first error's single fix is applied in memory and the program checked
-   again, and anything that disappears is shown under a `because:` pointing back at it (D55).
+   again. Anything that disappears is still shown as a message of its own, with a `because:` line pointing back to
+   the first error (D55, D83).
 5. **A broken block opener:** checking carries on into the body if it's clear what was meant, and stops there if it
    isn't (D55).
 
