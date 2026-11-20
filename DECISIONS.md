@@ -2593,3 +2593,26 @@ and what Cyborg does.
 **Tankun's words.** Asked "Knock-on errors shown as their own messages, each with `because:` pointing back to the
 first?", the owner chose: "yea"; then, asked to check which of two options that meant, the first, the owner chose:
 "yea".
+
+## D84. `fix:` always shows the whole corrected line
+
+2026-11-20.
+
+**Chosen.** A message's `fix:` line (D54) shows the whole line as it should be, not just the piece that changes:
+
+```
+refused: game.plainly:4:29, line 4 column 29
+ 4 |     let tries: Whole = 0
+   |                         ^
+ fix:  `    let tries: Whole = 0;`
+```
+
+**Weighed.**
+- Only the piece that changes, as in `fix: ;`, with the `^` showing where it goes. Shorter, but for longer fixes, like
+  reordering narrowings or changing `+` to `&`, the reader has to work out how the line ends up, and a piece of
+  indentation can't be read at all.
+
+**Why this won.** A beginner can copy the fix straight in, and there's never a doubt about where a piece goes. D10's
+indentation fix needs the whole line anyway. It's what the compiler session drafted (its Q18).
+
+**Tankun's words.** Asked "`fix:` always shows the whole corrected line?", the owner chose: "yea".
