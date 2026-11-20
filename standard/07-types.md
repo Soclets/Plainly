@@ -22,9 +22,13 @@ let left: Whole = 5 - tries;
 let back: Whole = -speed;
 ```
 
-`+` is only for numbers (D27).
+`+` is only for numbers (D27). `*` multiplies, with a space on each side (D59):
 
-**Not decided:** going past the range; multiplying and dividing; maths order; how whole numbers are written; other
+```
+let total: Whole = price * count;
+```
+
+**Not decided:** going past the range; dividing; maths order; how whole numbers are written; other
 number types.
 
 ## `Bool`

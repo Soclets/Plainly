@@ -1814,3 +1814,35 @@ than Cyborg-style garuntees. If your shit breaks, sorry, but it broke", "We coul
 `^`?", "Wouldn't that make it two meanings?", "Wait, then `=` is double meaning. So, maybe we should loosen the
 rule?", "No, look at `!=`", "So, then we get `!` marking for free? Or just `*` again?", then, asked "Drop `$`, and
 multiply with `*`?", the owner chose: "yea".
+
+## D59. `*` multiplies
+
+2026-11-20.
+
+**Chosen.** `*` multiplies, with a space on each side, as in nearly every language:
+
+```
+let total: Whole = price * count;
+```
+
+`.*`, the mark on a handler that can jump (D42), is a different symbol: it's written stuck to a dot, so it's read as
+one symbol of its own, and never comes where multiplying could. D42 doesn't change.
+
+The rule behind that: **each symbol, read as a whole, has one job.** A longer symbol counts as its own, so pieces
+inside it may echo other symbols: `!=` echoes `=`, `|>` echoes `>`, and `.*` echoes `*`. What the rule still refuses
+is one whole symbol doing two jobs.
+
+(Dividing, maths order, and going past `Whole`'s range aren't decided yet.)
+
+**Weighed.**
+- `x`, the sign taught at school, as in Plainly v1 (its D84). Without `$` (D58), `x` couldn't also be a name, and `x`
+  is the most common name in a game, a position.
+- Moving the jump mark to `^` (Tankun's idea), or to `!`. Both were allowed once the rule was stated as above, and
+  neither adds anything over keeping `.*`, which is Cyborg's and Plainly v1's mark.
+- A strict rule that no symbol appears in two meanings, even inside another. `=` already means "gets this value" alone
+  and "equal" inside `!=`, as in nearly every language since C, and avoiding that would need `/=` or `:=`.
+
+**Why this won.** `*` is what every other language and calculator app uses, and frees `x` to be a name. Stating the
+symbol rule by whole symbols keeps it honest about `=` and `!=`.
+
+**Tankun's words.** Decided with D58, in the same answer (quoted there).

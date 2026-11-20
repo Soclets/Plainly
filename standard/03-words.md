@@ -60,6 +60,9 @@ Each kind of bracket has one job (D3):
 
 ## Symbols
 
+Each symbol, read as a whole, has one job. A longer symbol counts as its own, so `!=` and `.*` are different symbols
+from `=` and `*` (D59).
+
 | Symbol | Meaning | Decided in |
 |---|---|---|
 | `;` | ends a statement | D7 |
@@ -69,7 +72,8 @@ Each kind of bracket has one job (D3):
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |
 | `+`, `-` | add and subtract, with a space on each side; a `-` with no space after it negates | D27 |
+| `*` | multiplies, with a space on each side | D59 |
 | `&` | joins text | D28 |
 | `?` | passes a failure up | D23 |
 | `??` | handles a failure on one line | D23 |
-| `*` | marks a handler that can jump, where it's used | D42 |
+| `.*` | marks a handler that can jump, where it's used; one symbol, stuck to the dot | D42, D59 |
