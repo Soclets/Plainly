@@ -27,6 +27,7 @@ message".
 | `.fmt` | format | D2, D29 |
 | `extern`, `.rust` | external | D2, D36 |
 | `returns` | | D37 |
+| `return` | | D57 |
 | `fam` | family | D2, D41 |
 | `handler` | | D42 |
 | `include` | | D43 |

@@ -31,8 +31,15 @@ proc greet($name: Text):
 
 Using what such a procedure gives as a value is refused (D38).
 
-**Not decided:** how a parameter is written; how a procedure gives back its value in its body. Failures in a header:
-chapter 8.
+### `return`
+
+- **`return value;`** gives back a value of the header's type, and every way through a procedure with `returns` must
+  end in one (D57).
+- **A bare `return;`** leaves early, in a procedure with no `returns` (D57).
+- **Nothing may follow `return` in the same block** (D57).
+- **A bare `return;` as a procedure's last line is refused** (D57).
+
+**Not decided:** how a parameter is written. Failures in a header: chapter 8.
 
 ## Procedures written in Rust
 

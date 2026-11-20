@@ -1728,3 +1728,46 @@ They're the implementations' own limits, not Plainly errors, and use D54's layou
 v1's D71 and D82; 5 is new, since v1 never decided it.
 
 **Tankun's words.** Asked "Those six exit statuses?", the owner chose: "yea".
+
+## D57. `return value;` gives back a value, and a bare `return;` leaves a procedure that gives nothing back
+
+2026-11-20.
+
+**Chosen.**
+
+```
+proc larger($a: Whole, $b: Whole) returns Whole:
+    if $a > $b:
+        return $a;
+    else:
+        return $b;
+    end if
+end proc larger
+
+proc greet($name: Text):
+    if $name == "":
+        return;
+    else:
+        show_msg.fmt("Hi, {$name}!");
+    end if
+end proc greet
+```
+
+- **`return value;`** gives back a value, in a procedure with `returns` (D37). It must be the header's type, and every
+  way through the procedure must end in one, or the procedure is refused.
+- **A bare `return;`** leaves early, in a procedure with no `returns` (D38).
+- **Nothing may follow `return` in the same block,** since it could never run, as with D9.
+- **A bare `return;` as a procedure's last line is refused,** since the procedure ends there anyway.
+
+(`$name == ""`, comparing text, isn't decided yet.)
+
+**Weighed.**
+- `return nothing;`, as in Plainly v1 (its D100), which matched v1's `returns nothing` headers. v2's headers write
+  nothing when nothing comes back (D38), so neither does `return`.
+
+**Why this won.** `return` is followed by exactly what the header says comes back: a value, or nothing. Code that can
+never run is refused rather than left as a trap.
+
+**Tankun's words.** Asked "`return` like that?", the owner chose: "yea.
+What about adding `proc larger(Whole $a, $b) returns Whole:`?
+Infront like that means every" (the second part is still being weighed).

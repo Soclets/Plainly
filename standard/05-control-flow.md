@@ -122,4 +122,5 @@ proc larger($a: Whole, $b: Whole) returns Whole:
 end proc larger
 ```
 
-**Not decided:** `return`, failing on purpose, other loops, leaving an outer loop, and every other part of control flow.
+**Not decided:** failing on purpose, other loops, leaving an outer loop, and every other part of control flow. `return`:
+chapter 4.
