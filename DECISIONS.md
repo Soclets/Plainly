@@ -240,15 +240,17 @@ special rule. With the exact fix in every message, a missing `;` costs a keystro
 no `;`: `end proc add`, `end proc.main`, `end if`.
 
 ```
-proc add($a: Whole, $b: Whole) returns Whole:
+proc larger($a: Whole, $b: Whole) returns Whole:
     if $a > $b:
         return $a;
+    else:
+        return $b;
     end if
-    return $b;
-end proc add
+end proc larger
 ```
 
-(Indentation, `if`, `return` and comparisons aren't decided yet.)
+(Indentation, `if`, `return` and comparisons aren't decided yet. This example first had `return $b;` after `end if`,
+the shape Plainly v1's D50 and Cyborg's D430 refuse, and called itself `add` though it doesn't add.)
 
 **Weighed.**
 - Python's way: `:` to open, and the block ends where the indentation does, with no closing line. Shorter, and
