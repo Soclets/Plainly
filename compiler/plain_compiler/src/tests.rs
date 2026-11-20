@@ -323,3 +323,22 @@ fn d93_a_variable_ends_with_its_block() {
     ]);
     assert_eq!(found(&program), refused_on(6));
 }
+
+#[test]
+fn d94_a_name_in_use_is_not_declared_again() {
+    let program = main_with(&[
+        "let guess: Text = \"4\";",
+        "if true:",
+        "    let guess: Whole = 4;",
+        "end if",
+    ]);
+    assert_eq!(found(&program), refused_on(4));
+}
+
+#[test]
+fn d94_a_variable_can_not_take_a_procedure_name() {
+    let program = "proc roll returns Whole:\n    return 4;\nend proc roll\n\nproc.main:\n    let roll: Whole = roll();\nend proc.main\n";
+    assert_eq!(found(program), refused_on(6));
+    let parameter = "proc roll returns Whole:\n    return 4;\nend proc roll\n\nproc show(roll: Whole):\n    show_msg(be.Text(roll));\nend proc show\n\nproc.main:\n    show(roll());\nend proc.main\n";
+    assert_eq!(found(parameter), refused_on(5));
+}

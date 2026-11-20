@@ -11,14 +11,15 @@ the test results (`python3 compiler/run_tests.py`).
 - **The guessing game builds and plays** (`plainly compile examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
-- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 38 Rust unit tests pass, among them one
+- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 41 Rust unit tests pass, among them one
   per refusal, named after its decision (`plain_compiler/src/tests.rs`); they check what's refused and where, never
   the wording.
 - Every stage of D62 exists: tokenizer and parser (syntax tree), checker (typed tree), lowering (Plainly IR), code
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- A variable ends with its block (D93).
+- A variable ends with its block (D93); a name in use can't be declared again, and a variable can't take a
+  procedure's name (D94).
 - `plainly compile` replaces `plainly build` (D91), and messages say "compile time" and "runtime" (D90).
 - Follows the decisions up to D83: `??` sticks to its call, and comparison chains and operators after a step are
   refused with their fixes (D81); exit statuses 6 and 7 (D82); knock-ons as D83 confirms.
@@ -77,8 +78,7 @@ Inside `plain_compiler`: `tokenizer.rs`, `parser.rs` (syntax tree, with indentat
 The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard is silent or says "Not decided". Each
 place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
-two statements on one line; comparing text; conditions that aren't `Bool`;
-declaring a name already in use; a call whose value isn't used; `??` on a call that can't fail; label order;
+two statements on one line; comparing text; conditions that aren't `Bool`; a procedure named like a library one; a call whose value isn't used; `??` on a call that can't fail; label order;
 sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `be.Whole` on text like
 ` 42`, `+5`, `007` or a number out of range; running out of input; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
@@ -138,6 +138,13 @@ mode. Each is marked `// trace: D92`.
 - two parameters with one name; a narrowing written twice; an unknown narrowing of `show_msg` or `be.Text`; anything
   after an `if`'s `else:` part but `end if`;
 - D81's three: two comparisons in a row, an operator after a slide's step, `??` not after a call;
+- D94's two: a name declared again while in use (what: `` `guess` is already in use here ``; because: `` `guess` is
+  declared here ``; why: a name in use can't be declared again; two things get two names.), and a variable or
+  parameter with a procedure's name (what: `` `roll` is already a procedure's name ``; because: `` the procedure
+  `roll` is declared here ``; why: `` a variable can't take a procedure's name, since `roll` and `roll()` would look
+  alike. ``);
+- the `because:` on a variable used after its block (D93): `` `note` is declared inside a block that has ended ``,
+  with the declaration shown;
 - the `because:` on a knock-on error (D83): "it follows from the error at line N column M";
 - `internal error:`'s first line, "PlainCompiler itself went wrong, not your program";
 - the other command mistakes: no command, `x` isn't a command, no file, two files, two modes, `check` needs no mode,
@@ -249,8 +256,9 @@ uses a placeholder until it's decided.
   with their fixes.
 - **Q11. Answered by D93:** a variable ends with its block; using it after is refused with "there's no variable
   named `x` here", and the name can be declared again.
-- **Q12. Declaring a name that's already in use:** a variable again while the first is still in use, or a variable or
-  parameter with a procedure's name, or a procedure named like a library one (`ask`, `random`, `show_msg`).
+- **Q12. Answered by D94:** a name in use can't be declared again, and a variable can't take a procedure's name;
+  both refused. A program's procedure named like a library one (`ask`, `random`, `show_msg`) is still
+  `NotDesignedYet`.
 - **Q13. Which text `be.Whole` reads.** Digits with an optional `-` in front are read, and anything that isn't nearly a
   number fails, as `abc` does (D22). These stop with `NotDesignedYet` at runtime: spaces around the number
   (`" 42"`), a `+` (`"+5"`), extra zeros in front (`"007"`, `"-0"`), `_` or `,` between digits, and a number outside

@@ -302,6 +302,8 @@ struct ProcedureChecker<'a, 'b> {
     messages: &'b mut Vec<Message>,
     variables: Vec<VariableFacts>,
     scopes: Vec<Vec<VariableId>>,
+    /// Variables whose block has ended, by name, with where each was declared (D93).
+    ended: HashMap<String, Place>,
     loop_depth: usize,
     gives: Gives,
     name: String,
@@ -322,21 +324,14 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             messages,
             variables: Vec::new(),
             scopes: vec![Vec::new()],
+            ended: HashMap::new(),
             loop_depth: 0,
             gives,
             name: procedure.name.text.clone(),
         };
         let mut parameters = Vec::new();
         for parameter in &procedure.parameters {
-            if program.by_name.contains_key(&parameter.name.text) {
-                checker.messages.push(Message::not_designed_yet(
-                    parameter.name.place,
-                    format!(
-                        "a parameter with the same name as a procedure, `{}`, isn't decided",
-                        parameter.name.text
-                    ),
-                ));
-            }
+            checker.refuse_procedure_name(&parameter.name.text, parameter.name.place);
             parameters.push(checker.declare(
                 &parameter.name.text,
                 parameter.type_name.known,
@@ -426,12 +421,42 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
     /// Ends a block: whatever it declared ends with it (D93).
     fn close_scope(&mut self) {
         // trace: D93
-        self.scopes.pop();
+        if let Some(scope) = self.scopes.pop() {
+            for id in scope {
+                let variable = &self.variables[id];
+                self.ended.insert(variable.name.clone(), variable.place);
+            }
+        }
+    }
+
+    /// A variable or parameter can't take a procedure's name (D94).
+    fn refuse_procedure_name(&mut self, name: &str, place: Place) {
+        if let Some(&id) = self.program.by_name.get(name) {
+            // trace: D94
+            let declared = self.program.signatures[id].place;
+            self.messages.push(
+                Message::refused(place, format!("`{name}` is already a procedure's name"))
+                    .because(format!("the procedure `{name}` is declared here"), declared)
+                    .why(format!(
+                        "a variable can't take a procedure's name, since `{name}` and `{name}()` would look alike."
+                    )),
+            );
+        }
     }
 
     /// A name that isn't a variable here, including one whose block has ended (D93).
     fn unknown_name(&mut self, name: &str, place: Place) {
-        if let Some(&id) = self.program.by_name.get(name) {
+        if let Some(&declared) = self.ended.get(name) {
+            // trace: D93
+            self.messages.push(
+                Message::refused(place, format!("there's no variable named `{name}` here"))
+                    .because(
+                        format!("`{name}` is declared inside a block that has ended"),
+                        declared,
+                    )
+                    .why("a variable is declared with `let` or `var` before it's used."),
+            );
+        } else if let Some(&id) = self.program.by_name.get(name) {
             let signature = &self.program.signatures[id];
             let message = if signature.parameters.is_empty() {
                 let replacement = format!("{name}()");
@@ -524,25 +549,18 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             } => {
                 let checked = self.value(value);
                 if let Some(id) = self.lookup(&name.text) {
+                    // trace: D94
                     let earlier = self.variables[id].place;
                     self.messages.push(
-                        Message::not_designed_yet(
+                        Message::refused(
                             name.place,
-                            format!(
-                                "declaring `{}` again while it's still in use isn't decided",
-                                name.text
-                            ),
+                            format!("`{}` is already in use here", name.text),
                         )
-                        .because(format!("`{}` is declared here", name.text), earlier),
+                        .because(format!("`{}` is declared here", name.text), earlier)
+                        .why("a name in use can't be declared again; two things get two names."),
                     );
-                } else if self.program.by_name.contains_key(&name.text) {
-                    self.messages.push(Message::not_designed_yet(
-                        name.place,
-                        format!(
-                            "a variable with the same name as a procedure, `{}`, isn't decided",
-                            name.text
-                        ),
-                    ));
+                } else {
+                    self.refuse_procedure_name(&name.text, name.place);
                 }
                 self.expect_type(&checked, type_name.known, |expected, found| {
                     format!(
