@@ -413,6 +413,7 @@ impl<'a> Parser<'a> {
                     place,
                     replacement: String::new(),
                 },
+                // trace: D88
                 "a definition writes `( )` only when it has parameters.",
             );
             return Ok(Vec::new());
@@ -1622,6 +1623,7 @@ impl<'a> Parser<'a> {
                         place,
                         replacement: String::new(),
                     },
+                    // trace: D88
                     "a step with nothing else to pass is written bare, since the slide gives it its value.",
                 );
             }

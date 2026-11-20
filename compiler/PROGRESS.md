@@ -7,7 +7,7 @@ the test results (`python3 compiler/run_tests.py`).
 
 **Milestone 1 is done.**
 
-- **All 20 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including message tests for D85 and D87.
+- **All 21 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including message tests for D85, D87 and D88.
 - **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
@@ -114,6 +114,11 @@ closer before a line, and a missing `:` on an opening line (D8); indentation and
 (D8); a missing `:` or `=` in a declaration (D13); comparing two types (D17); converting to the type a value already
 is, and `be` with no type (D22); an unhandled call that can fail (D23); `+` on two texts (D27, D28); a number joined
 with `&` (D28); a keyword as a name (D58). Each is marked `// trace: D87`.
+
+**Approved in D88,** word for word as drafted: `( )` on a definition with no parameters and parameters on `proc.main`
+(D4); `()` on a bare step (D5); the missing, unwanted and wrong label messages and the argument count (D24); using
+what a no-`returns` procedure gives, and `return value;` without `returns` (D38); the four `return` messages (D57); a
+line after an `if` that can leave (D9); `break` outside a loop (D32). Each is marked `// trace: D88`.
 
 ### Refusals
 

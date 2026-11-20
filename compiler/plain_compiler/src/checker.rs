@@ -104,6 +104,7 @@ pub fn check_program(
                 // trace: D4
                 messages.push(
                     Message::refused(procedure.header_place, "`proc.main` takes nothing").why(
+                        // trace: D88
                         "only the program's start runs `proc.main`, so it's never given anything.",
                     ),
                 );
@@ -351,6 +352,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     last.place,
                     "a bare `return;` as a procedure's last line does nothing",
                 )
+                // trace: D88
                 .why("a procedure ends there anyway; `return;` is for leaving early."),
             );
         }
@@ -366,6 +368,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         procedure.name.text
                     ),
                 )
+                // trace: D88
                 .why("every way through a procedure with `returns` ends in `return` and a value."),
             );
         }
@@ -478,6 +481,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             "this line comes after a `return` in the same block, so it can never run",
                         )
                         .because("the `return` is here", *place)
+                        // trace: D88
                         .why("nothing may follow `return` in the same block."),
                         Blocked::Break(place) => Message::not_designed_yet(
                             statement.place,
@@ -489,6 +493,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             "this line follows an `if` that can leave",
                         )
                         .because(format!("the `if` on line {} can leave", place.line), *place)
+                        // trace: D88
                         .why("when any way through an `if` leaves, nothing may follow its `end if`; code that should run afterwards goes in the ways that don't leave."),
                     };
                     self.messages.push(message);
@@ -688,6 +693,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     // trace: D32
                     self.messages.push(
                         Message::refused(statement.place, "this `break` isn't inside a loop")
+                            // trace: D88
                             .why("`break` leaves the innermost loop it's in."),
                     );
                 }
@@ -732,6 +738,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         ),
                     )
                     .why(
+                        // trace: D88
                         "in a procedure with `returns`, `return` gives back a value of that type.",
                     ),
                 );
@@ -744,6 +751,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         value.place,
                         format!("`{}` has no `returns`, so it gives nothing back", self.name),
                     )
+                    // trace: D88
                     .why("only a procedure with `returns` gives back a value."),
                 );
                 None
@@ -847,6 +855,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     checked.expression.place,
                     "this call gives nothing back, so it can't be used as a value",
                 )
+                // trace: D88
                 .why("a procedure with no `returns` gives nothing back."),
             );
             return Checked::unknown(checked.expression.place);
@@ -1434,6 +1443,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 count(given, "value"),
             );
             let mut message = Message::refused(place, what)
+                // trace: D88
                 .why("a call gives every parameter a value, with its label if it has one.");
             if let Some(declared) = declared {
                 message = message.because(format!("`{name}` is declared here"), declared);
@@ -1462,6 +1472,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     };
                     self.messages.push(
                         Message::refused_with_fix(value_place, edit)
+                            // trace: D88
                             .why("every call writes the labels its procedure chose."),
                     );
                     refused = true;
@@ -1476,6 +1487,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     };
                     self.messages.push(
                         Message::refused_with_fix(written.place, edit)
+                            // trace: D88
                             .why("a call writes only the labels its procedure chose."),
                     );
                     refused = true;
@@ -1486,6 +1498,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             written.place,
                             format!("this argument's label is `{label}`, not `{}`", written.text),
                         )
+                        // trace: D88
                         .why("every call writes the labels its procedure chose."),
                     );
                     refused = true;
@@ -1741,6 +1754,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         if let Some(label) = &argument.label {
             self.messages.push(
                 Message::refused(label.place, "`.fmt`'s text has no label")
+                    // trace: D88
                     .why("a call writes only the labels its procedure chose."),
             );
             return None;
