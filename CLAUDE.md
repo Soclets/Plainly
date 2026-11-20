@@ -46,7 +46,10 @@ one it replaces. The "why" matters most. Log a decision as soon as it's made,
 before moving on to the next question.
 
 Tankun's words are quoted whole and exactly, typos included, never in pieces
-or trimmed. When a message can't be quoted, write a marker without quotes
+or trimmed. That holds everywhere in an entry, the Weighed and Why parts
+included, and for messages from other repos and old versions: to back up a
+point, quote the whole message or point to the entry that quotes it, never a
+phrase pulled out of one. When a message can't be quoted, write a marker without quotes
 instead: *too long* (over 300 characters in DECISIONS.md, or over 60 in a
 commit subject) or *has code* (a code block, or in a commit subject any
 backticks). Pick by a check, never by feel: write the whole message to a file
