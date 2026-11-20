@@ -12,6 +12,7 @@
 mod checker;
 mod code_generation;
 mod internal_error;
+mod knock_ons;
 mod linking;
 mod lowering;
 mod message;
@@ -19,6 +20,8 @@ mod parser;
 mod plainly_ir;
 mod source;
 mod syntax_tree;
+#[cfg(test)]
+mod tests;
 mod tokenizer;
 mod typed_tree;
 
@@ -224,6 +227,8 @@ fn compile_and_go(action: Action, file: &Path) -> Result<u8, InternalError> {
     };
     let (mut messages, typed) = front_end(&sources);
     if !messages.is_empty() {
+        messages.sort_by_key(|message| message.place);
+        knock_ons::sort_out(&mut messages, &sources, |fixed| front_end(fixed).0);
         return Ok(show_messages(&mut messages, &sources));
     }
     // `check` stops at the typed tree (D50, D62).

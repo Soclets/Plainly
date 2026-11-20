@@ -860,13 +860,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 place,
             ),
             ExpressionKind::Text(characters) => {
-                if characters.is_empty() {
-                    self.messages.push(Message::not_designed_yet(
-                        place,
-                        "empty text, `\"\"`, isn't decided",
-                    ));
-                    return Checked::unknown(place);
-                }
+                // trace: D21, D76
                 let text = characters
                     .iter()
                     .map(|character| character.character)
@@ -1246,6 +1240,14 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 Checked::unknown(place)
             }
             [name] => self.check_user_call(name, callee, slid, arguments, place),
+            [name, _, ..] if self.lookup(name).is_some() => {
+                self.messages.push(Message::not_built_yet(
+                    callee.place,
+                    "methods, called on a value with `.` (D77), aren't built yet",
+                ));
+                self.check_arguments_alone(slid, arguments);
+                Checked::unknown(place)
+            }
             [name, ..] if self.program.by_name.contains_key(*name) => {
                 self.messages.push(Message::not_built_yet(
                     callee.place,
@@ -1734,13 +1736,6 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             let _ = self.value(&argument.value);
             return None;
         };
-        if characters.is_empty() {
-            self.messages.push(Message::not_designed_yet(
-                argument.value.place,
-                "empty text, `\"\"`, isn't decided",
-            ));
-            return None;
-        }
         self.read_braces(characters, argument.value.place)
     }
 

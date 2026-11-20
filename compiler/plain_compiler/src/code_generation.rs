@@ -442,8 +442,13 @@ impl Emitter<'_, '_> {
                 self.set(*to, value)?;
             }
             IrStep::AllocateText { to, bytes } => {
-                let id = self.generator.text_data(bytes)?;
-                let address = self.address_of(id);
+                // Empty text has no bytes to point at (D76).
+                let address = if bytes.is_empty() {
+                    self.builder.ins().iconst(self.generator.pointer, 0)
+                } else {
+                    let id = self.generator.text_data(bytes)?;
+                    self.address_of(id)
+                };
                 let length = self.builder.ins().iconst(types::I64, bytes.len() as i64);
                 let text = self.call_value(text_from_bytes, &[address, length])?;
                 self.set(*to, text)?;

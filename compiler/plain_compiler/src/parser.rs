@@ -43,6 +43,9 @@ const KEYWORDS: &[&str] = &[
     "copy",
     "share",
     "fails",
+    "div",
+    "rem",
+    "comment",
 ];
 
 /// One level of indentation is 4 spaces (D10).
@@ -224,6 +227,9 @@ impl<'a> Parser<'a> {
                     TokenKind::Word(word) if word == "fam" => {
                         Message::not_built_yet(token.place, "families (D41) aren't built yet")
                     }
+                    TokenKind::Word(word) if word == "comment" => {
+                        Message::not_built_yet(token.place, "comment blocks (D74) aren't built yet")
+                    }
                     TokenKind::Word(word) if word == "extern" => Message::not_built_yet(
                         token.place,
                         "procedures written in Rust (D36) aren't built yet",
@@ -248,7 +254,10 @@ impl<'a> Parser<'a> {
             if self.at_end()
                 || (token.first_on_line
                     && token.place.column == 1
-                    && (token.is_word("proc") || token.is_word("fam") || token.is_word("extern")))
+                    && (token.is_word("proc")
+                        || token.is_word("fam")
+                        || token.is_word("extern")
+                        || token.is_word("comment")))
             {
                 return;
             }
@@ -480,6 +489,22 @@ impl<'a> Parser<'a> {
             "Text" => Some(Type::Text),
             _ => None,
         };
+        if word == "List" {
+            self.messages.push(Message::not_built_yet(
+                token.place,
+                "lists (D75) aren't built yet",
+            ));
+            while !self.at_line_start()
+                && !self.at_symbol(Symbol::Equals)
+                && !self.at_symbol(Symbol::CloseBracket)
+            {
+                self.advance();
+            }
+            return Ok(TypeName {
+                known: None,
+                place: token.place,
+            });
+        }
         if known.is_none() {
             self.messages.push(Message::not_designed_yet(
                 token.place,
@@ -719,6 +744,13 @@ impl<'a> Parser<'a> {
                     );
                     Err(Skip)
                 }
+                "comment" => {
+                    self.messages.push(Message::not_built_yet(
+                        place,
+                        "comment blocks (D74) aren't built yet",
+                    ));
+                    Err(Skip)
+                }
                 "case" | "otherwise" | "instead" | "include" => {
                     self.messages.push(Message::not_built_yet(
                         place,
@@ -802,8 +834,20 @@ impl<'a> Parser<'a> {
         } else {
             return Err(self.refuse_unexpected("`=` and the first value"));
         }
-        let value = self.parse_full_expression()?;
-        self.expect_statement_end(keyword.place)?;
+        let value_start = self.current().place;
+        let value = self
+            .parse_full_expression()
+            .and_then(|value| self.expect_statement_end(keyword.place).map(|()| value));
+        // trace: D55
+        let value = value.unwrap_or_else(|Skip| {
+            if !self.at_line_start() {
+                self.skip_rest_of_line();
+            }
+            Expression {
+                kind: ExpressionKind::Refused,
+                place: value_start,
+            }
+        });
         Ok(StatementKind::Declare {
             changeable,
             name,
@@ -1026,12 +1070,7 @@ impl<'a> Parser<'a> {
     fn parse_full_expression(&mut self) -> Result<Expression, Skip> {
         let first = self.parse_or()?;
         if self.at_symbol(Symbol::Slide) {
-            if has_operator_outside_brackets(&first) {
-                return Err(self.not_designed_here(
-                    self.current().place,
-                    "where `|>` sits among other operators isn't decided, so a slide can't start with a calculation",
-                ));
-            }
+            // trace: D73
             let mut steps = Vec::new();
             while self.at_symbol(Symbol::Slide) {
                 self.set_role(Role::BinaryOperator);
@@ -1041,7 +1080,7 @@ impl<'a> Parser<'a> {
             if self.at_binary_operator() || self.at_symbol(Symbol::QuestionQuestion) {
                 return Err(self.not_designed_here(
                     self.current().place,
-                    "where `|>` sits among other operators isn't decided",
+                    "an operator after a slide's step isn't decided",
                 ));
             }
             let place = first.place.to(self.previous().place);
@@ -1055,9 +1094,17 @@ impl<'a> Parser<'a> {
         }
         if self.at_symbol(Symbol::QuestionQuestion) {
             let operator = self.current().place;
+            if self.peek_slide_after_fallback() {
+                return Err(self.not_designed_here(
+                    operator,
+                    "where `??` sits among other operators, `|>` included, isn't decided",
+                ));
+            }
             if !matches!(first.kind, ExpressionKind::Call { .. }) {
-                return Err(self
-                    .not_designed_here(operator, "`??` after anything but a call isn't decided"));
+                return Err(self.not_designed_here(
+                    operator,
+                    "where `??` sits among other operators isn't decided, so it can only follow a call",
+                ));
             }
             self.set_role(Role::BinaryOperator);
             self.advance();
@@ -1068,9 +1115,7 @@ impl<'a> Parser<'a> {
                 ));
             }
             let fallback = self.parse_or()?;
-            if has_operator_outside_brackets(&fallback)
-                || self.at_symbol(Symbol::QuestionQuestion)
-                || self.at_symbol(Symbol::Slide)
+            if has_operator_outside_brackets(&fallback) || self.at_symbol(Symbol::QuestionQuestion)
             {
                 return Err(self.not_designed_here(
                     fallback.place,
@@ -1087,6 +1132,21 @@ impl<'a> Parser<'a> {
             });
         }
         Ok(first)
+    }
+
+    /// Whether a `|>` comes later on this line, after a `??`.
+    fn peek_slide_after_fallback(&self) -> bool {
+        let mut index = self.position + 1;
+        while let Some(token) = self.tokens.get(index) {
+            if token.first_on_line || token.is_symbol(Symbol::Semicolon) {
+                return false;
+            }
+            if token.is_symbol(Symbol::Slide) {
+                return true;
+            }
+            index += 1;
+        }
+        false
     }
 
     fn not_designed_here(&mut self, place: Place, what: &str) -> Skip {
@@ -1185,9 +1245,9 @@ impl<'a> Parser<'a> {
         self.parse_comparison()
     }
 
-    /// One comparison at most (D17); chains of them aren't decided.
+    /// One comparison at most (D17); chains of them aren't decided. Maths comes first (D72).
     fn parse_comparison(&mut self) -> Result<Expression, Skip> {
-        let left = self.parse_arithmetic()?;
+        let left = self.parse_sum()?;
         if self.at_symbol(Symbol::Equals) {
             // trace: D14
             let place = self.current().place;
@@ -1209,13 +1269,7 @@ impl<'a> Parser<'a> {
         let operator_place = self.current().place;
         self.set_role(Role::BinaryOperator);
         self.advance();
-        let right = self.parse_arithmetic()?;
-        if has_operator_outside_brackets(&left) || has_operator_outside_brackets(&right) {
-            return Err(self.not_designed_here(
-                operator_place,
-                "the order of maths and comparisons without brackets isn't decided",
-            ));
-        }
+        let right = self.parse_sum()?;
         if self
             .binary_operator()
             .is_some_and(BinaryOperator::is_comparison)
@@ -1229,48 +1283,68 @@ impl<'a> Parser<'a> {
         Ok(Self::binary(operator, operator_place, left, right))
     }
 
-    /// `+`, `-`, `*` and `&`. Maths order isn't decided (standard chapter 7), so a chain of more than one of them
-    /// is only read when every one is `&`, which joins text the same way in any order (D28).
-    fn parse_arithmetic(&mut self) -> Result<Expression, Skip> {
-        let mut operands = vec![self.parse_unary()?];
-        let mut operators: Vec<(BinaryOperator, Place)> = Vec::new();
+    /// `+`, `-` and `&`, left to right, after `*` (D72). `&` next to an unbracketed `+`, `-` or `*` is refused,
+    /// since maths doesn't say which goes first (D72).
+    fn parse_sum(&mut self) -> Result<Expression, Skip> {
+        let mut left = self.parse_product()?;
+        let mut join_place: Option<Place> = None;
+        let mut maths_place: Option<Place> = arithmetic_place(&left);
         while let Some(operator) = self.binary_operator() {
             if !matches!(
                 operator,
-                BinaryOperator::Add
-                    | BinaryOperator::Subtract
-                    | BinaryOperator::Multiply
-                    | BinaryOperator::Join
+                BinaryOperator::Add | BinaryOperator::Subtract | BinaryOperator::Join
             ) {
                 break;
             }
-            operators.push((operator, self.current().place));
+            let operator_place = self.current().place;
+            if operator == BinaryOperator::Join {
+                join_place = join_place.or(Some(operator_place));
+            } else {
+                maths_place = maths_place.or(Some(operator_place));
+            }
             self.set_role(Role::BinaryOperator);
             self.advance();
-            operands.push(self.parse_unary()?);
+            let right = self.parse_product()?;
+            maths_place = maths_place.or(arithmetic_place(&right));
+            // trace: D72
+            left = Self::binary(operator, operator_place, left, right);
         }
-        if operators.len() > 1
-            && !operators
-                .iter()
-                .all(|(operator, _)| *operator == BinaryOperator::Join)
-        {
-            let place = operators[1].1;
-            let what = if operators
-                .iter()
-                .any(|(operator, _)| *operator == BinaryOperator::Join)
-            {
-                "`&` next to `+`, `-` or `*` without brackets isn't decided"
-            } else {
-                "maths order isn't decided, so more than one of `+`, `-` and `*` needs brackets for now"
-            };
-            return Err(self.not_designed_here(place, what));
-        }
-        let mut operands = operands.into_iter();
-        let mut left = operands.next().ok_or(Skip)?;
-        for ((operator, place), right) in operators.into_iter().zip(operands) {
-            left = Self::binary(operator, place, left, right);
+        if let (Some(join_place), Some(maths_place)) = (join_place, maths_place) {
+            // trace: D72
+            self.messages.push(
+                Message::refused(
+                    join_place,
+                    "`&` is next to maths without brackets, so it isn't clear which goes first",
+                )
+                .because("the maths is here", maths_place)
+                .why("where maths doesn't say which goes first, `( )` shows it."),
+            );
+            return Err(Skip);
         }
         Ok(left)
+    }
+
+    /// `*`, left to right, after a negating `-` and before `+` and `-` (D72).
+    fn parse_product(&mut self) -> Result<Expression, Skip> {
+        let mut left = self.parse_unary()?;
+        loop {
+            if self.at_symbol(Symbol::Slash) || self.at_word("div") || self.at_word("rem") {
+                return Err(self.not_built_here(
+                    self.current().place,
+                    "dividing and remainders, `/`, `div` and `rem` (D70, D71), aren't built yet"
+                        .to_string(),
+                ));
+            }
+            if !self.at_symbol(Symbol::Star) {
+                return Ok(left);
+            }
+            let operator_place = self.current().place;
+            self.set_role(Role::BinaryOperator);
+            self.advance();
+            let right = self.parse_unary()?;
+            // trace: D59, D72
+            left = Self::binary(BinaryOperator::Multiply, operator_place, left, right);
+        }
     }
 
     /// `-` right before a value negates it (D27).
@@ -1384,7 +1458,15 @@ impl<'a> Parser<'a> {
                 }
             }
             TokenKind::Symbol(Symbol::OpenSquare) => {
-                return Err(self.not_designed_here(token.place, "lists aren't decided"));
+                return Err(
+                    self.not_built_here(token.place, "lists (D75) aren't built yet".to_string())
+                );
+            }
+            TokenKind::Word(word) if word == "copy" || word == "share" => {
+                return Err(self.not_built_here(
+                    token.place,
+                    format!("`{word}` (D49) isn't built yet, since lists aren't"),
+                ));
             }
             _ => return Err(self.refuse_unexpected("a value")),
         };
@@ -1679,6 +1761,18 @@ fn expected_gap(before: &Token, after: &Token, roles: (Role, Role)) -> usize {
         0
     } else {
         1
+    }
+}
+
+/// Where an expression's unbracketed `+`, `-` or `*` is, if it has one.
+fn arithmetic_place(expression: &Expression) -> Option<Place> {
+    match &expression.kind {
+        ExpressionKind::Binary {
+            operator: BinaryOperator::Add | BinaryOperator::Subtract | BinaryOperator::Multiply,
+            operator_place,
+            ..
+        } => Some(*operator_place),
+        _ => None,
     }
 }
 

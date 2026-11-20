@@ -504,6 +504,6 @@ impl Lowering<'_> {
                 }
             });
         }
-        joined.ok_or_else(|| InternalError::new("empty `.fmt` text reached lowering"))
+        Ok(joined.unwrap_or_else(|| self.allocate_text("")))
     }
 }

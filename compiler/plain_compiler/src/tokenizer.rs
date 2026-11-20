@@ -23,6 +23,7 @@ pub enum Symbol {
     Plus,
     Minus,
     Star,
+    Slash,
     Ampersand,
     Slide,
     Question,
@@ -50,6 +51,7 @@ impl Symbol {
             Symbol::Plus => "+",
             Symbol::Minus => "-",
             Symbol::Star => "*",
+            Symbol::Slash => "/",
             Symbol::Ampersand => "&",
             Symbol::Slide => "|>",
             Symbol::Question => "?",
@@ -216,6 +218,13 @@ fn tokenize_line(
             continue;
         }
 
+        if character == '/' && characters.get(index + 1) == Some(&'/') {
+            messages.push(Message::not_built_yet(
+                place(column, characters.len() - index),
+                "comments (D74) aren't built yet",
+            ));
+            break;
+        }
         let start = index;
         let kind = if character.is_ascii_alphabetic() || character == '_' {
             while index < characters.len()
@@ -344,6 +353,7 @@ fn read_symbol(characters: &[char], index: usize) -> Option<(Symbol, usize)> {
         ('+', _) => one(Symbol::Plus),
         ('-', _) => one(Symbol::Minus),
         ('*', _) => one(Symbol::Star),
+        ('/', _) => one(Symbol::Slash),
         ('&', _) => one(Symbol::Ampersand),
         ('?', _) => one(Symbol::Question),
         _ => None,
