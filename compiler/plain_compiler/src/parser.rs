@@ -1466,7 +1466,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Word(word) if !is_keyword(word) || word == "be" => {
                 let callee = self.parse_callee()?;
-                if self.at_symbol(Symbol::OpenBracket) && self.current().spaces_before == 0 {
+                if self.at_symbol(Symbol::OpenBracket) && !self.at_line_start() {
                     self.set_role(Role::CallOpen);
                     let arguments = self.parse_arguments()?;
                     let place = callee.place.to(self.previous().place);
@@ -1611,7 +1611,7 @@ impl<'a> Parser<'a> {
         }
         let callee = self.parse_callee()?;
         let mut arguments = Vec::new();
-        if self.at_symbol(Symbol::OpenBracket) && self.current().spaces_before == 0 {
+        if self.at_symbol(Symbol::OpenBracket) && !self.at_line_start() {
             self.set_role(Role::CallOpen);
             let open = self.current().place;
             arguments = self.parse_arguments()?;
@@ -1653,6 +1653,7 @@ impl<'a> Parser<'a> {
             let Some(why) = decided_spacing(token, role) else {
                 continue;
             };
+            let why = why.as_str();
             let gap_before =
                 (index > 0 && !token.first_on_line && role != Role::PrefixMinus).then_some(index);
             let gap_after = (index + 1 < count
@@ -1728,15 +1729,28 @@ impl<'a> Parser<'a> {
                     ..after.place
                 }
             };
-            let (first, second) = (before.written(), after.written());
-            let what = if gap == 0 {
-                format!("writing `{first}` and `{second}` with no space between isn't decided")
-            } else if expected == 0 {
-                format!("a space between `{first}` and `{second}` isn't decided")
-            } else {
-                format!("more than one space between `{first}` and `{second}` isn't decided")
+            // trace: D98
+            let as_written = |token: &Token| {
+                self.written_at(token.place)
+                    .unwrap_or_else(|| token.written())
             };
-            self.messages.push(Message::not_designed_yet(place, what));
+            let (first, second) = (as_written(before), as_written(after));
+            let why = if expected == 0 {
+                format!("no space goes between `{first}` and `{second}`.")
+            } else if gap == 0 {
+                format!("`{first}` and `{second}` have one space between them.")
+            } else {
+                "spaces never come two in a row, outside indentation.".to_string()
+            };
+            let edit = Edit {
+                place: Place {
+                    column: before.place.column + before.place.length,
+                    length: gap,
+                    ..after.place
+                },
+                replacement: " ".repeat(expected),
+            };
+            self.refuse_with_edit(place, edit, &why);
         }
     }
 
@@ -1778,16 +1792,16 @@ impl<'a> Parser<'a> {
 }
 
 /// The rule, as its `why:`, for a symbol whose spacing is decided.
-fn decided_spacing(token: &Token, role: Role) -> Option<&'static str> {
+fn decided_spacing(token: &Token, role: Role) -> Option<String> {
     if token.is_symbol(Symbol::Dot) || token.is_symbol(Symbol::DotStar) {
         // trace: D18
         // trace: D85
-        return Some("a narrowing's `.` touches the words on both sides.");
+        return Some("a narrowing's `.` touches the words on both sides.".to_string());
     }
     if role == Role::PrefixMinus {
         // trace: D27
         // trace: D89
-        return Some("a `-` that makes a value negative has no space after it.");
+        return Some("a `-` that makes a value negative has no space after it.".to_string());
     }
     let spaced = [
         Symbol::Less,
@@ -1799,7 +1813,13 @@ fn decided_spacing(token: &Token, role: Role) -> Option<&'static str> {
     if role == Role::BinaryOperator && spaced.iter().any(|&symbol| token.is_symbol(symbol)) {
         // trace: D17, D27, D59
         // trace: D85
-        return Some("`<`, `>`, `+`, `-` and `*` between two values have a space on each side.");
+        return Some(
+            "`<`, `>`, `+`, `-` and `*` between two values have a space on each side.".to_string(),
+        );
+    }
+    if role == Role::BinaryOperator {
+        // trace: D98
+        return Some(format!("`{}` has one space on each side.", token.written()));
     }
     None
 }

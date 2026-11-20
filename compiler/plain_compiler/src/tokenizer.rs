@@ -172,10 +172,17 @@ fn tokenize_line(
     if characters.iter().all(|&character| character == ' ') {
         facts.blank = true;
         if !characters.is_empty() {
-            messages.push(Message::not_designed_yet(
-                place(1, characters.len()),
-                "whether a blank line may hold spaces isn't decided",
-            ));
+            // trace: D98
+            messages.push(
+                Message::refused_with_fix(
+                    place(1, characters.len()),
+                    Edit {
+                        place: place(1, characters.len()),
+                        replacement: String::new(),
+                    },
+                )
+                .why("a blank line has no spaces on it."),
+            );
         }
         return facts;
     }
@@ -200,10 +207,17 @@ fn tokenize_line(
                 index += 1;
             }
             if index == characters.len() {
-                messages.push(Message::not_designed_yet(
-                    place(start + 1, index - start),
-                    "whether a line may end with spaces isn't decided",
-                ));
+                // trace: D98
+                messages.push(
+                    Message::refused_with_fix(
+                        place(start + 1, index - start),
+                        Edit {
+                            place: place(start + 1, index - start),
+                            replacement: String::new(),
+                        },
+                    )
+                    .why("a line never ends with spaces."),
+                );
             }
             spaces_before = index - start;
             continue;

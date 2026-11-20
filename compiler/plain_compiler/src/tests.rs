@@ -359,3 +359,21 @@ fn d97_one_blank_line_at_a_time() {
         Some((4, 2))
     );
 }
+
+#[test]
+fn d98_spacing_is_fixed() {
+    for line in [
+        "let  a: Whole = 1;",
+        "let a: Whole = 1; ",
+        "show_msg( \"a\");",
+        "show_msg (\"a\");",
+        "let a: Whole = random(from: 1,to: 6);",
+        "let a: Bool = 1==1;",
+        "let a: Text = \"a\"&\"b\";",
+    ] {
+        let found = messages(&main_with(&[line]));
+        assert_eq!(found.len(), 1, "{line}");
+        assert_eq!(found[0].kind, Kind::Refused, "{line}");
+        assert!(found[0].edit.is_some(), "{line}");
+    }
+}
