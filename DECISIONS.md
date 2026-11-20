@@ -3570,7 +3570,7 @@ check failed: game.plainly:12:19, line 12 column 19
 ```
 
 It can't be handled with `?`, `??` or `otherwise:`. This replaces PlainCompiler's placeholder, a `NotDesignedYet` with
-status 3.
+status 3. (Changed by D122: the `when:` says how much more was needed, how much was in use, and the limit.)
 
 **Weighed.**
 - A new kind and status, like `out of memory:` with status 8. Clear, but one more kind for what works like any other
@@ -3737,3 +3737,25 @@ what to carry on with otherwise.
 
 **Tankun's words.** Asked "Should `?? ignore` be refused after a call that gives a value, with the message pointing to
 `?? value`?", the owner chose: "yea".
+
+## D122. Running out of memory's `when:` says what was needed, what was in use, and the limit
+
+2026-11-20.
+
+**Chosen.** D115's `when:` is one line that's true whether memory was full or one piece was too big for what was left:
+
+```
+ when:    needed 8.0 GiB more, with 7.2 GiB of the 14.4 GiB it may use on this computer in use
+ when:    needed 48 bytes more, with 14.4 GiB of the 14.4 GiB it may use on this computer in use
+```
+
+Amounts use the unit that reads best: bytes, KiB, MiB or GiB.
+
+**Weighed.**
+- D115's "14.4 GiB in use, the most it may use on this computer". False when one big piece runs out with room left.
+- A different line for each case, as PlainCompiler did until now. Two wordings, where one covers both.
+
+**Why this won.** One line, always true, gives every number that explains the stop.
+
+**Tankun's words.** Asked "Should D115's `when:` say how much more was needed, how much was in use, and the limit, in
+one line for both cases?", the owner chose: "yea".
