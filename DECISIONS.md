@@ -974,3 +974,31 @@ end while
 branch. Without `continue`, the shape of the code shows which lines a pass runs.
 
 **Tankun's words.** Asked "`break` leaves the innermost loop, and no `continue`?", the owner chose: "yea".
+
+## D33. `Bool` is the type for true or false, with the values `true` and `false`
+
+2026-11-20.
+
+**Chosen.** A value that's either true or false has the type `Bool`, and its two values are written `true` and
+`false`. A comparison gives a `Bool`, and that's what `if` and `while` check.
+
+```
+var $won: Bool = false;
+$won = $guess == $secret;
+```
+
+The docs teach "`Bool` is short for Boolean, a value that's either true or false, named after George Boole" (D2).
+
+(Combining conditions with words like `and`, `or` and `not`, and whether a condition must be a `Bool`, aren't decided
+yet.)
+
+**Weighed.**
+- `Truth`. Reads oddly: `var $won: Truth`.
+- `YesNo`. Made up, and found in no other language.
+- `Flag`. Jargon of its own.
+- `True` and `False`, capitalised as in Python. Plainly's other keyword values are lowercase.
+
+**Why this won.** `Bool` follows D2: a short form taught once, and the word every language and tutorial uses, so a
+learner keeps meeting it.
+
+**Tankun's words.** Asked "`Bool`, with `true` and `false`?", the owner chose: "yea".

@@ -23,6 +23,6 @@ happened; this standard says what the rules are today (D12).
 4. [Procedures](04-procedures.md): definitions, calls, `proc.main`, slides, `show_msg` and `ask`
 5. [Control flow](05-control-flow.md): `if`, comparisons, `while`, and what may follow an `if`
 6. [Variables](06-variables.md): `let` and `var`
-7. [Types](07-types.md): `Whole`, `Text` and converting
+7. [Types](07-types.md): `Whole`, `Bool`, `Text` and converting
 8. [Failures](08-failures.md): `?`, `??` and `otherwise:`
 9. [Library](09-library.md): `random`

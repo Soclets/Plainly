@@ -27,6 +27,19 @@ let $back: Whole = -$speed;
 **Not decided:** going past the range; multiplying and dividing; maths order; how whole numbers are written; other
 number types.
 
+## `Bool`
+
+`true` or `false` (D33):
+
+```
+var $won: Bool = false;
+$won = $guess == $secret;
+```
+
+A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool` is short for Boolean (D2).
+
+**Not decided:** combining conditions; whether a condition must be a `Bool`.
+
 ## `Text`
 
 Text, written in double quotes (D21):

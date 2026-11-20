@@ -18,6 +18,7 @@ message".
 | `at_least`, `at_most` | | D17 |
 | `while` | | D19 |
 | `break` | | D32 |
+| `true`, `false` | | D33 |
 | `be` | | D22 |
 | `ignore`, `crash`, `otherwise`, `case` | | D23 |
 | `labels`, `as` | | D25 |
