@@ -145,3 +145,33 @@ avoid the method-call look of `proc.main()`.
 
 **Tankun's words.** Asked "No brackets on a definition that takes nothing, `()` on every call?", the owner chose:
 "yea, what about calls inside slides?"
+
+## D5. Slides: `|>` passes a value along as each step's first argument
+
+2026-11-20.
+
+**Chosen.** v2 has slides (a pipe): `|>` passes the value on its left into the next step as its first argument, so a
+chain reads left to right in the order it runs. A step with nothing else to pass is written bare. A step with more
+arguments takes `( )` for those only, and the slid value goes in first.
+
+```
+$points |> be.Text |> show_msg;
+$score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
+```
+
+A step isn't a whole call, so D4's "every call writes `()`" doesn't apply to it: the step names the procedure, and the
+slide does the calling. `|> show_msg()` would look like calling `show_msg` with nothing, when it actually gets the
+slid value.
+
+(`be.Text`, `clamp` and its labels, and where `|>` sits among other operators aren't decided yet.)
+
+**Weighed.**
+- `()` on every step, as D4 asks of calls. Empty `()` on each step of a long chain read "as a stroke" (multifinity's
+  chat), and it hides that a value goes in.
+- No slides, nesting calls inside out instead: `show_msg(be.Text(clamp($score, min: 0, max: 100)))`.
+
+**Why this won.** A chain reads in the order it runs, where nesting reads from the inside out. Writing only what's
+added in a step's `( )` matches Elixir and Plainly v1's pipe (its D29, D30), and keeps D4's rule true where it means
+something: a full call writes all its arguments in `( )`.
+
+**Tankun's words.** Asked "Slides like that?", the owner chose: "yea".
