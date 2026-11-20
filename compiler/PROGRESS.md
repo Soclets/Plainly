@@ -71,8 +71,8 @@ and the compiler depends on nothing but that interface.
 - **Step 1 works.** Every `Text` is a PlainGC object. Collections find their roots precisely through Cranelift's
   stack maps, mark, and compact by evacuating sparse pages; texts held in variables, parameters and deep recursion
   survive being moved, with every value right afterwards.
-- **Every run passes:** each of the 27 tests in `tests/` and the 7 stress programs in `compiler/gc_tests/`, run both as
-  they are and in collect-often mode: 68 runs. In collect-often mode the stress programs make up to 100,000
+- **Every run passes:** each of the 28 tests in `tests/` and the 7 stress programs in `compiler/gc_tests/`, run both as
+  they are and in collect-often mode: 70 runs. In collect-often mode the stress programs make up to 100,000
   collections and move up to 240,000 objects each.
 - PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
   freeing, moving, forwarding, and reading the stack map table.
@@ -271,7 +271,9 @@ built, with its decisions) and the `NotDesignedYet` pattern ("X isn't decided ye
 narrowings ("`random` has no narrowings.", "`be.Whole` can't be narrowed further."). Each is marked
 `// trace: D103` where it's made.
 
-**Still waiting for wording:** only where a runtime message starts when the program's line is still open (Q23).
+**Decided in D104:** a runtime message first ends the program's open output line, if there is one (Q23).
+
+**Still waiting for wording:** nothing.
 
 ### Refusals
 
@@ -396,8 +398,7 @@ uses a placeholder until it's decided.
 - **Q20. Answered:** fixed in standard chapter 11.
 - **Q21. Giving a parameter a new value** with `=`. `NotDesignedYet`.
 - **Q22. `??` after a call that can't fail.** `NotDesignedYet`.
-- **Q23. A message after an open line.** When the program stops while a line is still open, as after
-  `Your guess: `, the message starts on that same line. Should it start on a new line?
+- **Q23. Answered by D104:** the runtime ends an open output line before any runtime message.
 - **Q24. Smaller text questions:** line breaks written as `\r\n` (Windows); `\` before a letter and a tab inside
   text (D30's notes). All `NotDesignedYet`. (Empty text `""` is decided by D76.)
 - **Q25. Columns in messages** count characters, so `é` counts as one (D54's note says it isn't decided).

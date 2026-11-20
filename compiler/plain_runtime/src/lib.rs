@@ -5,7 +5,7 @@
 //! Every message's wording here is a draft (D54), listed in `compiler/PROGRESS.md`.
 
 use std::io::{BufRead, Write};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 // trace: D56
 const STATUS_NOT_YET: i32 = 3;
@@ -19,10 +19,24 @@ fn labelled_line(label: &str, text: &str) -> String {
     format!(" {:<9}{text}\n", format!("{label}:"))
 }
 
+/// Whether the program's output has a line still open, as after `show_msg.same_line` or `ask`'s question.
+static LINE_OPEN: AtomicBool = AtomicBool::new(false);
+
+/// Before a runtime message: ends an open line on standard output, so the message never shares a line with the
+/// program's own output (D104).
+fn before_message() {
+    // trace: D104
+    let mut output = std::io::stdout().lock();
+    if LINE_OPEN.swap(false, Ordering::SeqCst) {
+        let _ = output.write_all(b"\n");
+    }
+    let _ = output.flush();
+}
+
 /// Stops the program with a message in D54's layout. `site` is the start of the message, written out by the
 /// compiler: the place twice, then the source line with `^` under the part in question.
 fn stop(kind: &str, status: i32, site: &str, lines: &[(&str, String)]) -> ! {
-    let _ = std::io::stdout().flush();
+    before_message();
     let mut message = format!("{kind}: {site}");
     for (label, text) in lines {
         message.push_str(&labelled_line(label, text));
@@ -68,9 +82,9 @@ unsafe fn site_text<'a>(site: *const u8, site_length: i64) -> &'a str {
 
 // ----- Text -----
 
-/// Stops the program because PlainGC or the code PlainCompiler made went wrong (D82). Its wording is a draft.
+/// Stops the program because PlainGC or the code PlainCompiler made went wrong (D82), worded as D103 approved.
 fn internal_error(what: &str) -> ! {
-    let _ = std::io::stdout().flush();
+    before_message();
     let message = format!(
         "internal error: PlainGC itself went wrong, not your program\n{}{}",
         labelled_line("what", what),
@@ -99,7 +113,7 @@ fn new_text(bytes: &[u8]) -> *const u8 {
                     "what a program does when memory runs out isn't decided yet"
                 )
             );
-            let _ = std::io::stdout().flush();
+            before_message();
             let _ = std::io::stderr().write_all(message.as_bytes());
             std::process::exit(STATUS_NOT_YET);
         }
@@ -234,6 +248,11 @@ fn write_output(bytes: &[u8], end_line: bool) {
     });
     if written.is_err() {
         output_failed();
+    }
+    if end_line {
+        LINE_OPEN.store(false, Ordering::SeqCst);
+    } else if !bytes.is_empty() {
+        LINE_OPEN.store(true, Ordering::SeqCst);
     }
 }
 
