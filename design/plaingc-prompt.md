@@ -38,7 +38,9 @@ labelled placeholder, written in your PROGRESS file, and never something a progr
 </the_central_rule>
 
 <steps>
-Build it in steps that each end with something working and tested, and commit and push after each:
+Build it in steps that each end with something working and tested, and commit and push after each. Go straight on
+to the next step after each one, without waiting for a reply: report it to Tankun in a sentence or two and keep
+building. Stop only at step 5, which waits on the design session, at bedtime, or when Tankun says so.
 1. Allocation, with objects laid out so the collector can find every reference inside them, and a collection that
    runs with the program paused (stop-the-world mark and compact). Roots come from Cranelift's stack maps.
 2. Moving objects, with the load barrier emitted by PlainCompiler on every reference read, and forwarding so a moved
@@ -74,5 +76,6 @@ later without redoing it: D69's whole point is many threads sharing one heap.
 1. Read the sources above.
 2. Add PlainGC's steps to `compiler/PROGRESS.md`, with your plan for step 1 in detail.
 3. Write step 1's unit tests, then step 1.
+4. Carry on through steps 2, 3 and 4 the same way, one after another.
 </first_steps>
 ````
