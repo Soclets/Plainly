@@ -74,7 +74,10 @@ it exactly, which writes the glue that links it, and holds Plainly values throug
 fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
 ```
 
-**Not decided:** how values other than PlainGC's cross into Rust; what an extern procedure does when it fails.
+A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned directly; a `Text` crosses as a handle
+(D105, D109).
+
+**Not decided:** what an extern procedure does when it fails.
 
 ## Families
 

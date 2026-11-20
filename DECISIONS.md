@@ -3380,3 +3380,20 @@ other ways leave to hand-written `unsafe` code, at the cost of a small crate tha
 **Tankun's words.** Shown the module way as the recommendation, Tankun asked: "Why not macro?". Asked "Should each
 `extern.rust` procedure's Rust function be marked with `#[plainly::procedure("...")]` naming its Plainly procedure,
 with the macro writing the glue that links it?", the owner chose: "yea".
+
+## D109. `Whole` crosses into Rust as `i64` and `Bool` as `bool`, passed and returned directly
+
+2026-11-20.
+
+**Chosen.** An `extern.rust` procedure's `Whole` values are Rust's `i64` (a 64-bit signed integer, with the same range,
+D92) and its `Bool` values Rust's `bool`, as parameters and as what it returns, copied in and out with no handle.
+`Text`, which lives in PlainGC's heap, crosses as a handle (D105).
+
+**Weighed.**
+- Handles for every value, so all of them cross the same way. Numbers and true/false don't live in PlainGC's heap, so
+  nothing moves and a handle would hold nothing.
+
+**Why this won.** Each is Rust's own type of the same size and meaning, so nothing is converted or checked on the way.
+
+**Tankun's words.** Asked "Should `Whole` cross into Rust as `i64` and `Bool` as `bool`, both passed and returned
+directly?", the owner chose: "yea".
