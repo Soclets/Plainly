@@ -128,6 +128,10 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is C (D52); each
    test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12); one-line commands
    in config; and scratch work that's never committed. (From Cyborg's rule 1.)
+10. **No design in code.** Code follows `standard/`. Nothing undecided is guessed: anything the standard leaves open,
+    or marks **Not decided**, stops with `NotDesignedYet` (D56), and the question goes to Tankun through the design
+    session. Something decided but not built yet stops with `NotBuiltYet`, never `NotDesignedYet`. (From Cyborg's
+    rule 4.)
 
 ## Prompting
 
