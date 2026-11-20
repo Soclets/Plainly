@@ -52,6 +52,11 @@ why this one won, and quotes Tankun's own words, such as
 one it replaces. The "why" matters most. Log a decision as soon as it's made,
 before moving on to the next question.
 
+The standard follows the decisions: a decision that changes a rule updates
+`standard/` in the same commit, along with any test and example it changes,
+and anything it leaves open is marked **Not decided** there
+(`standard/README.md`). (Owner, 2026-11-20, from Plainly v1's rule 9.)
+
 Tankun's words are quoted whole and exactly, typos included, never in pieces
 or trimmed. That holds everywhere in an entry, the Weighed and Why parts
 included, and for messages from other repos and old versions: to back up a
