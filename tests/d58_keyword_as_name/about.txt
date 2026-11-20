@@ -1,1 +1,0 @@
-A keyword used as a name is refused. D58, D54, D86, D87; standard ch. 3 and 11.

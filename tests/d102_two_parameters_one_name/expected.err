@@ -1,5 +1,5 @@
-refused: program.plainly:1:19, line 1 column 19
- 1 | proc add(Whole x, x) returns Whole:
-   |                   ^
- what:    two parameters are named `x`
+refused: program.plainly:1:21, line 1 column 21
+ 1 | proc add($x: Whole, $x: Whole) returns Whole:
+   |                     ^^
+ what:    two parameters are named `$x`
  why:     each parameter needs its own name.
