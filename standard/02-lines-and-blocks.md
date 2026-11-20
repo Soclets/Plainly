@@ -11,7 +11,7 @@ end proc.main
 Every statement ends with `;` (D7). A statement can run over several lines, and ends only at its `;`:
 
 ```
-$score
+score
 |> clamp(min: 0, max: 100)
 |> be.Text
 |> show_msg;
@@ -30,7 +30,7 @@ opening line:
 end what
 ```
 
-where `opening line` is the block's first line, like `proc.main` or `if $a > $b`; `body` is its statements; and `what`
+where `opening line` is the block's first line, like `proc.main` or `if a > b`; `body` is its statements; and `what`
 is what the block is, like `proc.main`, `proc larger` or `if`. The `:`, the word `end` and the line breaks are written
 as they are.
 

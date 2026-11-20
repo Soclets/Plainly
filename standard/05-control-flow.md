@@ -16,9 +16,9 @@ where each `condition` is what's checked and each `body` the statements run when
 `else if` parts and at most one `else:`, and both are optional. One `end if` closes the whole chain (D8, D16).
 
 ```
-if $guess < $secret:
+if guess < secret:
     show_msg("Too low");
-else if $guess > $secret:
+else if guess > secret:
     show_msg("Too high");
 else:
     show_msg("Correct!");
@@ -28,12 +28,12 @@ end if
 ## Comparisons
 
 ```
-$lives == 0
-$guess != $secret
-$guess < $secret
-$score > $best
-$hp at_least 1
-$hp at_most 100
+lives == 0
+guess != secret
+guess < secret
+score > best
+hp at_least 1
+hp at_most 100
 ```
 
 - **`==` and `!=`:** equal and not equal (D17).
@@ -50,14 +50,14 @@ Conditions combine with `and`, `or` and `not`: `not` first, then `and`, then `or
 (D34):
 
 ```
-if not $won:
-    show_msg.fmt("Out of tries! It was {$secret}.");
+if not won:
+    show_msg.fmt("Out of tries! It was {secret}.");
 end if
 
-if $hp at_least 1 and $lives > 0 or $cheat == true:
+if hp at_least 1 and lives > 0 or cheat == true:
 ```
 
-The second means `($hp at_least 1 and $lives > 0) or $cheat == true`.
+The second means `(hp at_least 1 and lives > 0) or cheat == true`.
 
 `and` and `or` stop early: the right side runs only if it can still change the answer (D34).
 
@@ -74,10 +74,10 @@ end while
 where `condition` is checked before each pass, and `body` is run again as long as it holds (D19).
 
 ```
-var $tries: Whole = 0;
-while $tries < 5:
+var tries: Whole = 0;
+while tries < 5:
     show_msg("Guess!");
-    $tries = $tries + 1;
+    tries = tries + 1;
 end while
 ```
 
@@ -87,15 +87,15 @@ end while
 (D32).
 
 ```
-while $tries < 7:
-    let $guess: Whole = be.Whole(ask("Your guess: ")) ?? 0;
-    $tries = $tries + 1;
-    if $guess < $secret:
+while tries < 7:
+    let guess: Whole = be.Whole(ask("Your guess: ")) ?? 0;
+    tries = tries + 1;
+    if guess < secret:
         show_msg("Too low");
-    else if $guess > $secret:
+    else if guess > secret:
         show_msg("Too high");
     else:
-        show_msg.fmt("Correct! You got it in {$tries} tries.");
+        show_msg.fmt("Correct! You got it in {tries} tries.");
         break;
     end if
 end while
@@ -113,11 +113,11 @@ block, and code that should run afterwards goes in the ways that don't leave (D9
 Each is refused while building (D9).
 
 ```
-proc larger($a: Whole, $b: Whole) returns Whole:
-    if $a > $b:
-        return $a;
+proc larger(a: Whole, b: Whole) returns Whole:
+    if a > b:
+        return a;
     else:
-        return $b;
+        return b;
     end if
 end proc larger
 ```

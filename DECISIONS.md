@@ -1771,3 +1771,46 @@ never run is refused rather than left as a trap.
 **Tankun's words.** Asked "`return` like that?", the owner chose: "yea.
 What about adding `proc larger(Whole $a, $b) returns Whole:`?
 Infront like that means every" (the second part is still being weighed).
+
+## D58. Names have no `$`
+
+2026-11-20.
+
+**Chosen.** A variable's name is a plain word with no mark, written the same where it's made and where it's used:
+
+```
+let secret: Whole = random(from: 1, to: 100);
+var tries: Whole = 0;
+tries = tries + 1;
+show_msg.fmt("You got it in {tries} tries.");
+proc add(a: Whole, b: Whole) returns Whole:
+```
+
+A name can't be a keyword: a program using a keyword as a name is refused. If a later version of Plainly adds a
+keyword, a program already using that word as a name stops building and has to rename it.
+
+This replaces D11. Entries before this one write names with `$`.
+
+**Weighed.**
+- `$` on every name (D11). It keeps names apart from keywords in text with no colour, which matters most in a language
+  that reads in words (`if hp at_least max and not won:`), means a new keyword never breaks a program, and tells
+  autocomplete a variable comes next. Tankun: editors are more practical than that, the command line can colour code
+  too, and Plainly is a language for learning, not one with Cyborg's guarantees: "If your shit breaks, sorry, but it
+  broke".
+- `$` only where a name is used, as shell scripts do (`name=Tankun`, `echo $name`). Two spellings for every variable,
+  and shell's famous beginner trap.
+- Highlighting in place of `$`, as asked. It helps where there's colour, but chats, plain terminals and editors without
+  Plainly support show code bare.
+
+**Why this won.** Code is mostly written and read in editors, the command line and the docs, all of which can colour
+it, so the mark mostly costs a character per name. Without it, Plainly looks more like Python, as "static Python"
+suggests. The costs are accepted: names and keywords look alike where there's no colour, a new keyword can break a
+program, and words can't become operators over common names, so multiplying is `*`, not `x` (D59).
+
+**Tankun's words.** Their answer to D57 (quoted whole there), "You can't do that, lol", "yea", has code, "Removing `$` would make it faster, but idk if
+that's worth it", "What if we required it at use only?", "Wait, I think we forgot IDEs exist", "Wait, can't highlight
+replace `$`?", "But IDEs are alot more practical, and CLI could do highlighting. Plus it's a learn language, rather
+than Cyborg-style garuntees. If your shit breaks, sorry, but it broke", "We could replace `x` with `*`, and `*` with
+`^`?", "Wouldn't that make it two meanings?", "Wait, then `=` is double meaning. So, maybe we should loosen the
+rule?", "No, look at `!=`", "So, then we get `!` marking for free? Or just `*` again?", then, asked "Drop `$`, and
+multiply with `*`?", the owner chose: "yea".

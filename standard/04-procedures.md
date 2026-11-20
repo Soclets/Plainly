@@ -26,7 +26,7 @@ A procedure that gives back a value says so at the end of its header, with `retu
 A procedure that gives nothing back writes no `returns` (D38):
 
 ```
-proc greet($name: Text):
+proc greet(name: Text):
 ```
 
 Using what such a procedure gives as a value is refused (D38).
@@ -71,11 +71,11 @@ where `kind` is what the family holds (`proc` for a procedure and its narrowings
 
 ```
 fam.proc show_msg:
-    proc show_msg($text: Text):
+    proc show_msg(text: Text):
         ...
     end proc show_msg
 
-    proc show_msg.same_line($text: Text):
+    proc show_msg.same_line(text: Text):
         ...
     end proc show_msg.same_line
 end fam.proc show_msg
@@ -106,7 +106,7 @@ roll_dice();
 A procedure can give its arguments labels, and every call writes them, with `:` after each (D24):
 
 ```
-let $secret: Whole = random(from: 1, to: 100);
+let secret: Whole = random(from: 1, to: 100);
 ```
 
 - **The procedure's writer chooses each label.** A call can't leave one off, or write one the procedure doesn't have
@@ -116,20 +116,20 @@ let $secret: Whole = random(from: 1, to: 100);
 A procedure declares its labels on a `labels` line, the first line of its body, with no brackets (D25):
 
 ```
-labels $parameter as label, $parameter as label;
+labels parameter as label, parameter as label;
 ```
 
-where each `$parameter` is one of the procedure's parameters and `label` the word callers write for it. `labels`, `as`,
+where each `parameter` is one of the procedure's parameters and `label` the word callers write for it. `labels`, `as`,
 the commas and the `;` are written as they are.
 
 ```
-proc random($low: Whole, $high: Whole) returns Whole:
-    labels $low as from, $high as to;
+proc random(low: Whole, high: Whole) returns Whole:
+    labels low as from, high as to;
     ...
 end proc random
 ```
 
-where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:` and
+where `...` stands for the rest of the body. Inside, the procedure uses `low` and `high`, and callers write `from:` and
 `to:` (D25).
 
 **Not decided:** defaults; label order.
@@ -151,8 +151,8 @@ A slide passes the value on the left of `|>` into the next step as its first arg
 in the order it runs (D5):
 
 ```
-$points |> be.Text |> show_msg;
-$score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
+points |> be.Text |> show_msg;
+score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
 ```
 
 - **A step with nothing else to pass is bare,** with no `( )`: `|> be.Text`.
@@ -185,7 +185,7 @@ ask(question)
 where `question` is the text shown.
 
 ```
-let $typed: Text = ask("Your guess: ");
+let typed: Text = ask("Your guess: ");
 ```
 
 What's typed always comes back as text, even digits: typing `42` gives `"42"`, not the number 42 (D20).

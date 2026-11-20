@@ -6,7 +6,7 @@ A whole number from -9223372036854775808 to 9223372036854775807, negatives inclu
 `i64` (D15).
 
 ```
-let $secret: Whole = 42;
+let secret: Whole = 42;
 ```
 
 `Whole` has no second name. Other sizes, if they come, are different types with names of their own (D15).
@@ -17,9 +17,9 @@ let $secret: Whole = 42;
 (D27):
 
 ```
-$tries = $tries + 1;
-let $left: Whole = 5 - $tries;
-let $back: Whole = -$speed;
+tries = tries + 1;
+let left: Whole = 5 - tries;
+let back: Whole = -speed;
 ```
 
 `+` is only for numbers (D27).
@@ -32,8 +32,8 @@ number types.
 `true` or `false` (D33):
 
 ```
-var $won: Bool = false;
-$won = $guess == $secret;
+var won: Bool = false;
+won = guess == secret;
 ```
 
 A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool` is short for Boolean (D2).
@@ -45,7 +45,7 @@ A comparison gives a `Bool`, and that's what `if` and `while` check (D33). `Bool
 Text, written in double quotes (D21):
 
 ```
-let $name: Text = "Mia";
+let name: Text = "Mia";
 show_msg("Don't give up!");
 ```
 
@@ -55,7 +55,7 @@ Single quotes aren't used for text (D21).
 visible where a number becomes text (D22, D28):
 
 ```
-show_msg("You got it in " & be.Text($tries) & " tries.");
+show_msg("You got it in " & be.Text(tries) & " tries.");
 ```
 
 ### Filling in text
@@ -64,14 +64,14 @@ show_msg("You got it in " & be.Text($tries) & " tries.");
 (D29):
 
 ```
-show_msg.fmt("You got it in {$tries} tries.");
-let $line: Text = be.Text.fmt("{$name}: {$score}");
+show_msg.fmt("You got it in {tries} tries.");
+let line: Text = be.Text.fmt("{name}: {score}");
 ```
 
 - **Braces hold only a variable's name;** a calculation or a call in them is refused (D29).
 - **A number in braces becomes text by itself** (D29).
 - **The text is checked while building:** a name in braces that isn't a variable is refused (D29).
-- **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).
+- **Without `.fmt`, text is plain,** so `show_msg("{tries}")` shows exactly `{tries}` (D29).
 
 `fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first
 (D31).
@@ -83,7 +83,7 @@ and `\\` a backslash. Only `{` needs escaping in `.fmt` text, since a `}` with n
 doesn't start C-style codes, so `\n` isn't a new line (D30).
 
 ```
-show_msg.fmt("Type \{help} to see the commands, {$name}.");
+show_msg.fmt("Type \{help} to see the commands, {name}.");
 show_msg("She said \"hi\".");
 ```
 
@@ -100,8 +100,8 @@ be.Type(value)
 where `Type` is the type it becomes and `value` the value converted.
 
 ```
-let $guess: Whole = be.Whole($typed);
-show_msg(be.Text($guess));
+let guess: Whole = be.Whole(typed);
+show_msg(be.Text(guess));
 ```
 
 - **Converting to the type a value already is, is refused,** since it does nothing (D22).

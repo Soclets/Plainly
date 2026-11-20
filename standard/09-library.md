@@ -12,7 +12,7 @@ where `low` and `high` are whole numbers. It gives a whole number from `low` to 
 likely (D26).
 
 ```
-let $secret: Whole = random(from: 1, to: 100);
+let secret: Whole = random(from: 1, to: 100);
 ```
 
 It's game randomness, fine for dice and loot, not for anything that must be unguessable (D26).

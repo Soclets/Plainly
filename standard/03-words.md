@@ -38,10 +38,11 @@ message".
 
 ## Names
 
-A variable's name starts with `$`: `$name`, `$secret` (D11). So a variable is never mistaken for a keyword or a call,
-and new keywords never break existing names.
+A variable's name is a plain word with no mark, like `secret` or `tries`, written the same where it's made and where
+it's used. A procedure's name is a plain word too, like `larger` or `roll_dice` (D58).
 
-A procedure's name is a plain word, like `larger` or `roll_dice`, with no mark (D11).
+A name can't be a keyword: a program using a keyword as a name is refused, and a keyword added later can make an older
+program need a rename (D58).
 
 **Not decided:** which characters a name may hold; how words in a name are joined.
 
@@ -63,7 +64,6 @@ Each kind of bracket has one job (D3):
 |---|---|---|
 | `;` | ends a statement | D7 |
 | `:` | ends an opening line | D8 |
-| `$` | starts a variable's name | D11 |
 | `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
 | `.` | narrows, touching the words on both sides | D4, D6, D18 |
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
