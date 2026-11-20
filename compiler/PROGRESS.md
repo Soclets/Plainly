@@ -11,14 +11,16 @@ the test results (`python3 compiler/run_tests.py`).
 - **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
-- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 34 Rust unit tests pass, among them one
+- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 37 Rust unit tests pass, among them one
   per refusal, named after its decision (`plain_compiler/src/tests.rs`); they check what's refused and where, never
   the wording.
 - Every stage of D62 exists: tokenizer and parser (syntax tree), checker (typed tree), lowering (Plainly IR), code
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
-- Follows the decisions up to D80: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
+- Follows the decisions up to D83: `??` sticks to its call, and comparison chains and operators after a step are
+  refused with their fixes (D81); exit statuses 6 and 7 (D82); knock-ons as D83 confirms.
+- Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
 ## Milestone 1: every test and the guessing game, in `working` mode
@@ -71,7 +73,7 @@ Inside `plain_compiler`: `tokenizer.rs`, `parser.rs` (syntax tree, with indentat
 ## What `NotDesignedYet` covers
 
 The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard is silent or says "Not decided". Each
-place is an open question below. Briefly: `??` among other operators; two comparisons in a row; spacing beyond D17, D18, D27 and D59; names beyond lowercase
+place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
 two statements on one line; comparing text; conditions that aren't `Bool`; using a variable outside its
 block; declaring a name already in use; a call whose value isn't used; `??` on a call that can't fail; label order;
@@ -158,6 +160,9 @@ refused: game.plainly:7:5, line 7 column 5
 | D61 | both forms in one header | what: a header writes one type in front for every parameter, or a type after each, never both | parameters sharing one type write it once, in front; otherwise each writes its own (D61). |
 | D64 | two `proc.main`s, two procedures with one name | what: this program has two `proc.main`s / `` there's already a procedure named `pick` ``; because: the first is here | a program has exactly one `proc.main`, where it starts. / every name in a program shares one space, so two procedures can't have one name. |
 | D64 | no `proc.main` | what: this program has no `proc.main` (shown at line 1 column 1 of the first file) | a program starts with `proc.main`. |
+| D81 | two comparisons in a row | fix: the line with `and` and the middle value again, as `1 < x and x < 10` | two comparisons in a row are refused; `and` joins them, naming the middle value twice. |
+| D81 | an operator after a slide's step | fix: the line with brackets around the slide, as `(x \|> f) + 1` | a slide's step is a procedure, so an operator after it goes outside brackets around the slide. |
+| D81 | `??` after something that isn't a call | what: `` `??` here doesn't follow a call that can fail `` | `??` deals with the failure of the call right before it. |
 | D72 | `&` next to an unbracketed `+`, `-` or `*` | what: `` `&` is next to maths without brackets, so it isn't clear which goes first ``; because: the maths is here | where maths doesn't say which goes first, `( )` shows it. |
 | (D3, D4) | an unknown variable or procedure, a procedure used without `( )`, a variable called | what: `` there's no variable named `x` here `` / `` there's no procedure named `x` `` / `` `x` is a procedure, so using it writes `( )` with its arguments `` (fix: `x()` when it takes nothing) / `` `x` is a variable, not a procedure `` | a variable is declared with `let` or `var` before it's used. / a call names a procedure the program or the library has. / a call writes the procedure's name and `( )`. / only a procedure can be called. |
 | (any) | something the parser can't read | what: `` `;` should be here, not `x` `` / the line ends where `` `)` `` should be / the file ends where a value should be | (none) |
@@ -176,9 +181,9 @@ The `^` is under the whole calculation, like `tries + 1`.
 | Kind | When | Draft |
 |---|---|---|
 | `NotDesignedYet:`, `NotBuiltYet:` (D56) | as listed above | `what:` says what isn't decided or built, as in "maths order isn't decided, so more than one of `+`, `-` and `*` needs brackets for now" |
-| `internal error:` | PlainCompiler itself goes wrong | `what:` the problem; `why:` this is a bug in PlainCompiler. Please report it at https://github.com/Soclets/Plainly/issues, with the program that caused it. |
+| `internal error:` (status 7, D82) | PlainCompiler itself goes wrong | `what:` the problem; `why:` this is a bug in PlainCompiler. Please report it at https://github.com/Soclets/Plainly/issues, with the program that caused it. |
 | `can't read:` (status 2) | the file can't be read | `can't read: game.plainly` then `what:` the system's reason |
-| `plainly:` | a mistake in the command | `plainly: run and build need a mode: --working or --final`, then the usage lines |
+| `plainly:` (status 6, D82) | a mistake in the command | `plainly: run and build need a mode: --working or --final`, then the usage lines |
 
 ## Open questions for the design session
 
@@ -186,15 +191,12 @@ Numbered so they can be referred to. None of these is answered by the compiler; 
 uses a placeholder until it's decided.
 
 - **Q1. Answered by D72:** maths order is school order, so `d24_procedures` stands and passes.
-- **Q2. An exit status for an internal error**, when PlainCompiler itself goes wrong. D56 has none; the placeholder is
-  70.
-- **Q3. An exit status for a mistake in the command**, like `plainly run game.plainly` with no mode. The placeholder is
-  64.
+- **Q2. Answered by D82:** status 7 for a bug in PlainCompiler itself.
+- **Q3. Answered by D82:** status 6 for a command written wrong.
 - **Q4. The message for a file that can't be read** (status 2): its kind word, drafted as `can't read:`, and its
   layout, since there's no line to show.
 - **Q5. The exit status when a program has both refusals and `NotDesignedYet`.** It's 1 for now.
-- **Q6. The commit trailer.** `CLAUDE.md` says every commit ends with `Co-Authored-By: design claude`; the compiler
-  session writes `compiler claude`. Is that right?
+- **Q6. Answered:** each session signs with its own trailer, `compiler claude` here (CLAUDE.md).
 - **Q7. Blank lines inside a procedure** (standard chapter 2). Blank lines between procedures are accepted, since
   every test has them; inside one, `NotDesignedYet`.
 - **Q8. Spacing beyond D17, D18, D27 and D59:** around `==`, `!=`, `&`, `|>`, `??` and `=`; after `,` and `:`;
@@ -202,9 +204,8 @@ uses a placeholder until it's decided.
   takes the spacing every example shows as the only one, and anything else is `NotDesignedYet`.
 - **Q9. Which characters a name may hold** (standard chapter 3): digits, as in `player2`, capitals, `_` at the start
   or end. Only lowercase words joined by `_` are accepted.
-- **Q10. Mostly answered by D72 and D73.** Still open: where `??` sits among operators (the design session is taking
-  it to Tankun), two comparisons in a row like `a < b < c`, and an operator after a slide's step. All three are
-  `NotDesignedYet`.
+- **Q10. Answered by D72, D73 and D81.** `??` sticks to the call before it; `a < b < c` and `x |> f + 1` are refused
+  with their fixes.
 - **Q11. Using a variable after the block that declares it,** like a `let` inside an `if` used after `end if`.
   `NotDesignedYet`. Declaring the same name in two separate blocks is accepted, since a `let` inside a `while` (D32's
   example, the guessing game) is a fresh variable each pass.
@@ -225,9 +226,8 @@ uses a placeholder until it's decided.
   writes the executable into the current folder, named after the file (`guess`).
 - **Q18. What `fix:` shows.** Every fix shows the whole corrected line, as D10 says for indentation; D31's example
   shows only `show_msg.fmt.same_line`.
-- **Q19. How a knock-on error is shown (D55 rule 4).** Built with this reading: the knock-on error is still shown,
-  with its `because:` pointing at the first error ("it follows from the error at line N column M"). Only the first
-  refusal's fix is tried.
+- **Q19. Answered by D83:** each knock-on stays a message of its own, with a `because:` pointing back to the first
+  error. The `because:` line's wording comes with the wording batches.
 - **Q20. Answered:** fixed in standard chapter 11.
 - **Q21. Giving a parameter a new value** with `=`. `NotDesignedYet`.
 - **Q22. `??` after a call that can't fail.** `NotDesignedYet`.
@@ -240,3 +240,5 @@ uses a placeholder until it's decided.
   `Bool`s are accepted, as D34's `cheat == true` shows.
 - **Q27. What the runtime does when standard output can't be written,** or memory runs out. `NotDesignedYet`.
 - **Q28. Standard chapter 7** still lists maths order under "Not decided", though D72 decides it.
+- **Q29. `??` after a slide's step,** as in `typed |> be.Whole ?? 0`. D81 gives `??` to the call right before it,
+  and a step isn't written as a call. `NotDesignedYet`.

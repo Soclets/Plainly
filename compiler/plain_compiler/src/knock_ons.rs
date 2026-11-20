@@ -77,7 +77,7 @@ pub fn sort_out(
     sources: &[SourceFile],
     check: impl Fn(&[SourceFile]) -> Vec<Message>,
 ) {
-    // trace: D55
+    // trace: D55, D83
     let Some(first) = messages
         .iter()
         .position(|message| message.kind == Kind::Refused)

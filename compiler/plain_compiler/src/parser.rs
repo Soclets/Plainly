@@ -2,7 +2,7 @@
 //! spacing (D17, D18, D27, D59), `;` (D7) and closers (D8).
 
 use crate::message::{Edit, Message};
-use crate::source::Place;
+use crate::source::{Place, SourceFile};
 use crate::syntax_tree::{
     Argument, BinaryOperator, Callee, Expression, ExpressionKind, LabelPair, Name, Parameter,
     Procedure, Statement, StatementKind, Step, Type, TypeName,
@@ -76,11 +76,17 @@ pub struct ParsedFile {
     pub stopped: bool,
 }
 
-pub fn parse_file(file: usize, tokens: Tokens, messages: &mut Vec<Message>) -> ParsedFile {
+pub fn parse_file(
+    file: usize,
+    source: &SourceFile,
+    tokens: Tokens,
+    messages: &mut Vec<Message>,
+) -> ParsedFile {
     let roles = vec![Role::Plain; tokens.tokens.len()];
     let mut parser = Parser {
         tokens: &tokens.tokens,
         lines: &tokens.lines,
+        source,
         file,
         position: 0,
         messages,
@@ -100,6 +106,7 @@ pub fn parse_file(file: usize, tokens: Tokens, messages: &mut Vec<Message>) -> P
 struct Parser<'a> {
     tokens: &'a [Token],
     lines: &'a [LineFacts],
+    source: &'a SourceFile,
     file: usize,
     position: usize,
     messages: &'a mut Vec<Message>,
@@ -182,6 +189,14 @@ impl<'a> Parser<'a> {
             length: 1,
             ..token.place
         }
+    }
+
+    /// The source text at `place`, when it's on one line.
+    fn written_at(&self, place: Place) -> Option<String> {
+        let line: Vec<char> = self.source.line_text(place.line).chars().collect();
+        let start = place.column.checked_sub(1)?;
+        let end = start + place.length;
+        (end <= line.len()).then(|| line[start..end].iter().collect())
     }
 
     fn refuse_with_edit(&mut self, place: Place, edit: Edit, why: &str) {
@@ -1069,84 +1084,82 @@ impl<'a> Parser<'a> {
     /// A whole expression: a slide (D5), `call ?? value` (D23), or anything less.
     fn parse_full_expression(&mut self) -> Result<Expression, Skip> {
         let first = self.parse_or()?;
-        if self.at_symbol(Symbol::Slide) {
-            // trace: D73
-            let mut steps = Vec::new();
-            while self.at_symbol(Symbol::Slide) {
-                self.set_role(Role::BinaryOperator);
-                self.advance();
-                steps.push(self.parse_step()?);
-            }
-            if self.at_binary_operator() || self.at_symbol(Symbol::QuestionQuestion) {
-                return Err(self.not_designed_here(
-                    self.current().place,
-                    "an operator after a slide's step isn't decided",
-                ));
-            }
-            let place = first.place.to(self.previous().place);
-            return Ok(Expression {
-                kind: ExpressionKind::Slide {
-                    first: Box::new(first),
-                    steps,
-                },
-                place,
-            });
-        }
         if self.at_symbol(Symbol::QuestionQuestion) {
-            let operator = self.current().place;
-            if self.peek_slide_after_fallback() {
-                return Err(self.not_designed_here(
-                    operator,
-                    "where `??` sits among other operators, `|>` included, isn't decided",
-                ));
-            }
-            if !matches!(first.kind, ExpressionKind::Call { .. }) {
-                return Err(self.not_designed_here(
-                    operator,
-                    "where `??` sits among other operators isn't decided, so it can only follow a call",
-                ));
-            }
+            // A call takes its own `??` (D81), so this one follows something else.
+            self.messages.push(
+                Message::refused(
+                    self.current().place,
+                    "`??` here doesn't follow a call that can fail",
+                )
+                .why("`??` deals with the failure of the call right before it."),
+            );
+            return Err(Skip);
+        }
+        if !self.at_symbol(Symbol::Slide) {
+            return Ok(first);
+        }
+        // trace: D73
+        let mut steps = Vec::new();
+        while self.at_symbol(Symbol::Slide) {
             self.set_role(Role::BinaryOperator);
             self.advance();
-            if self.at_word("ignore") || self.at_word("crash") {
-                return Err(self.not_built_here(
-                    self.current().place,
-                    format!("`?? {}` (D23) isn't built yet", self.current().written()),
-                ));
-            }
-            let fallback = self.parse_or()?;
-            if has_operator_outside_brackets(&fallback) || self.at_symbol(Symbol::QuestionQuestion)
-            {
-                return Err(self.not_designed_here(
-                    fallback.place,
-                    "where `??` sits among other operators isn't decided, so the value after `??` can't be a calculation",
-                ));
-            }
-            let place = first.place.to(self.previous().place);
-            return Ok(Expression {
-                kind: ExpressionKind::Fallback {
-                    call: Box::new(first),
-                    fallback: Box::new(fallback),
-                },
-                place,
-            });
+            steps.push(self.parse_step()?);
         }
-        Ok(first)
+        let place = first.place.to(self.previous().place);
+        if self.at_symbol(Symbol::QuestionQuestion) {
+            return Err(self.not_designed_here(
+                self.current().place,
+                "`??` after a slide's step isn't decided, since a step isn't written as a call",
+            ));
+        }
+        if self.at_binary_operator() {
+            // trace: D81
+            let why = "a slide's step is a procedure, so an operator after it goes outside brackets around the slide.";
+            let message = match self.written_at(place) {
+                Some(text) if place.line == self.current().place.line => Message::refused_with_fix(
+                    place,
+                    Edit {
+                        place,
+                        replacement: format!("({text})"),
+                    },
+                ),
+                _ => Message::refused(
+                    self.current().place,
+                    "an operator can't follow a slide's step",
+                ),
+            };
+            self.messages.push(message.why(why));
+            return Err(Skip);
+        }
+        Ok(Expression {
+            kind: ExpressionKind::Slide {
+                first: Box::new(first),
+                steps,
+            },
+            place,
+        })
     }
 
-    /// Whether a `|>` comes later on this line, after a `??`.
-    fn peek_slide_after_fallback(&self) -> bool {
-        let mut index = self.position + 1;
-        while let Some(token) = self.tokens.get(index) {
-            if token.first_on_line || token.is_symbol(Symbol::Semicolon) {
-                return false;
-            }
-            if token.is_symbol(Symbol::Slide) {
-                return true;
-            }
-            index += 1;
+    /// `call ?? value`: `??` belongs to the call right before it, and takes a single value (D23, D81).
+    fn parse_fallback(&mut self, call: Expression) -> Result<Expression, Skip> {
+        // trace: D81
+        self.set_role(Role::BinaryOperator);
+        self.advance();
+        if self.at_word("ignore") || self.at_word("crash") {
+            return Err(self.not_built_here(
+                self.current().place,
+                format!("`?? {}` (D23) isn't built yet", self.current().written()),
+            ));
         }
-        false
+        let fallback = self.parse_unary()?;
+        let place = call.place.to(fallback.place);
+        Ok(Expression {
+            kind: ExpressionKind::Fallback {
+                call: Box::new(call),
+                fallback: Box::new(fallback),
+            },
+            place,
+        })
     }
 
     fn not_designed_here(&mut self, place: Place, what: &str) -> Skip {
@@ -1274,10 +1287,27 @@ impl<'a> Parser<'a> {
             .binary_operator()
             .is_some_and(BinaryOperator::is_comparison)
         {
-            return Err(self.not_designed_here(
-                self.current().place,
-                "two comparisons in a row, like `a < b < c`, isn't decided",
-            ));
+            // trace: D81
+            let why = "two comparisons in a row are refused; `and` joins them, naming the middle value twice.";
+            let message = match self.written_at(right.place) {
+                Some(middle) if right.place.line == operator_place.line => {
+                    let end = Place {
+                        column: right.place.column + right.place.length,
+                        length: 0,
+                        ..right.place
+                    };
+                    Message::refused_with_fix(
+                        left.place.to(self.current().place),
+                        Edit {
+                            place: end,
+                            replacement: format!(" and {middle}"),
+                        },
+                    )
+                }
+                _ => Message::refused(self.current().place, "two comparisons are written in a row"),
+            };
+            self.messages.push(message.why(why));
+            return Err(Skip);
         }
         // trace: D17
         Ok(Self::binary(operator, operator_place, left, right))
@@ -1426,9 +1456,14 @@ impl<'a> Parser<'a> {
                     self.set_role(Role::CallOpen);
                     let arguments = self.parse_arguments()?;
                     let place = callee.place.to(self.previous().place);
-                    Expression {
+                    let call = Expression {
                         kind: ExpressionKind::Call { callee, arguments },
                         place,
+                    };
+                    if self.at_symbol(Symbol::QuestionQuestion) {
+                        self.parse_fallback(call)?
+                    } else {
+                        call
                     }
                 } else if callee.words.len() == 1 {
                     let place = callee.place;
@@ -1781,21 +1816,6 @@ fn arithmetic_place(expression: &Expression) -> Option<Place> {
             ..
         } => Some(*operator_place),
         _ => None,
-    }
-}
-
-/// Whether an expression has an operator that isn't inside brackets.
-fn has_operator_outside_brackets(expression: &Expression) -> bool {
-    match &expression.kind {
-        ExpressionKind::Binary { .. }
-        | ExpressionKind::Not(_)
-        | ExpressionKind::Fallback { .. }
-        | ExpressionKind::Slide { .. } => true,
-        ExpressionKind::Negate(value) => !matches!(
-            value.kind,
-            ExpressionKind::Name(_) | ExpressionKind::Grouped(_) | ExpressionKind::Call { .. }
-        ),
-        _ => false,
     }
 }
 

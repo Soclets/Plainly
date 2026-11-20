@@ -268,3 +268,44 @@ fn d79_d80_list_facts_and_items_are_not_built_yet() {
         vec![(Kind::NotBuiltYet, 3), (Kind::NotBuiltYet, 4)]
     );
 }
+
+#[test]
+fn d81_question_question_sticks_to_its_call() {
+    let program = main_with(&[
+        "let score: Whole = 1;",
+        "let n: Whole = score + be.Whole(\"4\") ?? 0;",
+    ]);
+    assert_eq!(found(&program), vec![]);
+    assert_eq!(
+        found(&main_with(&["let n: Whole = 3 ?? 0;"])),
+        refused_on(2)
+    );
+}
+
+#[test]
+fn d81_two_comparisons_in_a_row() {
+    let program = main_with(&[
+        "let x: Whole = 5;",
+        "if 1 < x < 10:",
+        "    show_msg(\"in\");",
+        "end if",
+    ]);
+    let found = messages(&program);
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].kind, Kind::Refused);
+    assert_eq!(
+        found[0].edit.as_ref().map(|edit| edit.replacement.as_str()),
+        Some(" and x")
+    );
+}
+
+#[test]
+fn d81_an_operator_after_a_step() {
+    let program = main_with(&["let x: Whole = 5;", "let n: Whole = x |> double + 1;"]);
+    let found = messages(&program);
+    assert_eq!(found.len(), 1);
+    assert_eq!(
+        found[0].edit.as_ref().map(|edit| edit.replacement.as_str()),
+        Some("(x |> double)")
+    );
+}

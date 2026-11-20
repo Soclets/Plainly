@@ -40,10 +40,9 @@ const STATUS_RAN: u8 = 0;
 const STATUS_REFUSED: u8 = 1;
 const STATUS_UNREADABLE: u8 = 2;
 const STATUS_NOT_YET: u8 = 3;
-/// D56 has no status for PlainCompiler going wrong itself yet; this placeholder waits for the design session.
-const STATUS_INTERNAL_ERROR: u8 = 70;
-/// D56 has no status for a mistake in the command itself yet; this placeholder waits for the design session.
-const STATUS_COMMAND_MISTAKE: u8 = 64;
+// trace: D82
+const STATUS_COMMAND_MISTAKE: u8 = 6;
+const STATUS_INTERNAL_ERROR: u8 = 7;
 
 const USAGE: &str = "usage:
   plainly run FILE.plainly --working     build in a temporary file and run it
@@ -208,7 +207,7 @@ fn front_end(sources: &[SourceFile]) -> (Vec<Message>, Option<typed_tree::TypedP
     let mut stopped = false;
     for (index, source) in sources.iter().enumerate() {
         let tokens = tokenizer::tokenize(index, source, &mut messages);
-        let parsed = parser::parse_file(index, tokens, &mut messages);
+        let parsed = parser::parse_file(index, source, tokens, &mut messages);
         stopped |= parsed.stopped;
         procedures.extend(parsed.procedures);
     }
