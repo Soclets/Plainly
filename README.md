@@ -11,4 +11,12 @@
 
 ## Btw
 
-Please don't expect high performance, I estimate its runtime performance on around Bash in this message.
+- Please don't expect high performance, I estimate its runtime performance on around Bash in this message.
+
+## Ideas
+
+`->` means borrowed from.
+- Families and narrowings: Cyborg -> Radium -> CyborgPL
+- error handling: Cyborg -> Radium -> CyborgPL
+- Memory model: Hylo
+- General feel: Cyborg + Fale
