@@ -125,9 +125,12 @@ Handler families: chapter 8.
 A call writes the procedure's name and `( )`, with its arguments inside, even when there are none (D3, D4):
 
 ```
-add(1, 2);
-roll_dice();
+let total: Whole = add(1, 2);
+show_score();
 ```
+
+A call that gives back a value has its value used: kept in a variable, passed on, or compared. One standing alone,
+its value thrown away, is refused; a call that gives nothing stands alone (D120).
 
 ### Labels
 

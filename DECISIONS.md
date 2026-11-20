@@ -3681,3 +3681,32 @@ The macro's own messages, shown by Rust while it builds the `rust` folder:
 - `.plainly` without backticks, as drafted. It's text typed in a file's name, like other code in messages.
 
 **Tankun's words.** Asked "Do all of these read right, with my two changes?", the owner chose: "yea".
+
+## D120. A call whose value isn't used is refused
+
+2026-11-20.
+
+**Chosen.** A call to a procedure that gives back a value, standing alone with its value thrown away, is refused:
+
+```
+random(from: 1, to: 6);
+```
+
+```
+ what:    `random` gives back a `Whole`, but nothing uses it
+ why:     a call that gives back a value is used: kept in a variable, passed on, or compared.
+```
+
+A call that gives nothing, like `show_msg("Hi");`, stands alone as before. There's no way to throw a value away on
+purpose for now; one can be added if a procedure ever needs it.
+
+**Weighed.**
+- Allowing it, as C and Python do. The mistake, usually a forgotten `let`, runs silently.
+- Allowing it with a way to throw the value away on purpose, like Rust's `let _ = ...`. An extra form to learn before
+  anything needs it.
+
+**Why this won.** It catches a real beginner mistake at compile time, and Plainly has refusals, not warnings, so the
+choice is between refusing and staying silent.
+
+**Tankun's words.** Asked "Should a call whose value isn't used be refused, with no way to throw a value away for
+now?", the owner chose: "yea".
