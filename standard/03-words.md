@@ -20,6 +20,7 @@ message".
 | `be` | | D22 |
 | `ignore`, `crash`, `otherwise`, `case` | | D23 |
 | `labels`, `as` | | D25 |
+| `.fmt` | format | D2, D29 |
 
 **Not decided:** every other keyword.
 

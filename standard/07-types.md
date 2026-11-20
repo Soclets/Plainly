@@ -45,7 +45,25 @@ visible where a number becomes text (D22, D28):
 show_msg("You got it in " & be.Text($tries) & " tries.");
 ```
 
-**Not decided:** filling values into text; a quote inside text, and other escapes; empty text; comparing text; lists.
+### Filling in text
+
+`.fmt` fills in what's in braces. It narrows `show_msg` to show the result, and `be.Text` to give it back as `Text`
+(D29):
+
+```
+show_msg.fmt("You got it in {$tries} tries.");
+let $line: Text = be.Text.fmt("{$name}: {$score}");
+```
+
+- **Braces hold only a variable's name;** a calculation or a call in them is refused (D29).
+- **A number in braces becomes text by itself** (D29).
+- **The text is checked while building:** a name in braces that isn't a variable is refused (D29).
+- **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).
+
+`fmt` is short for format (D2).
+
+**Not decided:** a literal `{` inside `.fmt` text; settings in braces; the order of `.fmt` and `.same_line` together; a
+quote inside text, and other escapes; empty text; comparing text; lists.
 
 ## Converting
 

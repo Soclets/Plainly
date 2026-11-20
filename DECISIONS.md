@@ -854,3 +854,40 @@ show_msg("You got it in " & be.Text($tries) & " tries.");
 is Plainly v1's D1 and D6, and multifinity's notes.
 
 **Tankun's words.** Asked "`&` joins text, with no automatic converting?", the owner chose: "yea".
+
+## D29. `.fmt` fills values into text, with braces holding only names
+
+2026-11-20.
+
+**Chosen.** `.fmt` fills in what's in braces. It narrows `show_msg` to show the result, and `be.Text` to give it back
+as `Text`:
+
+```
+show_msg.fmt("You got it in {$tries} tries.");
+let $line: Text = be.Text.fmt("{$name}: {$score}");
+```
+
+- Braces hold only a variable's name. `{$tries + 1}` and `{roll()}` are refused, so text never hides a calculation or a
+  call that could fail.
+- A number in braces becomes text by itself.
+- The text is checked while building: a name in braces that isn't a variable is refused before the program runs.
+- Without `.fmt`, text is plain: `show_msg("{$tries}")` shows exactly `{$tries}`.
+- The docs teach "`fmt` is short for format" (D2).
+
+(A literal `{` inside `.fmt` text, settings in braces like `places: 2`, and the order of `.fmt` and `.same_line`
+together aren't decided yet.)
+
+**Weighed.**
+- `.format`, as in Plainly v1. D2's short form is `fmt`, known from Go and Rust.
+- Python's f-strings, `f"You got it in {tries} tries."`. Shorter, but one letter before the quote changes what the
+  text means, easy to miss when reading.
+- Cyborg's `@fmt("...")`, a compiler builtin giving a "format value" that becomes text wherever it's used. The `@`
+  marks Cyborg's builtins, and the format value exists because Cyborg makes every memory allocation visible; Cyborg's
+  design claude advised that `.fmt` returning text is simpler for a language without that. Taken from it: names-only
+  braces and checking while building.
+
+**Why this won.** One narrowing covers both showing and building text, with no new keyword, and a fill-in can only
+read a value, never do work. It replaces long `&` chains with `be.Text` in each (D28).
+
+**Tankun's words.** "What about Cyborg's `@fmt`?", "How about `.fmt`?", then, asked "`.fmt` on `show_msg` and
+`be.Text`, with braces holding only names, checked while building?", the owner chose: "yea".
