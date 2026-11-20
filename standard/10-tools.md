@@ -75,6 +75,18 @@ Every build names one of two modes, `--working` or `--final`. There's no default
 In final mode, checks the optimizer proves can never fail are removed, and the NaN check after every float operation
 becomes the CPU's own flags, read where a value leaves a procedure, so its message names the procedure (D46).
 
+Final mode's optimizations (D124), none of which changes what a program does:
+- Cranelift's full optimizing;
+- removing checks that can't fail, using what an `if` proved;
+- inlining small procedures, and moving check-failure code out of the way so more inline;
+- skipping load barriers that can't matter, and keeping short-lived values off the heap;
+- for procedures with no side effects, inlining them into themselves and merging repeated calls;
+- recursion into loops, constants across procedures, merging identical procedures, recording what each procedure
+  reads and changes, and passing only the parts of a value a procedure uses;
+- doing a calculation once where some paths did it twice;
+- for loops: fast list fills and copies, unrolling, vectorization, moving an unchanging `if` out, swapping nested
+  loops, reusing values from the last pass, and Graphite-style polyhedral reordering of loop nests.
+
 The modes are written lowercase everywhere, docs and messages included: `working` and `final` (D47).
 
 **Not decided:** each check's message.

@@ -1927,7 +1927,7 @@ source → syntax tree → typed tree → Plainly IR → Cranelift IR → native
 Both build modes take the same path and differ only in optimizations, so a translation bug shows in `working` mode too,
 where tests and PlainOracle catch it.
 
-(Which optimizations `final` mode makes isn't decided yet.)
+(Which optimizations `final` mode makes isn't decided yet.) (Decided by D124.)
 
 **Weighed.**
 - No IR of Plainly's own, going from the typed tree straight to Cranelift. Plainly's own optimizations, like removing
@@ -3783,3 +3783,67 @@ there are.
 
 **Tankun's words.** Asked "Should the missing-mode line be left out when the command has an unknown mode?", the owner
 chose: "yea".
+
+## D124. What `final` mode optimizes: twenty-one optimizations, Graphite-style loop nests built last
+
+2026-11-20.
+
+**Chosen.** `final` mode (D46) makes these optimizations, on Plainly IR (D62) unless marked as Cranelift's. Every one
+keeps D46's rule: a program behaves exactly as in `working` mode, and no check is dropped unless it's proved unable to
+fail.
+
+1. **Cranelift's full optimizing:** working out known values at compile time, doing a repeated calculation once
+   (LLVM's GVN), moving what never changes out of a loop (LICM), simplifying arithmetic, and dropping unused code.
+2. **Removing checks that can't fail** (D46).
+3. **Inlining small procedures** into the places that call them.
+4. **Skipping load barriers** (D69) where nothing between two reads can start a collection.
+5. **Keeping short-lived values off the heap** (escape analysis): a value that never leaves its procedure lives on the
+   stack, and PlainGC never sees it.
+6. **gfortran's trick:** working out which procedures have no side effects (GCC's `-fipa-pure-const`), inlining such a
+   procedure into itself, and merging its repeated calls with the same values, so recursive `fib` does
+   `2 × fib(n - 2) + fib(n - 3)`.
+7. **Recursion into loops,** even with a running total (LLVM's TailCallElim).
+8. **Using what an `if` proved,** as in knowing `hp` is positive inside `if hp > 0:` (LLVM's CorrelatedValuePropagation
+   and JumpThreading), which feeds check removal.
+9. **Constants across procedures:** a procedure always called with the same value gets a version with it built in
+   (LLVM's IPSCCP, GCC's `-fipa-cp-clone`).
+10. **Fast list fills and copies:** a loop that fills or copies a list becomes the CPU's own fill or copy (LLVM's
+    LoopIdiomRecognize).
+11. **Unrolling small loops** with a known count (LLVM's LoopUnroll).
+12. **Vectorization:** doing 4 or 8 numbers in one CPU step, SIMD (LLVM's LoopVectorize and SLPVectorizer).
+13. **Moving check-failure code out of the way,** so hot code stays small and inlines well, knowing from Plainly
+    itself, not profiling, that a check's failure path is rare (LLVM's HotColdSplitting and PartialInlining).
+14. **Merging identical procedures** (LLVM's MergeFunctions, GCC's `-fipa-icf`).
+15. **Moving an unchanging `if` out of a loop,** giving two loops with no `if` (GCC's `-funswitch-loops`).
+16. **Swapping nested loops** so memory is walked in order (GCC's `-floop-interchange`).
+17. **Reusing a value from the loop's last pass,** as with `cells[i + 1]` becoming the next pass's `cells[i]` (GCC's
+    `-fpredictive-commoning`).
+18. **Doing a calculation once where some paths did it twice** (GCC's `-ftree-pre` and `-ftree-partial-pre`).
+19. **Recording what each procedure reads and changes,** extending 6 to procedures that only read, and 4 across calls
+    (GCC's `-fipa-modref`).
+20. **Passing only the parts of a value a procedure uses** (GCC's `-fipa-sra`).
+21. **Graphite-style loop nests** (GCC's Graphite, LLVM's Polly): a nest of loops is modelled exactly, each pass a
+    point in a polyhedron and each dependence an arrow, and reordered, as by tiling, skewing or fusing, so it runs
+    faster with the same result. Built last, since it needs lists and loops over them first.
+
+`final` isn't built yet; this says what it makes once it is.
+
+**Weighed.**
+- The first five only, as the design claude first put it. Fine for a terminal game, but each optimization is
+  invisible to users, so fun to build counts (D69's reasoning), and several fit Plainly especially well: 13 needs no
+  profiling because Plainly knows its checks' failure paths are rare.
+- Profile-guided optimization, which runs the program first to see where time goes. A second build step to learn.
+- `-ffast-math`, which changes decimal maths' answers for speed. Out for good: `final` behaves exactly as `working`
+  (D46).
+- Leaving Graphite out, since even GCC leaves it off by default, and it's huge and slow to compile with. Tankun wanted
+  it.
+
+**Why this won.** None of these changes what a program does, only how fast it runs, so the list is the builder's
+choice, and building them, from gfortran's trick to polyhedral loops, is the kind of real compiler work that keeps
+Plainly v2 from repeating v1 (D69).
+
+**Tankun's words.** "My mf, what would Final optimize?"; shown five, "Borrow Gfortran's FIB trick too. To see? Fucking
+make a Fortran shit, and soAW({fuhy'ieqg;qAOfg" (the design claude built and timed it: `fib(44)` in 3 ms at `-O3`
+against 2.62 s unoptimized); shown six, "Any more? Maybe look at LLVM's premade passes"; shown eleven, "C'mon 🥺";
+shown fourteen, "Look at GCC's premade too"; shown twenty, "What's Graphite? 🥺". Then, asked "Should `final` make
+twenty-one: the twenty plus Graphite-style polyhedral loop optimization, built last?", the owner chose: "Pwease 🥺".
