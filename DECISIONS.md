@@ -231,3 +231,32 @@ A missing `;` is refused, with the place it goes as the fix.
 special rule. With the exact fix in every message, a missing `;` costs a keystroke, not confusion.
 
 **Tankun's words.** Asked "`;` ends every statement?", the owner chose: "yea".
+
+## D8. A block opens with `:` and closes with `end` and what it closes
+
+2026-11-20.
+
+**Chosen.** A block's opening line ends with `:`. Its closer is `end` followed by what it closes, standing alone with
+no `;`: `end proc add`, `end proc.main`, `end if`.
+
+```
+proc add($a: Whole, $b: Whole) returns Whole:
+    if $a > $b:
+        return $a;
+    end if
+    return $b;
+end proc add
+```
+
+(Indentation, `if`, `return` and comparisons aren't decided yet.)
+
+**Weighed.**
+- Python's way: `:` to open, and the block ends where the indentation does, with no closing line. Shorter, and
+  closest to "static Python", but a wrongly indented line silently moves outside its block, pasted code can change
+  meaning, and deep in nested code nothing says which block just ended.
+
+**Why this won.** "Built for reading": `end if` and `end proc add` say which block ends, so a reader never counts
+indentation. A missing closer gets a clear refusal instead of a silent change of meaning. Indentation can still be
+required for looks, as a decision of its own. This is Plainly v1's shape (its D31, D35).
+
+**Tankun's words.** Asked "Blocks open with `:` and close with `end` plus what they close?", the owner chose: "yea".
