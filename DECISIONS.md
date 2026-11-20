@@ -2267,3 +2267,28 @@ rule nobody remembers. This is Plainly v1's D83.
 
 **Tankun's words.** Asked "Maths order like that, with brackets required wherever maths doesn't say?", the owner
 chose: "yea".
+
+## D73. `|>` comes last, so a slide takes everything on its left
+
+2026-11-20.
+
+**Chosen.** In D72's order, `|>` comes after everything else: maths, `&`, comparisons and logic. A slide takes the
+whole expression on its left:
+
+```
+a + 1 |> be.Text |> show_msg;
+"HP: " & be.Text(hp) |> show_msg;
+```
+
+The first slides `a + 1`, the second the joined text. `( )` around the left side is allowed, and never needed.
+
+**Weighed.**
+- `|>` tighter than maths, so `a + 1 |> be.Text` would mean `a + (1 |> be.Text)`, sliding one piece out of a sum,
+  which is never what's meant.
+- `|>` between maths and comparisons, as Plainly v1's D97 placed it (after maths and `&`). Putting it after
+  comparisons and logic too means a slide never cuts into the middle of anything.
+
+**Why this won.** A slide reads left to right as "take all this, then do that". Elixir and F# put their pipes last in
+the same way.
+
+**Tankun's words.** Asked "`|>` comes last, after maths, `&`, comparisons and logic?", the owner chose: "yea".

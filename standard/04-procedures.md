@@ -174,7 +174,9 @@ score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
 A step isn't a whole call, so it doesn't write `()` as a call does: the step names the procedure, and the slide calls
 it (D4, D5).
 
-**Not decided:** where `|>` sits among other operators; `be.Text`, `clamp` and labels, which the examples use.
+`|>` comes last in the order of operators, so a slide takes everything on its left, as in `a + 1 |> be.Text` (D73).
+
+**Not decided:** `clamp`, which the example uses.
 
 ## Showing text
 

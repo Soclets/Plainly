@@ -64,14 +64,15 @@ Without brackets, operators go in school maths' order (D72):
 1. a `-` negating, as in `-7`;
 2. `*`, `/`, `div` and `rem`, left to right;
 3. `+` and `-`, left to right;
-4. comparisons, then `not`, `and` and `or`.
+4. comparisons, then `not`, `and` and `or`;
+5. `|>`, last, so a slide takes everything on its left (D73).
 
 So `2 + 3 * 4` is 14. Where maths doesn't say, brackets are required: `&` next to an unbracketed `+`, `-`, `*`, `/`,
 `div` or `rem` is refused (D72).
 
 Dividing by zero is a failed check that stops the program (D46, D72).
 
-**Not decided:** where `|>` sits in this order; going past the range; maths order; how whole numbers are written; other
+**Not decided:** going past the range; maths order; how whole numbers are written; other
 number types.
 
 ## `Bool`
