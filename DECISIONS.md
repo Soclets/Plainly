@@ -2673,3 +2673,26 @@ the compiler session already prints them.
 
 **Tankun's words.** Asked "Text after every label starts at the same column, the width of `because:`?", the owner
 chose: "yea".
+
+## D87. The wording of the second batch of refusals
+
+2026-11-20.
+
+**Chosen.** These messages, drafted by the compiler session in D54's layout, with `fix:` showing the whole corrected
+line (D84) and the label column of D86. Names and types in them are filled in from the program:
+
+| Refused | `what:` | `because:` | `why:` |
+|---|---|---|---|
+| `=` on a `let` (D14) | D85's | `` line 2 declares it with `let` ``, with that line shown | D85's |
+| the file ending inside a block (D8) | `` the file ends before `end proc.main` `` | | every block ends with `end` and what it closes. |
+| a missing `:` in a declaration (D13) | (a `fix:`) | | a declaration writes `:` between the variable's name and its type. |
+| a missing `=` in a declaration (D13) | (a `fix:`) | | a declaration gives its variable a first value after `=`. |
+| comparing two types (D17) | `` `==` compares two values of one type, and this is a `Whole` and a `Text` `` | | a comparison is between two values of the same type. |
+| converting to the type it already is (D22) | `` this value is already a `Text`, so `be.Text` does nothing `` | | converting a value to the type it already is does nothing, so it's refused. |
+| `be` with no type (D22) | `` `be` needs the type the value becomes, as in `be.Text` `` | | a value is converted with `be` narrowed by the type it becomes. |
+| a call that can fail, unhandled (D23) | this call can fail, and nothing here deals with the failure | | every call that can fail deals with its failure, with `?`, `??` or `otherwise:`. |
+| `+` on two texts (D27, D28) | (a `fix:` with `&`) | | `+` is only for numbers, and `&` joins text. |
+| a number joined with `&` (D28) | (a `fix:` with `be.Text(...)`) | | `&` joins two pieces of text, and a number becomes text only where `be.Text` says so. |
+| a keyword used as a name (D58) | `` `if` is a keyword, so it can't be a name `` | | a name can't be one of Plainly's own words. |
+
+**Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
