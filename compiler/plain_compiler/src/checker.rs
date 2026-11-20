@@ -302,8 +302,6 @@ struct ProcedureChecker<'a, 'b> {
     messages: &'b mut Vec<Message>,
     variables: Vec<VariableFacts>,
     scopes: Vec<Vec<VariableId>>,
-    /// Names declared in blocks that have ended, for using one outside its block.
-    closed: HashMap<String, Place>,
     loop_depth: usize,
     gives: Gives,
     name: String,
@@ -324,7 +322,6 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             messages,
             variables: Vec::new(),
             scopes: vec![Vec::new()],
-            closed: HashMap::new(),
             loop_depth: 0,
             gives,
             name: procedure.name.text.clone(),
@@ -426,29 +423,15 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             .find(|&id| self.variables[id].name == name)
     }
 
+    /// Ends a block: whatever it declared ends with it (D93).
     fn close_scope(&mut self) {
-        if let Some(scope) = self.scopes.pop() {
-            for id in scope {
-                let variable = &self.variables[id];
-                self.closed.insert(variable.name.clone(), variable.place);
-            }
-        }
+        // trace: D93
+        self.scopes.pop();
     }
 
-    /// A name that isn't a variable here: refused, or not designed yet when it was declared in a block that ended.
+    /// A name that isn't a variable here, including one whose block has ended (D93).
     fn unknown_name(&mut self, name: &str, place: Place) {
-        if let Some(&declared) = self.closed.get(name) {
-            self.messages.push(
-                Message::not_designed_yet(
-                    place,
-                    format!("using `{name}` outside the block that declares it isn't decided"),
-                )
-                .because(
-                    format!("`{name}` is declared inside a block that has ended"),
-                    declared,
-                ),
-            );
-        } else if let Some(&id) = self.program.by_name.get(name) {
+        if let Some(&id) = self.program.by_name.get(name) {
             let signature = &self.program.signatures[id];
             let message = if signature.parameters.is_empty() {
                 let replacement = format!("{name}()");
@@ -1856,21 +1839,12 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         None => refused = true,
                     },
                     None => {
-                        let message = if self.closed.contains_key(&inside) {
-                            Message::not_designed_yet(
-                                brace_place,
-                                format!(
-                                    "using `{inside}` outside the block that declares it isn't decided"
-                                ),
-                            )
-                        } else {
-                            Message::refused(
-                                brace_place,
-                                format!("there's no variable named `{inside}` here"),
-                            )
-                            // trace: D92
-                            .why("braces in `.fmt` text hold a variable's name, checked at compile time.")
-                        };
+                        let message = Message::refused(
+                            brace_place,
+                            format!("there's no variable named `{inside}` here"),
+                        )
+                        // trace: D92
+                        .why("braces in `.fmt` text hold a variable's name, checked at compile time.");
                         self.messages.push(message);
                         refused = true;
                     }

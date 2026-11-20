@@ -309,3 +309,17 @@ fn d81_an_operator_after_a_step() {
         Some("(x |> double)")
     );
 }
+
+#[test]
+fn d93_a_variable_ends_with_its_block() {
+    let program = main_with(&[
+        "if true:",
+        "    let message: Text = \"Still alive\";",
+        "    show_msg(message);",
+        "end if",
+        "show_msg(message);",
+        "let message: Text = \"again\";",
+        "show_msg(message);",
+    ]);
+    assert_eq!(found(&program), refused_on(6));
+}

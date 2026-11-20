@@ -11,13 +11,14 @@ the test results (`python3 compiler/run_tests.py`).
 - **The guessing game builds and plays** (`plainly compile examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
-- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 37 Rust unit tests pass, among them one
+- `cargo fmt --check` and `cargo clippy --workspace --all-targets` are clean. 38 Rust unit tests pass, among them one
   per refusal, named after its decision (`plain_compiler/src/tests.rs`); they check what's refused and where, never
   the wording.
 - Every stage of D62 exists: tokenizer and parser (syntax tree), checker (typed tree), lowering (Plainly IR), code
   generation (Cranelift IR and native code), linking with the runtime.
 - D55 is built in full, rule 4 included: the first error's fix is applied in memory, the program checked again, and
   each error that disappears gets a `because:` pointing back at the first one (`knock_ons.rs`).
+- A variable ends with its block (D93).
 - `plainly compile` replaces `plainly build` (D91), and messages say "compile time" and "runtime" (D90).
 - Follows the decisions up to D83: `??` sticks to its call, and comparison chains and operators after a step are
   refused with their fixes (D81); exit statuses 6 and 7 (D82); knock-ons as D83 confirms.
@@ -77,7 +78,7 @@ The compiler stops with `NotDesignedYet` (exit status 3) wherever the standard i
 place is an open question below. Briefly: `??` after a slide's step or a call that can't fail; spacing beyond D17, D18, D27 and D59; names beyond lowercase
 words joined by `_`; blank lines inside a procedure; a statement over several lines (its later lines' indentation);
 two statements on one line; comparing text; conditions that aren't `Bool`; using a variable outside its
-block; declaring a name already in use; a call whose value isn't used; `??` on a call that can't fail; label order;
+declaring a name already in use; a call whose value isn't used; `??` on a call that can't fail; label order;
 sliding into a labelled first parameter; `.fmt` given anything but text written in the call; `be.Whole` on text like
 ` 42`, `+5`, `007` or a number out of range; running out of input; `random` with `from:` above `to:`; types other
 than `Whole`, `Bool` and `Text`; lists; anything outside a procedure.
@@ -246,9 +247,8 @@ uses a placeholder until it's decided.
   or end. Only lowercase words joined by `_` are accepted.
 - **Q10. Answered by D72, D73 and D81.** `??` sticks to the call before it; `a < b < c` and `x |> f + 1` are refused
   with their fixes.
-- **Q11. Using a variable after the block that declares it,** like a `let` inside an `if` used after `end if`.
-  `NotDesignedYet`. Declaring the same name in two separate blocks is accepted, since a `let` inside a `while` (D32's
-  example, the guessing game) is a fresh variable each pass.
+- **Q11. Answered by D93:** a variable ends with its block; using it after is refused with "there's no variable
+  named `x` here", and the name can be declared again.
 - **Q12. Declaring a name that's already in use:** a variable again while the first is still in use, or a variable or
   parameter with a procedure's name, or a procedure named like a library one (`ask`, `random`, `show_msg`).
 - **Q13. Which text `be.Whole` reads.** Digits with an optional `-` in front are read, and anything that isn't nearly a
