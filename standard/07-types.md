@@ -60,7 +60,8 @@ let $line: Text = be.Text.fmt("{$name}: {$score}");
 - **The text is checked while building:** a name in braces that isn't a variable is refused (D29).
 - **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).
 
-`fmt` is short for format (D2).
+`fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first
+(D31).
 
 ### `\`
 
@@ -73,8 +74,7 @@ show_msg.fmt("Type \{help} to see the commands, {$name}.");
 show_msg("She said \"hi\".");
 ```
 
-**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; the order of `.fmt` and
-`.same_line` together; empty text; comparing text; lists.
+**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; empty text; comparing text; lists.
 
 ## Converting
 

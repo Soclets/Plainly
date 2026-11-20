@@ -23,7 +23,8 @@ The words this standard uses, each defined before a chapter relies on it.
 - **Type:** the kind of a value, like a whole number or text, as in `Whole` (chapter 7).
 - **Narrowing:** a word after a `.` that makes another word more specific, as `.main` makes `proc` mean the procedure
   the program starts with, and `.same_line` makes `show_msg` leave its line open. The `.` has no spaces around it
-  (D18).
+  (D18). When a word has several, the one that changes the action most comes first, as in `show_msg.fmt.same_line`,
+  and any other order is refused (D31).
 
 ## Procedures
 

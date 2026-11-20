@@ -917,3 +917,27 @@ show_msg("She said \"hi\".");
 D5 ("`\` escapes, but it doesn't format like C", Tankun in v1).
 
 **Tankun's words.** Asked "`\` makes the next character literal, with no C codes?", the owner chose: "yea".
+
+## D31. Narrowings go strongest first, and any other order is refused
+
+2026-11-20.
+
+**Chosen.** When a word has two or more narrowings, the one that changes the action most comes first, and any other
+order is refused, with the right spelling as the fix. `.fmt` changes what's shown, and `.same_line` only where it ends,
+so:
+
+```
+show_msg.fmt.same_line("Lives: {$lives}, your move: ");
+```
+
+and `show_msg.same_line.fmt(...)` is refused, with `fix: show_msg.fmt.same_line`.
+
+(A table of narrowing kinds, to place each new narrowing without judging it afresh, isn't decided yet.)
+
+**Weighed.**
+- Any order. Two spellings for one thing, against D2, and a reader may wonder whether the orders differ.
+
+**Why this won.** One spelling means a search finds every use, and the reader learns the most important fact first.
+This is Plainly v1's D14 and Cyborg's rule.
+
+**Tankun's words.** Asked "Narrowings go strongest first, with any other order refused?", the owner chose: "yea".
