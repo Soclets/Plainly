@@ -3085,3 +3085,34 @@ The compiler session leaned the same way.
 
 **Tankun's words.** Asked "Spacing mistakes on one line give one message, with every gap fixed at once?", the owner
 chose: "yea".
+
+## D101. `fix:` only when the one fix can be shown as a line; otherwise `what:` says what's wrong
+
+2026-11-20.
+
+**Chosen.** A message has a `fix:` when there's exactly one fix and it can be shown as a corrected line to copy (D54,
+D84). Otherwise it has a `what:`, which says what's wrong, as `what:` always does. So extra blank lines (D97), whose fix
+is deleting lines, get:
+
+```
+refused: game.plainly:4:1, line 4 column 1
+ 4 | 
+   | ^
+ what:    2 extra blank lines, after the one on line 3
+ why:     one blank line is enough to separate the parts of a program.
+```
+
+(That message's wording is drafted, not yet decided.)
+
+**Weighed.**
+- A `fix:` in words, "remove blank lines 4 and 5, leaving one", as the compiler session drafted: an exception to D84,
+  whose `fix:` is always a line to copy.
+- A `what:` as an exception to D54, which gives a `fix:` whenever there's exactly one fix, as the design claude first
+  put it. Tankun pointed out that was an exception too.
+
+**Why this won.** Stating what D54 and D84 mean together leaves neither with an exception: a `fix:` is always a line to
+copy, and anything that can't be shown that way, like deleting or moving lines, says what's wrong instead.
+
+**Tankun's words.** "Isn't yours also an exception?", "Does that `what:` say fix or the problem", then, asked "`fix:`
+only when there's one fix that can be shown as a line, and a `what:` saying what's wrong otherwise?", the owner chose:
+"yea".

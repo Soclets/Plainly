@@ -15,7 +15,8 @@ refused: game.plainly:5:5, line 5 column 5
 - **The place is written twice:** `file:line:column` for tools, then `line N column M` for people (D54).
 - **The source line is shown,** with `^` under exactly the part in question (D54).
 - **Then labelled lines, each only when known, in this order** (D54):
-  1. `fix:` when there's exactly one fix, showing the whole corrected line (D84), otherwise `what:`;
+  1. `fix:` when there's exactly one fix and it can be shown as a corrected line, showing the whole line (D84, D101);
+     otherwise `what:`, saying what's wrong;
   2. `when:`, the values that broke a check at runtime;
   3. `because:`, the earlier place the error comes from, as a sentence, then that line with `^` under the cause;
   4. `why:`, the rule, as a plain sentence.
