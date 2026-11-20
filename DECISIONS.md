@@ -47,3 +47,34 @@ and adding the licence files before a repo is public (Cyborg sat public and
 unlicensed for five days; Plainly for a few minutes).
 
 **Tankun's words.** Asked "Go with that?", the owner chose: "yes".
+
+## D2. Every keyword has one spelling, the short one, and the docs teach the full word
+
+2026-11-20.
+
+**Chosen.** Code has one spelling for each keyword, the short form: `proc`, `var`, `msg`, never `procedure`,
+`variable` or `message`. The docs teach the full word once, where a keyword first appears ("`proc` is short for
+procedure"), and so do error messages, so a beginner learns the concept and then types it short.
+
+```
+proc.main:
+    show_msg("Hello, World!");
+end proc.main
+```
+
+(Hello world's other parts, `.main`, `show_msg`, `;` and `end`, aren't decided yet.)
+
+**Weighed.**
+- Both forms, long and short, as in Plainly v1 (its D28: `procedure` or `proc`, `mutable` or `mut`). It let
+  beginners start with full words, but anyone reading other people's code met the short ones anyway, so beginners
+  learnt both, and teams argue over which to write.
+- Only the long forms. Plainest to read, but long to type everywhere.
+
+**Why this won.** One spelling per thing means every program looks the same, a search for `proc` finds every
+procedure, and nobody learns two words for one thing. The short forms are clipped words, not symbols, so they stay
+plain once taught. The cost is that a beginner sees `proc` before knowing what it stands for, which the docs and
+messages make up for by teaching the full word at first sight.
+
+**Tankun's words.** From multifinity's chat (Nov 19): "So, learn concepts, then type short" and "teach the full
+words, and remember the shorten". Asked "Only the short form in code, with the docs teaching the full word once?",
+the owner chose: "yea".
