@@ -107,5 +107,16 @@ let $title: Text = first_word($heading) otherwise word_failed.use_placeholder;
 A handler that can `return` or `break` is marked `*` where it's used, as in `otherwise word_failed.*give_up;`. The mark
 is required on a handler that can jump, and refused on one that can't (D42).
 
-**Not decided:** how a procedure fails on purpose; `return`; handlers that take arguments; handlers covering only some
-failures; whether failing on purpose inside a case counts as a jump.
+Inside an `otherwise:` block, `include family.handler;` brings in a handler's cases as if written there, and the
+block's own `case`s cover the failures it doesn't. Together they must cover every failure, none twice (D43):
+
+```
+let $title: Text = load_word($file) otherwise:
+    include word_failed.use_placeholder;
+    case disk_full:
+        instead "?";
+end otherwise
+```
+
+**Not decided:** how a procedure fails on purpose; `return`; handlers that take arguments; whether failing on purpose
+inside a case counts as a jump.

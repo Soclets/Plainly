@@ -1299,3 +1299,36 @@ Plainly v1's D41.
 
 **Tankun's words.** Asked "Handlers declared with `handler` inside a `fam.handler`, used as `otherwise
 family.handler`, with `*` at the use for one that can jump?", the owner chose: "yea".
+
+## D43. `include` brings a handler's cases into an `otherwise:` block, beside cases of its own
+
+2026-11-20.
+
+**Chosen.** Inside an `otherwise:` block, `include family.handler;` brings in that handler's cases as if written
+there, and the block's own `case`s cover the failures it doesn't:
+
+```
+let $title: Text = load_word($file) otherwise:
+    include word_failed.use_placeholder;
+    case disk_full:
+        instead "?";
+end otherwise
+```
+
+- Together, the included and written cases must cover every failure still possible at the call, with no failure
+  covered twice (D40).
+- A handler that can jump is marked as at any use: `include word_failed.*give_up;` (D42).
+
+(Handlers that take arguments aren't decided yet.)
+
+**Weighed.**
+- `use`, the word first proposed. Vaguer, since plain `otherwise family.handler` also uses a handler, and it's the
+  word other languages use for importing names, which v2 may want later.
+- No combining, so a call with one failure the handler doesn't cover needs a whole new handler. Cyborg's design claude
+  warned to settle this early, since Cyborg never did.
+
+**Why this won.** A handler covering some failures stays reusable on calls that can fail in more ways. `include` says
+exactly what happens, its cases included as if written there, and leaves `use` free. Tankun found the word.
+
+**Tankun's words.** "`include` instead?", then, asked "`include` inside `otherwise:` to combine a handler with extra
+cases?", the owner chose: "yea".

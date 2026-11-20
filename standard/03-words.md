@@ -29,6 +29,7 @@ message".
 | `returns` | | D37 |
 | `fam` | family | D2, D41 |
 | `handler` | | D42 |
+| `include` | | D43 |
 | `fails`, `or` | | D39 |
 
 **Not decided:** every other keyword.
