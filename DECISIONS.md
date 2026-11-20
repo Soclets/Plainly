@@ -326,3 +326,22 @@ meaningful; Plainly gets it by checking it. A refusal with the corrected line te
 Plainly v1's D70 and D74.
 
 **Tankun's words.** Asked "4 spaces per level, required, tabs refused?", the owner chose: "yea".
+
+## D11. Variable names start with `$`
+
+2026-11-20.
+
+**Chosen.** A variable's name starts with `$`: `$name`, `$secret`, `$roll`.
+
+**Weighed.**
+- `#`, as in Plainly v1. In Python and most other languages `#` starts a comment, so `#score` looks like one to
+  anyone coming from them.
+- No mark, as in Python. Variables could then clash with keywords and procedure names, and a new keyword could break
+  existing programs.
+
+**Why this won.** A mark means a variable is never mistaken for a keyword or a call (`$roll` is a value, `roll()` a
+call), keywords can be added later without breaking anyone's names, and variables stand out when filled into text.
+`$` already means "a variable" in shells and PHP. The cost is one character per name, and looking less like Python.
+
+**Tankun's words.** Asked "Variable names start with `$`?", the owner chose: "yea. Compiler before oracle, right? But
+with tests. And also a standard before compiler"
