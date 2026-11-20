@@ -28,6 +28,7 @@ message".
 | `extern`, `.rust` | external | D2, D36 |
 | `returns` | | D37 |
 | `fam` | family | D2, D41 |
+| `handler` | | D42 |
 | `fails`, `or` | | D39 |
 
 **Not decided:** every other keyword.
@@ -68,3 +69,4 @@ Each kind of bracket has one job (D3):
 | `&` | joins text | D28 |
 | `?` | passes a failure up | D23 |
 | `??` | handles a failure on one line | D23 |
+| `*` | marks a handler that can jump, where it's used | D42 |

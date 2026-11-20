@@ -81,4 +81,31 @@ end otherwise
   purpose. A case that could fall off its end is refused (D40).
 - **`case` is indented one level in, and its body one level further** (D10, D40).
 
-**Not decided:** how a procedure fails on purpose; `return`; handler families.
+## Handler families
+
+A handler is a named set of `case`s, declared with `handler` inside a `fam.handler`, whose word names what fails
+(D41, D42):
+
+```
+fam.handler word_failed:
+    handler word_failed.use_placeholder:
+        case too_long:
+            instead "...";
+        case no_words:
+            instead "(none)";
+    end handler word_failed.use_placeholder
+end fam.handler word_failed
+```
+
+It's used with `otherwise` and its full name, as if its cases were written at the call, so they must cover every
+failure still possible there (D40, D42):
+
+```
+let $title: Text = first_word($heading) otherwise word_failed.use_placeholder;
+```
+
+A handler that can `return` or `break` is marked `*` where it's used, as in `otherwise word_failed.*give_up;`. The mark
+is required on a handler that can jump, and refused on one that can't (D42).
+
+**Not decided:** how a procedure fails on purpose; `return`; handlers that take arguments; handlers covering only some
+failures; whether failing on purpose inside a case counts as a jump.

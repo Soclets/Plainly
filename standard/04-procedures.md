@@ -83,8 +83,7 @@ where each `...` stands for that procedure's body.
 
 `fam` is short for family (D2).
 
-**Not decided:** how a handler family's handlers are written; handlers that take arguments; handlers covering only some
-failures.
+Handler families: chapter 8.
 
 ## Calls
 

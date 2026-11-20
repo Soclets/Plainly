@@ -1246,3 +1246,56 @@ Familiy now can create shit like different modules. And I think that is too big"
 wait. I think we should pause here, and let me go refine families in Cyborg. So, it would be better or more in my
 vision. Since families are one of my biggest innovations.", then, after Cyborg's D480, asked "Families as a word and
 its kinds, in a `fam.kind` block, with every member passing "a Y kind of X"?", the owner chose: "yea".
+
+## D42. Handlers are declared with `handler` in a `fam.handler`, used with `otherwise`, and `*` marks one that can jump
+
+2026-11-20.
+
+**Chosen.**
+
+```
+fam.handler word_failed:
+    handler word_failed.use_placeholder:
+        case too_long:
+            instead "...";
+        case no_words:
+            instead "(none)";
+    end handler word_failed.use_placeholder
+
+    handler word_failed.give_up:
+        case too_long:
+            return;
+        case no_words:
+            return;
+    end handler word_failed.give_up
+end fam.handler word_failed
+
+let $title: Text = first_word($heading) otherwise word_failed.use_placeholder;
+let $name: Text = first_word($typed) otherwise word_failed.*give_up;
+```
+
+- Each member of a `fam.handler` starts with `handler` and its full name, and is closed with `end handler` and that
+  name, as `fam.proc`'s members are with `proc` (D41).
+- A handler's body is `case`s, exactly as in an `otherwise:` block (D40). `otherwise family.handler` uses it at a call
+  as if its cases were written there, so they must cover every failure still possible at that call.
+- The family's word names what fails, so each handler reads as a kind of handling it (D41).
+- A handler that can `return` or `break` is marked `*` where it's used, as in `word_failed.*give_up`: required on one
+  that can jump, refused on one that can't.
+
+(`return` itself, handlers that take arguments, handlers covering only some failures, and whether failing on purpose
+inside a case counts as a jump aren't decided yet.)
+
+**Weighed.**
+- No mark, as an ordinary handler call. A `return` inside a handler leaves the caller's procedure, and nothing at the
+  call would show that the lines after it might never run.
+- The mark where the handler's declared. Then reading a call wouldn't show it.
+- A handler header with no `handler` word, as Cyborg writes `word_failed.use_placeholder:`. `fam.proc`'s members start
+  with `proc`, so v2's handlers start with `handler`.
+
+**Why this won.** Handling that repeats across many calls is written once and named, and reads at the call as what it
+does. The `*` at the use is the part of Cyborg's design that has most clearly earned its keep, Cyborg's design claude
+reports: a hidden return out of the caller is the real surprise. This is Cyborg's handler families (its D46, D480) and
+Plainly v1's D41.
+
+**Tankun's words.** Asked "Handlers declared with `handler` inside a `fam.handler`, used as `otherwise
+family.handler`, with `*` at the use for one that can jump?", the owner chose: "yea".
