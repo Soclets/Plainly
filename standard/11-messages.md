@@ -44,6 +44,8 @@ refused: game.plainly:5:5, line 5 column 5
 | 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
 | 4 | a check failed while running |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
+| 6 | the command itself was written wrong, like a missing mode or an unknown command (D82) |
+| 7 | PlainCompiler or PlainOracle itself went wrong, a bug in the tool, with a message saying how to report it (D82) |
 
 `NotBuiltYet` is for something decided but not built, and `NotDesignedYet` for something no decision covers. They use
 the same layout, with their name as the kind (D56).

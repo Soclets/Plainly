@@ -2540,3 +2540,28 @@ misread and giving the one-word or one-bracket fix.
 
 **Tankun's words.** Asked "`??` sticks to its call, chains of comparisons refused, and an operator after a step
 refused?", the owner chose: "yea".
+
+## D82. Exit statuses 6 for a wrongly written command, and 7 for a bug in Plainly's own tools
+
+2026-11-20.
+
+**Chosen.** Two more rows for D56's table:
+
+| Status | When |
+|---|---|
+| 6 | the command itself was written wrong, like `plainly run game.plainly` with no mode, or an unknown command |
+| 7 | PlainCompiler or PlainOracle itself went wrong: a bug in the tool, never in the program, with a message saying how to report it |
+
+(The messages for both aren't decided yet.)
+
+**Weighed.**
+- 64 and 70, from Unix's `sysexits.h` (64 for a usage mistake, 70 for an internal software error), which the compiler
+  session used as placeholders. A few Unix tools follow it, but almost nothing reads those numbers, and one small
+  scheme is easier to learn.
+- One status for both, or 1. A bug in Plainly must never look like a mistake in the program.
+
+**Why this won.** All of Plainly's statuses stay in one short table, and a test suite can tell a bug in Plainly's tools
+from a bug in the program it ran. The compiler session found both gaps.
+
+**Tankun's words.** Asked "Exit statuses 6 for a wrong command, and 7 for a bug in Plainly's own tools?", the owner
+chose: "yea".
