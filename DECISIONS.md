@@ -2809,3 +2809,47 @@ raised it.
 
 **Tankun's words.** "yea, what about `plainly compile`?" (in D90's answer); then, asked "`plainly compile` in place of
 `plainly build`?", the owner chose: "yea".
+
+## D92. The wording of the fifth batch: `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages
+
+2026-11-20.
+
+**Chosen.** These messages, in D54's layout, with D84's `fix:`, D86's label column and D89's "but". Names, types and
+values are filled in from the program:
+
+| When | `what:` | `why:` |
+|---|---|---|
+| a brace that isn't a variable (D29) | `` there's no variable named `nme` here `` | braces in `.fmt` text hold a variable's name, checked at compile time. |
+| a calculation or call in braces (D29) | braces in `.fmt` text hold only a variable's name | text never hides a calculation or a call; work it out into a variable first. |
+| `.fmt` with no text (D29) | `` `.fmt` takes one piece of text `` | `.fmt` fills in the braces of the text it's given. |
+| `.fmt`'s text with a label (D29) | `` `.fmt`'s text has no label `` | `.fmt` fills in the braces of the text it's given. |
+| two `proc.main`s (D64) | `` this program has two `proc.main`s ``, with `because:` the first is here | a program has exactly one `proc.main`, where it starts. |
+| two procedures with one name (D64) | `` there's already a procedure named `pick` ``, with `because:` the first is here | every procedure in a program needs its own name, since a call has to know which one it means. |
+| no `proc.main` (D64) | `` this program has no `proc.main` `` | a program starts with `proc.main`. |
+| an unknown variable | `` there's no variable named `x` here `` | a variable is declared with `let` or `var` before it's used. |
+| an unknown procedure | `` there's no procedure named `x` `` | a call names a procedure the program or the library has. |
+| a procedure used without `( )` (D4) | `` `x` is a procedure, so using it writes `( )` with its arguments `` | a call writes the procedure's name and `( )`. |
+| a variable called | `` `x` is a variable, not a procedure `` | only a procedure can be called. |
+| a value of the wrong type | `` `x` is a `Whole`, but this value is a `Text` `` | a value's type has to match where it's used. |
+| an argument of the wrong type | `` `f` takes a `Whole` here, but this is a `Text` `` | a value's type has to match where it's used. |
+| `;` expected | `` `;` should be here, not `x` `` | (none) |
+| a line ending early | `` the line ends where `)` should be `` | (none) |
+| the file ending early | the file ends where a value should be | (none) |
+| overflow, at runtime (D46), as `check failed:` | `` the result is too big for a `Whole` ``, with `when:` the values, as in `9223372036854775807 + 1` | a `Whole` holds whole numbers from -9223372036854775808 to 9223372036854775807. |
+| underflow, at runtime (D46), as `check failed:` | `` the result is too small for a `Whole` ``, with `when:` the values | the same. |
+
+The tools' own messages:
+- **`internal error:`** (status 7, D82): `what:` the problem; `why:` "this is a bug in PlainCompiler. Please report it at
+  https://github.com/Soclets/Plainly/issues, with the program that caused it."
+- **`can't read:`** (status 2, D56): `can't read: game.plainly`, then `what:` the system's reason.
+- **A wrongly written command** (status 6, D82): `plainly: run and compile need a mode: --working or --final`, then
+  how to use the command.
+
+The parser's three messages have no `why:`, since there's no rule to name beyond what's written.
+
+**Weighed.**
+- "every name in a program shares one space, so two procedures can't have one name", as drafted. "Space" is
+  programmer jargon for a namespace.
+
+**Tankun's words.** Their questions about the first showing are quoted in D90; then, asked "Do any of those read
+wrong?", the owner chose: "no".
