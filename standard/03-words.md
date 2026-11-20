@@ -16,6 +16,7 @@ message".
 | `var` | variable | D2, D13 |
 | `if`, `else` | | D16 |
 | `at_least`, `at_most` | | D17 |
+| `while` | | D19 |
 
 **Not decided:** every other keyword.
 

@@ -558,3 +558,27 @@ raised it.
 
 **Tankun's words.** In answer to D17's question: "yea, `proc . main` also shouldn't be legal". Taken as the rule for
 every narrowing, not `proc.main` alone.
+
+## D19. `while` repeats while its condition holds
+
+2026-11-20.
+
+**Chosen.** `while`, its condition and `:` open a loop that runs its body again and again as long as the condition
+holds, checked before each pass. `end while` closes it (D8).
+
+```
+var $tries: Whole = 0;
+while $tries < 5:
+    show_msg("Guess!");
+    $tries = $tries + 1;
+end while
+```
+
+(`+`, leaving a loop early, and other kinds of loop aren't decided yet.)
+
+**Weighed.**
+- `repeat while`, or `loop while`. Longer, with nothing gained over the word every language uses.
+
+**Why this won.** It's Python's word, and the shape of every other block (D8). Plainly v1 had the same (its D53).
+
+**Tankun's words.** Asked "`while` like that?", the owner chose: "yea".

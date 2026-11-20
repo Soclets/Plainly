@@ -44,6 +44,24 @@ $hp at_most 100
 
 **Not decided:** comparing two pieces of text; combining conditions; what else a condition may be.
 
+## `while`
+
+```
+while condition:
+    body
+end while
+```
+
+where `condition` is checked before each pass, and `body` is run again as long as it holds (D19).
+
+```
+var $tries: Whole = 0;
+while $tries < 5:
+    show_msg("Guess!");
+    $tries = $tries + 1;
+end while
+```
+
 ## After an `if` that leaves
 
 When any way through an `if` leaves, by `return`, `break` or a failure, nothing may follow its `end if` in the same
@@ -65,4 +83,4 @@ proc larger($a: Whole, $b: Whole) returns Whole:
 end proc larger
 ```
 
-**Not decided:** `return`, `break`, failures, loops, and every other part of control flow.
+**Not decided:** `return`, `break`, failures, other loops, and every other part of control flow.
