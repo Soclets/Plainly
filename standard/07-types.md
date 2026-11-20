@@ -62,8 +62,19 @@ let $line: Text = be.Text.fmt("{$name}: {$score}");
 
 `fmt` is short for format (D2).
 
-**Not decided:** a literal `{` inside `.fmt` text; settings in braces; the order of `.fmt` and `.same_line` together; a
-quote inside text, and other escapes; empty text; comparing text; lists.
+### `\`
+
+Inside text, `\` makes the next character literal, and does nothing else: `\{` is a brace in `.fmt` text, `\"` a quote,
+and `\\` a backslash. Only `{` needs escaping in `.fmt` text, since a `}` with no open `{` is just a character. `\`
+doesn't start C-style codes, so `\n` isn't a new line (D30).
+
+```
+show_msg.fmt("Type \{help} to see the commands, {$name}.");
+show_msg("She said \"hi\".");
+```
+
+**Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; the order of `.fmt` and
+`.same_line` together; empty text; comparing text; lists.
 
 ## Converting
 

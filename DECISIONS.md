@@ -891,3 +891,29 @@ read a value, never do work. It replaces long `&` chains with `be.Text` in each 
 
 **Tankun's words.** "What about Cyborg's `@fmt`?", "How about `.fmt`?", then, asked "`.fmt` on `show_msg` and
 `be.Text`, with braces holding only names, checked while building?", the owner chose: "yea".
+
+## D30. `\` makes the next character literal, with no C-style codes
+
+2026-11-20.
+
+**Chosen.** Inside text, `\` makes the next character literal, and does nothing else:
+
+```
+show_msg.fmt("Type \{help} to see the commands, {$name}.");
+show_msg("She said \"hi\".");
+```
+
+- `\{` is a brace in `.fmt` text, `\"` a quote, and `\\` a backslash.
+- Only `{` needs escaping in `.fmt` text: a `}` with no open `{` is just a character.
+- `\` doesn't start C-style codes: `\n` isn't a new line and `\t` isn't a tab.
+
+(How a new line or a tab is written inside text, and whether `\` before a letter is refused, aren't decided yet.)
+
+**Weighed.**
+- C's codes, `\n`, `\t` and the rest, as Python has. Codes to memorise, which a plain word can replace.
+- Python's doubled braces, `{{` and `}}`. Two rules where one does.
+
+**Why this won.** One rule covers every case: the character after `\` is taken as it is. This is Plainly v1's D3 and
+D5 ("`\` escapes, but it doesn't format like C", Tankun in v1).
+
+**Tankun's words.** Asked "`\` makes the next character literal, with no C codes?", the owner chose: "yea".
