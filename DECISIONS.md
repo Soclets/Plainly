@@ -617,3 +617,28 @@ so one procedure. It reads like English, `let $typed: Text = ask("Your guess: ")
 **Tankun's words.** "What if they input a number? What about something like `read_input`? Idk. What does this do",
 "Read? It seems more like `ask`?", "What if we made `msg` a family? `msg.ask`, `msg.show`? Lol", then, asked
 "`ask(question)`?", the owner chose: "yea".
+
+## D21. `Text` is the type for text, written in double quotes
+
+2026-11-20.
+
+**Chosen.** Text has the type `Text`, and a piece of text is written in double quotes:
+
+```
+let $name: Text = "Mia";
+show_msg("Don't give up!");
+```
+
+Single quotes aren't used for text.
+
+(A quote inside text, other escapes, empty text, joining and comparing text aren't decided yet.)
+
+**Weighed.**
+- `String` or `str`, as most languages say. Jargon that needs explaining ("a string of characters").
+- Single and double quotes both, as in Python. Two ways to write the same text, against D2's one spelling per thing.
+
+**Why this won.** `Text` is the plain word and needs no explaining. With only double quotes there's one way to write
+text, and an apostrophe inside, as in `"Don't"`, needs nothing special. Plainly v1 and multifinity's notes both use
+`Text`.
+
+**Tankun's words.** Asked "`Text`, written in double quotes?", the owner chose: "yea".
