@@ -7,6 +7,16 @@ Cranelift, with no bytecode and no JIT. Running a program compiles it to a tempo
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
+PlainCompiler works in stages (D62):
+
+```
+source → syntax tree → typed tree → Plainly IR → Cranelift IR → native code
+```
+
+Refusals happen at the typed tree, so `plainly check` stops there. Plainly IR is the one intermediate form of Plainly's
+own, where every check, allocation, label, default and handler case is written out, and where `final` mode's own
+optimizations run. Both modes take the same path (D62).
+
 PlainOracle, the reference implementation, is written in C (D52).
 
 It's C23, compiled with Clang with every warning on, and every test run is under AddressSanitizer and

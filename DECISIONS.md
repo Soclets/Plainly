@@ -1906,3 +1906,36 @@ does.
 
 **Tankun's words.** In their answer to D57 (quoted whole there), then the messages listed in D58; asked "The short form required when two or more parameters share
 one type?", the owner chose: "yea".
+
+## D62. PlainCompiler's stages, with one IR of Plainly's own
+
+2026-11-20.
+
+**Chosen.**
+
+```
+source → syntax tree → typed tree → Plainly IR → Cranelift IR → native code
+```
+
+- **Syntax tree:** the program as written.
+- **Typed tree:** names resolved and types attached. Refusals happen here, so `plainly check` (D50) stops after it.
+- **Plainly IR:** the one intermediate form of Plainly's own, a graph of simple steps where everything hidden is
+  written out: each check (D46), each allocation for PlainGC (D48), labels and defaults filled in, and each handler's
+  cases (D42). `final` mode's own optimizations run on it (D46).
+- **Cranelift IR,** then native code (D45).
+
+Both build modes take the same path and differ only in optimizations, so a translation bug shows in `working` mode too,
+where tests and PlainOracle catch it.
+
+(Which optimizations `final` mode makes isn't decided yet.)
+
+**Weighed.**
+- No IR of Plainly's own, going from the typed tree straight to Cranelift. Plainly's own optimizations, like removing
+  checks it can prove, need a form that knows Plainly's types and checks, which Cranelift's doesn't.
+- Two IRs of its own, as Go has. Go needs them because it writes its own backend; with Cranelift doing the low-level
+  work, one is enough.
+
+**Why this won.** It's Swift's shape (its SIL sits between the syntax tree and LLVM), and Plainly v1's D22: one layer of
+Plainly's own for its checks and optimizations, with the backend library doing the rest.
+
+**Tankun's words.** Asked "These stages for PlainCompiler?", the owner chose: "yea".
