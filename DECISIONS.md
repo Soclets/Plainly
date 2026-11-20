@@ -3170,3 +3170,55 @@ what exists without suggesting how they combine.
 Asked "Change that `why:` to "`show_msg`'s narrowings are `.fmt` and `.same_line`"?", the owner chose: "yea". Then,
 asked "Do the other rows read right as they are, including parameters counting as variables in the D94 row?", the
 owner chose: "yea".
+
+## D103. The wording of the sixth batch, part two: the command's own messages, words with no more narrowings, and `NotBuiltYet` and `NotDesignedYet`
+
+2026-11-20.
+
+**Chosen.** These messages, with D86's label column and D89's "but".
+
+**Command mistakes** (status 6, D82). Each first line is followed by how to use the command, as D92's is:
+
+| When | First line |
+|---|---|
+| no command | `plainly: no command given` |
+| an unknown command | ``plainly: `go` isn't a command`` |
+| no file | ``plainly: `run` needs a file`` |
+| two files | ``plainly: `run` takes one file, but this gives 2`` |
+| no mode (D92's) | `plainly: run and compile need a mode: --working or --final` |
+| two modes | ``plainly: `run` takes one mode, but this gives both `--working` and `--final` `` |
+| a mode on `check` | ``plainly: `check` takes no mode, since it doesn't compile`` |
+| an unknown mode | ``plainly: `--fast` isn't a mode; the modes are `--working` and `--final` `` |
+
+**A file that can't be read** (status 2): `can't read: notes.txt`, then a `what:` that's one of "`` a Plainly file's
+name ends in `.plainly` ``", "it isn't UTF-8 text", or the system's own reason (D92).
+
+**Internal errors** (status 7, D82): the first line names the part that went wrong, as
+`internal error: PlainCompiler itself went wrong, not your program`, or the same with PlainGC. Then a `what:` with the
+problem and D92's `why:`, naming the same part: "this is a bug in PlainGC. Please report it at
+https://github.com/Soclets/Plainly/issues, with the program that caused it."
+
+**`NotBuiltYet` and `NotDesignedYet`** (status 3, D56), as a pattern, in D54's layout with no `why:`:
+- `NotBuiltYet`'s `what:` says what isn't built, with the decisions that decided it: "dividing and remainders, `/`,
+  `div` and `rem` (D70, D71), aren't built yet".
+- `NotDesignedYet`'s `what:` says what isn't decided, with no number: "X isn't decided yet".
+
+**An unknown narrowing on a word with no more narrowings**, beside D102's: the `what:` is D102's, as
+"`` `be.Whole` has no narrowing `.fmt` ``". The `why:` depends on whether the word is already narrowed:
+- a plain word with no narrowings: "`` `random` has no narrowings. ``"
+- a word that's already a narrowing: "`` `be.Whole` can't be narrowed further. ``"
+
+**Weighed.**
+- Every command mistake as one catch-all, "`` `run --working` isn't a command ``", as PlainCompiler printed them while
+  none had a wording. It doesn't say which part is wrong.
+- "`` `be.Whole` has no narrowings. ``", as drafted for every word with no more narrowings. `be` is narrowed by the
+  type (D22), so `be.Whole` is itself a narrowing, and the sentence contradicts that on its face.
+- A decision number on `NotDesignedYet` too. There's no decision to point to.
+
+**Why this won.** Each command mistake says which part of the command is wrong, a `NotBuiltYet` points to the decision
+that will be built, and "further" admits a narrowing that's already there while saying nothing more goes after it.
+
+**Tankun's words.** Shown part two, and then the row for words with no narrowings, Tankun asked: "`be` does have
+narrowings, right?". Asked "For an already-narrowed word with nothing more allowed, should the `why:` be "`be.Whole`
+can't be narrowed further"?", the owner chose: "yea". Then, asked "Do they all read right as drafted?" of the rest of
+part two, the owner chose: "yea".

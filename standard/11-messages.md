@@ -39,8 +39,9 @@ refused: game.plainly:5:5, line 5 column 5
 Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables, D87 for
 declarations, comparing, converting, unhandled failures, joining text and keywords used as names, D88 for
 procedures, calls and `return`, D89 for types, labels lines, narrowing order, parameter forms and `&` beside
-maths, D92 for `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages, and D102 for
-parameters, narrowings, `else:`, D81's refusals, names in use, knock-on errors, names, blank lines and spacing. Where a
+maths, D92 for `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages, D102 for
+parameters, narrowings, `else:`, D81's refusals, names in use, knock-on errors, names, blank lines and spacing, and
+D103 for the command's own messages, words with no more narrowings, and `NotBuiltYet` and `NotDesignedYet`. Where a
 `what:` sets what's expected against what was found, it says "but" (D89).
 
 The text after every label starts at the same column, one space after the longest label, `because:`, in every message
@@ -60,9 +61,11 @@ beyond plain English letters.
 | 4 | a check failed at runtime |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
 | 6 | the command itself was written wrong, like a missing mode or an unknown command (D82) |
-| 7 | PlainCompiler or PlainOracle itself went wrong, a bug in the tool, with a message saying how to report it (D82) |
+| 7 | PlainCompiler, PlainGC or PlainOracle itself went wrong, a bug in the tool, with a message naming it and saying how to report it (D82, D103) |
 
 `NotBuiltYet` is for something decided but not built, and `NotDesignedYet` for something no decision covers. They use
-the same layout, with their name as the kind (D56).
+the same layout, with their name as the kind (D56). A `NotBuiltYet`'s `what:` names the decisions that decided what isn't built, as in
+"dividing and remainders, `/`, `div` and `rem` (D70, D71), aren't built yet"; a `NotDesignedYet`'s says "X isn't
+decided yet". Neither has a `why:` (D103).
 
 **Not decided:** what a failure leaving `proc.main` shows.
