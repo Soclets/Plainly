@@ -1789,7 +1789,7 @@ proc add(a: Whole, b: Whole) returns Whole:
 A name can't be a keyword: a program using a keyword as a name is refused. If a later version of Plainly adds a
 keyword, a program already using that word as a name stops building and has to rename it.
 
-This replaces D11. Entries before this one write names with `$`.
+This replaces D11. Entries before this one write names with `$`. (Replaced by D125, which brings `$` back.)
 
 **Weighed.**
 - `$` on every name (D11). It keeps names apart from keywords in text with no colour, which matters most in a language
@@ -3847,3 +3847,34 @@ make a Fortran shit, and soAW({fuhy'ieqg;qAOfg" (the design claude built and tim
 against 2.62 s unoptimized); shown six, "Any more? Maybe look at LLVM's premade passes"; shown eleven, "C'mon 🥺";
 shown fourteen, "Look at GCC's premade too"; shown twenty, "What's Graphite? 🥺". Then, asked "Should `final` make
 twenty-one: the twenty plus Graphite-style polyhedral loop optimization, built last?", the owner chose: "Pwease 🥺".
+
+## D125. Variable names start with `$` again
+
+2026-11-20.
+
+**Chosen.** A variable's name, a parameter's included, starts with `$`, as D11 had it, replacing D58:
+
+```
+let $secret: Whole = random(from: 1, to: 100);
+var $tries: Whole = 0;
+$tries = $tries + 1;
+show_msg.fmt("You got it in {$tries} tries.");
+```
+
+What follows from it:
+- A name after `$` follows D99: lowercase letters and digits, starting with a letter, with `_` only between words.
+- A keyword can be a variable's name, as in `$if`, since `$` keeps them apart; D58's refusal of keywords as names goes.
+- `.fmt`'s braces hold the name with its `$`, as in `{$tries}` (D29).
+- Procedures, labels, narrowings and types have no `$`.
+- `*` still multiplies (D59).
+
+**Weighed.**
+- No mark (D58). Faster to type and closer to Python, but names look like keywords where there's no colour, a new
+  keyword breaks programs using it as a name, and autocomplete can't tell a variable comes next.
+
+**Why this won.** Tankun missed it. The reasons D11 chose it still hold: a variable is never mistaken for a keyword or
+a call, keywords can be added without breaking anyone's names, and variables stand out in text. With the compiler
+being rewritten from a clean start (2026-11-21), nothing built has to change.
+
+**Tankun's words.** "yea. Mf, yk? I'm missing `$`, and `$a: Whole, $b: Whole`" (in answer to a question about Verus),
+then, asked "Should `$` come back on every name, replacing D58?", the owner chose: "yea".
