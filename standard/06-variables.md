@@ -17,7 +17,7 @@ let secret: Whole = 42;
 var tries: Whole = 0;
 ```
 
-- **`let`:** the value never changes after this line (D13).
+- **`let`:** the value never changes after this line, all the way down (D13, D78).
 - **`var`:** the value can change. `var` is short for variable (D2, D13).
 - **The type is always written,** never worked out from the value (D13).
 
@@ -49,6 +49,10 @@ var c: List<Whole> = share a;
 ```
 
 Changing `b` leaves `a` alone; changing `c` changes `a`. A plain value like a `Whole` needs neither word (D49).
+
+`let` is deep: nothing reachable through a `let` can ever change, not its items nor the items inside them. So `share`
+is refused between a `let` and a `var`, either way, with `copy` as the fix; it's allowed between two `let`s or two
+`var`s (D78).
 
 **Not decided:** whether arguments and changes with `=` need a word; shorthand like `+=`; constants known while building, like `const`; the types themselves; declaring
 a variable without a first value.

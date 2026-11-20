@@ -2433,3 +2433,29 @@ aren't decided yet.)
 **Tankun's words.** "Isn't it a method?", "Actually, no. It's because Cyborg doesn't do implicit ownership", "There's
 highlightung, though", then, asked "Methods on values with a plain `.`, with changing ones only allowed on a `var`?",
 the owner chose: "yea. Btw, `let` is deep".
+
+## D78. `let` is deep, and `share` never crosses between a `let` and a `var`
+
+2026-11-20.
+
+**Chosen.** Nothing reachable through a `let` can ever change: not its items, nor the items inside its items. So
+`share` (D49) is refused between a `let` and a `var`, either way, with `copy` as the fix:
+
+```
+var scores: List<Whole> = [1, 2];
+let frozen: List<Whole> = copy scores;
+```
+
+- `share` from a `var` into a `let` is refused: the `let` would change whenever the `var` did.
+- `share` from a `let` into a `var` is refused: the `var` could change the `let`'s value.
+- `share` between two `let`s, or between two `var`s, is allowed.
+
+**Weighed.**
+- A shallow `let`, as JavaScript's `const`, where the name can't be given a new value but its list can still change.
+  A `let` list could then change under a reader who trusted it, and D68's workers couldn't read it without copying.
+
+**Why this won.** A `let` means what it says all the way down, so a reader never has to check whether something
+reachable through it might change. It's what lets every worker read a `let` without copying (D68). Tankun stated it.
+
+**Tankun's words.** "yea. Btw, `let` is deep" (in D77's answer); then, asked "`let` is deep, with `share` refused
+between a `let` and a `var`?", the owner chose: "yea".
