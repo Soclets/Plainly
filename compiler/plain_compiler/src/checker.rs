@@ -321,6 +321,31 @@ struct ProcedureChecker<'a, 'b> {
     loop_depth: usize,
     gives: Gives,
     name: String,
+    /// What the expression about to be checked gives its value to, for messages; only the outermost expression of a
+    /// statement sees it.
+    receiving: Receiving,
+}
+
+/// What an expression gives its value to.
+#[derive(Clone, Default)]
+enum Receiving {
+    /// The variable being declared or changed.
+    Variable(String),
+    /// Nothing: the expression is a statement of its own.
+    Statement,
+    /// Anything else, like a call's argument.
+    #[default]
+    Other,
+}
+
+/// The procedure an expression calls last: a call's, or a slide's last step's, with or without `??` after it.
+fn called_name(expression: &Expression) -> Option<String> {
+    match &expression.kind {
+        ExpressionKind::Fallback { call, .. } => called_name(call),
+        ExpressionKind::Call { callee, .. } => Some(callee.written()),
+        ExpressionKind::Slide { steps, .. } => steps.last().map(|step| step.callee.written()),
+        _ => None,
+    }
 }
 
 impl<'a, 'b> ProcedureChecker<'a, 'b> {
@@ -342,6 +367,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             loop_depth: 0,
             gives,
             name: procedure.name.text.clone(),
+            receiving: Receiving::Other,
         };
         let mut parameters = Vec::new();
         for parameter in &procedure.parameters {
@@ -581,6 +607,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 type_name,
                 value,
             } => {
+                self.receiving = Receiving::Variable(name.text.clone());
                 let checked = self.value(value);
                 if let Some(id) = self.lookup(&name.text) {
                     // trace: D94
@@ -622,6 +649,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 })
             }
             StatementKind::Change { name, value } => {
+                self.receiving = Receiving::Variable(name.text.clone());
                 let checked = self.value(value);
                 match self.lookup(&name.text) {
                     None => {
@@ -677,20 +705,14 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 }
             }
             StatementKind::Expression(expression) => {
+                self.receiving = Receiving::Statement;
                 let checked = self.check_expression(expression);
                 let checked = self.require_handled(checked);
                 match checked.shape {
                     Shape::Nothing => Some(TypedStatement::Run(checked.expression)),
                     Shape::Unknown => None,
                     Shape::Value(value_type) => {
-                        let called = match &expression.kind {
-                            ExpressionKind::Call { callee, .. } => Some(callee.written()),
-                            ExpressionKind::Slide { steps, .. } => {
-                                steps.last().map(|step| step.callee.written())
-                            }
-                            _ => None,
-                        };
-                        let message = match called {
+                        let message = match called_name(expression) {
                             // trace: D120
                             Some(name) => Message::refused(
                                 expression.place,
@@ -929,7 +951,61 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
 
     fn check_expression(&mut self, expression: &Expression) -> Checked {
         let place = expression.place;
+        let receiving = std::mem::take(&mut self.receiving);
         match &expression.kind {
+            ExpressionKind::Ignore => {
+                // `ignore` stands only after `??`, which the parser sees to.
+                self.messages
+                    .push(Message::refused(place, "`ignore` only follows `??`"));
+                Checked::unknown(place)
+            }
+            ExpressionKind::Fallback { call, fallback }
+                if matches!(fallback.kind, ExpressionKind::Ignore) =>
+            {
+                let checked = self.check_expression(call);
+                if checked.shape == Shape::Unknown {
+                    return Checked::unknown(place);
+                }
+                if !checked.can_fail {
+                    self.messages.push(Message::not_designed_yet(
+                        call.place,
+                        "`??` after a call that can't fail isn't decided yet",
+                    ));
+                    return Checked::unknown(place);
+                }
+                let Shape::Value(value_type) = checked.shape else {
+                    self.messages.push(Message::not_built_yet(
+                        fallback.place,
+                        "`?? ignore` (D23) isn't built yet",
+                    ));
+                    return Checked::unknown(place);
+                };
+                let name = called_name(call).unwrap_or_default();
+                // trace: D121
+                let leaves = match receiving {
+                    // On a line of its own, D120 refuses the unused value instead.
+                    Receiving::Statement => {
+                        return Checked {
+                            can_fail: false,
+                            ..checked
+                        };
+                    }
+                    Receiving::Variable(variable) => format!("leaves `{variable}` with nothing"),
+                    // A placeholder wording until the design session words it (`compiler/PROGRESS.md`, Q35).
+                    Receiving::Other => "leaves nothing to use".to_string(),
+                };
+                self.messages.push(
+                    Message::refused(
+                        place,
+                        format!(
+                            "`{name}` gives back a `{}`, so `?? ignore` {leaves} if it fails",
+                            value_type.name()
+                        ),
+                    )
+                    .why("`?? ignore` is for a call that gives nothing; after one that gives a value, `?? value` says what to carry on with."),
+                );
+                Checked::unknown(place)
+            }
             ExpressionKind::Whole(value) => Checked::new(
                 TypedExpressionKind::Whole(*value),
                 Shape::Value(Type::Whole),

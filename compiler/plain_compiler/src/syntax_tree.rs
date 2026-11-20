@@ -173,6 +173,8 @@ pub enum ExpressionKind {
     Negate(Box<Expression>),
     /// `not` (D34).
     Not(Box<Expression>),
+    /// `ignore`, after `??` (D23).
+    Ignore,
     /// `call ?? value` (D23).
     Fallback {
         call: Box<Expression>,

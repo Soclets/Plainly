@@ -451,3 +451,26 @@ fn d120_a_call_whose_value_is_unused_is_refused() {
     let program = main_with(&["random(from: 1, to: 6);", "show_msg(\"rolled\");"]);
     assert_eq!(found(&program), refused_on(2));
 }
+
+#[test]
+fn d121_ignore_after_a_call_that_gives_a_value_is_refused() {
+    let program = main_with(&[
+        "let typed: Text = \"12\";",
+        "let guess: Whole = be.Whole(typed) ?? ignore;",
+        "show_msg(be.Text(guess));",
+    ]);
+    assert_eq!(found(&program), refused_on(3));
+}
+
+#[test]
+fn d120_ignore_after_a_value_on_its_own_line_is_d120s() {
+    let program = main_with(&["let typed: Text = \"12\";", "be.Whole(typed) ?? ignore;"]);
+    let found = messages(&program);
+    assert_eq!(found.len(), 1);
+    assert!(
+        found[0]
+            .what
+            .as_deref()
+            .is_some_and(|what| what.contains("nothing uses it"))
+    );
+}

@@ -1248,7 +1248,21 @@ impl<'a> Parser<'a> {
         // trace: D81
         self.set_role(Role::BinaryOperator);
         self.advance();
-        if self.at_word("ignore") || self.at_word("crash") {
+        if self.at_word("ignore") {
+            let ignore = self.advance();
+            let place = call.place.to(ignore.place);
+            return Ok(Expression {
+                kind: ExpressionKind::Fallback {
+                    call: Box::new(call),
+                    fallback: Box::new(Expression {
+                        kind: ExpressionKind::Ignore,
+                        place: ignore.place,
+                    }),
+                },
+                place,
+            });
+        }
+        if self.at_word("crash") {
             return Err(self.not_built_here(
                 self.current().place,
                 format!("`?? {}` (D23) isn't built yet", self.current().written()),

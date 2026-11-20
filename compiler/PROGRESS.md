@@ -29,7 +29,7 @@ the test results (`python3 compiler/run_tests.py`).
 - Before that: maths order (D72) and `|>` last (D73) are built; `/`, `div`, `rem`, comments,
   lists, methods, `copy` and `share` (D49, D70 to D77) stop with `NotBuiltYet`; `""` is accepted (D76).
 
-## Since: D116, D117 and D120 (2026-11-20)
+## Since: D116, D117, D120 and D121 (2026-11-20)
 
 - **D116:** a command with several mistakes shows every one, a `plainly:` line each in the order written, then
   anything missing (a file, a mode), then the usage once. An unknown command is its only mistake, since what follows
@@ -37,7 +37,11 @@ the test results (`python3 compiler/run_tests.py`).
 - **D117:** a line after `break;` in the same block is refused, with D88's wording for `break`.
 - **D120:** a call that gives back a value, standing alone, is refused: "`random` gives back a `Whole`, but nothing
   uses it". A statement that's only a value and not a call stays `NotDesignedYet`.
-- Unit tests for each, 45 in all; 80 of 80 runs pass.
+- **D121:** `?? ignore` after a call that gives a value is refused, naming the variable it would leave with nothing.
+  On a line of its own, D120's message comes instead. `?? ignore` after a call that gives nothing is still
+  `NotBuiltYet`. Where the value isn't going to a variable, as in a call's argument, the wording is a placeholder,
+  "`be.Whole` gives back a `Whole`, so `?? ignore` leaves nothing to use if it fails" (Q35).
+- Unit tests for each, 47 in all; 80 of 80 runs pass.
 
 ## PlainGC's pacer and limits (D113 to D115)
 
@@ -497,8 +501,7 @@ uses a placeholder until it's decided.
   anything else fails, a number too big or too small for a `Whole` included. The failure's name is still open.
 - **Q14. Answered by D96:** when input runs out, `ask` ends the program quietly with status 0, and a last line with
   no Enter still counts as an answer.
-- **Q15. A call whose value isn't used,** like `random(from: 1, to: 6);` alone, is refused (D120, built). `?? ignore`
-  on a call that gives a value is still open.
+- **Q15. Answered by D120 and D121,** both built.
 - **Q16. Answered by D117:** a line after `break;` in the same block is refused, as one after `return` is. Built.
 - **Q17. What the command's file means, and where `compile` puts its file.** D64 makes a program every `.plainly` file
   in its folder, so `plainly run games/guess.plainly` compiles every `.plainly` file in `games/`. `plainly compile`
@@ -526,5 +529,7 @@ uses a placeholder until it's decided.
 - **Q32. Answered by D118:** a `rust` folder in a program with no `extern.rust` procedure is ignored, not built.
 - **Q33. Where `plainly` finds its own crates** (`plainly`, the runtime, PlainGC) to build a `rust` folder against.
   How Plainly is installed isn't decided, so for now it uses the folder PlainCompiler was built from. A placeholder.
+- **Q35. D121's wording when the value doesn't go to a variable,** as in `show_msg(be.Text(be.Whole(t) ?? ignore));`.
+  The placeholder says "leaves nothing to use" in place of "leaves `guess` with nothing".
 - **Q34. Answered by D119:** the `extern.rust` wordings are approved, with `.plainly` in backticks and the Cargo
   message saying "a program with `extern.rust` procedures".
