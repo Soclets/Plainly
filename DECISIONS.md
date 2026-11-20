@@ -3448,6 +3448,7 @@ internal error: the Rust code of `load_text` went wrong, not your Plainly code
 
 - The first line names the procedure; the snippet shows the Plainly line that called it.
 - `what:` is Rust's own panic message.
+- (Changed by D112: the `why:` also says where in the Rust it went wrong, and what to do.)
 - It's a bug, not a failure, so Plainly code can't handle it with `?`, `??` or `otherwise:`.
 - Status 7 now means code below the program's Plainly went wrong: PlainCompiler, PlainGC, PlainOracle, or an
   `extern.rust` procedure's Rust code.
@@ -3464,3 +3465,27 @@ keeps the list short, while the message still says exactly where the bug is.
 **Tankun's words.** Asked "Should a panic in an `extern.rust` procedure stop the program as an `internal error:` with
 status 7, naming the procedure, showing the Plainly call, and giving Rust's panic message as the `what:`?", the owner
 chose: "yea".
+
+## D112. A Rust panic's `why:` says where in the Rust it happened, and to fix it there or report it
+
+2026-11-20.
+
+**Chosen.** D111's message ends with a `why:` that names the Rust file and line where the panic happened, which Rust's
+panic records, and says what to do:
+
+```
+ why:     this is a bug in `load_text`'s Rust code, at rust/src/lib.rs line 42; fix it there, or report it to whoever wrote it.
+```
+
+This changes D111's `why:`, which said only where the bug was: "this is a bug in `load_text`'s Rust code, in the
+program's `rust` folder."
+
+**Weighed.**
+- D111's `why:`. It says where the bug is but not what to do, unlike D103's internal errors, which say how to report
+  them.
+
+**Why this won.** The person writing the game can go straight to the line and fix it, and a player of a finished game
+knows to tell whoever made it.
+
+**Tankun's words.** "Whyb Doesn't say what to do, though.", then, asked "Should D111's `why:` say where in the Rust it
+went wrong, and to fix it there or report it to whoever wrote it?", the owner chose: "yea".
