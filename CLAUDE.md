@@ -37,6 +37,9 @@ counts as decided for v2 until Tankun confirms it here and it's logged.
 - Never use the visualize widget. If a picture helps, draw it as a real file.
 - Building started on 2026-11-20, when Tankun asked for PlainCompiler's prompt
   (`design/compiler-prompt.md`). Nothing else gets built until Tankun says so.
+- On the evening of 2026-11-20, Tankun chose to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21,
+  once Cyborg's implementation rules have been brought over to Plainly. The first build (about 10,000 lines of Rust)
+  stays in git history for reference; the decisions, the standard and the tests carry over unchanged.
 - Sketches from other chats (e.g. multifinity's) are leanings, not decisions,
   until Tankun confirms them here.
 
