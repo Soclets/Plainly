@@ -3251,3 +3251,41 @@ complete line, and a message always starts with its kind, in a terminal or read 
 standard output before the message?", Tankun wrote: "WHATATTTAYSIUJKSL":", then "Waht?". Shown an example, they asked
 "Do we err on stdout or stderr", and told errors go to standard error and that the suggestion was to close the open
 line on standard output, the owner chose: "yea".
+
+## D105. `extern.rust` code holds one-call handles, checked by Rust's borrow checker, and kept handles for longer
+
+2026-11-20.
+
+**Chosen.** How `extern.rust` code (D36) holds Plainly values that live in PlainGC's heap (D69):
+- **A handle lasts for one call.** The Rust procedure is given a handle for each such value, and Rust's compiler
+  refuses code that keeps it past the call.
+- **A handle gives a direct look at the value,** such as a `Text`'s letters, with no copying. The look is allowed only
+  while nothing can start a collection. Making a new value can start one, so Rust's borrow checker refuses code that
+  makes a value while a look is still held, and a look never crosses a collection.
+- **A kept handle** holds a value Rust stores beyond one call. PlainGC counts it as a root, so the value stays alive,
+  and it's released when the Rust code drops it.
+
+For example, with `call` standing for the current call:
+
+```rust
+fn shout(call: &mut Call, text: Handle<Text>) -> Handle<Text> {
+    let loud = text.read(call).to_uppercase();
+    call.new_text(&loud)
+}
+```
+
+Only people writing Rust for `extern.rust` procedures see handles; someone writing Plainly never does. The Rust names
+in the example are a sketch, PlainGC's to choose under the Code rules.
+
+**Weighed.**
+- Copying every value into Rust and back, with no handles. The simplest to build, but every call copies, which grows
+  costly once lists like game boards exist, and D69 already chose handles.
+- Pinning objects during a call, so PlainGC can't move them. A pinned object blocks compaction, against ZGC's design,
+  and nothing checks that the Rust code unpins.
+
+**Why this won.** It keeps D69's moving collector safe with no copying, and the mistakes it guards against are caught
+by Rust's own compiler before the program runs, rather than turning up as garbage read at runtime.
+
+**Tankun's words.** Asked "Should handles last for one call, with Rust's borrow checker stopping any look at a value
+from crossing a collection, plus kept handles for values Rust stores beyond a call?", the owner chose: "yea. Is there a
+rule about including optimizations from the start?" (the question is answered in chat, not a decision).

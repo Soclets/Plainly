@@ -53,9 +53,11 @@ PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69
 - **it moves objects as it collects,** so memory never fragments;
 - **every read of a reference gets a small check** (a load barrier), so a moved object is found;
 - **it's precise,** finding references through Cranelift's stack maps;
-- **`extern.rust` code holds handles** to Plainly values, not plain pointers.
+- **`extern.rust` code holds handles** to Plainly values, not plain pointers. A handle lasts for one call, and its
+  direct look at a value can't cross a collection, both checked by Rust's borrow checker; a kept handle holds a value
+  beyond one call, as a root (D105).
 
-**Not decided:** how handles work on the Rust side; the order of building it.
+**Not decided:** the order of building it.
 
 ## Build modes
 
