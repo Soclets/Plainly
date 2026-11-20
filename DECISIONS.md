@@ -1366,3 +1366,30 @@ procedures already use, so nothing new is learnt.
 
 **Tankun's words.** Asked "Handlers take parameters like procedures do?", the owner chose: "yea. Let's decide arch,
 like backend, memory, etc"
+
+## D45. The compiler is written in Rust and compiles ahead of time to native code through Cranelift
+
+2026-11-20.
+
+**Chosen.** Plainly's compiler is written in Rust. It compiles a whole program ahead of time to one native executable,
+through Cranelift, with no bytecode and no JIT. Running a program compiles it to a temporary file and starts it, as
+`go run` does. The web playground runs the oracle compiled to WebAssembly, so the compiler needs no second backend for
+the web.
+
+(The command's name and its parts, build modes, and the oracle's language aren't decided yet.)
+
+**Weighed.**
+- LLVM. It optimizes more, but compiles far slower, so running a program wouldn't feel instant; a terminal game won't
+  notice the difference in speed.
+- Bytecode with an interpreter or a JIT, as Python and Java do. A runtime to install alongside every game, and a
+  bytecode format to design and keep stable.
+- Compiling to C, or to WebAssembly first. An extra toolchain on every player's machine, or a web-first design, which
+  multifinity's notes warn killed Fale.
+
+**Why this won.** A player gets one file that starts instantly, matching the "Download" installer in multifinity's
+notes. Cranelift compiles fast enough that running feels immediate, covers x86-64 and ARM64, and is a Rust library, so
+the compiler and `extern.rust` procedures (D36) share one world. This is Plainly v1's D16.
+
+**Tankun's words.** Asked "A Rust compiler, ahead of time to native through Cranelift?", the owner chose: "yea, what
+about build modes? `--Working` (no optimization, every runtime check kept) and `--Final` (max optimization from backend
+and frontend, cheap checks kept)?"

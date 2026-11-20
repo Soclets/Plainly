@@ -26,3 +26,4 @@ happened; this standard says what the rules are today (D12).
 7. [Types](07-types.md): `Whole`, `Bool`, `Text` and converting
 8. [Failures](08-failures.md): `?`, `??`, `otherwise:` and handler families
 9. [Library](09-library.md): `random`
+10. [Tools](10-tools.md): the compiler
