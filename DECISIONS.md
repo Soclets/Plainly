@@ -78,3 +78,35 @@ messages make up for by teaching the full word at first sight.
 **Tankun's words.** From multifinity's chat (Nov 19): "So, learn concepts, then type short" and "teach the full
 words, and remember the shorten". Asked "Only the short form in code, with the docs teaching the full word once?",
 the owner chose: "yea".
+
+## D3. `( )` holds a procedure's parameters and a call's arguments, `[ ]` is for lists, `< >` for types
+
+2026-11-20.
+
+**Chosen.** Each kind of bracket has one job:
+- `( )` for procedures, in their definition and in calls, and for grouping maths;
+- `[ ]` for lists, as in `[1, 2, 3]` and reaching an item;
+- `< >` for filling in a type, as in `List<Whole>`.
+
+```
+proc add($a: Whole, $b: Whole) returns Whole:
+    return $a + $b;
+end proc add
+
+add(1, 2);
+```
+
+(`$`, `returns`, `return` and the types here aren't decided yet.)
+
+**Weighed.**
+- `[ ]` for a definition's parameters and `( )` for calls, as in Plainly v1 (its D51: `[ ]` holds values and runs
+  nothing, `( )` runs something), so a definition can't be mistaken for a call.
+
+**Why this won.** In v2, `proc` in front already marks a definition, so the brackets don't need to as well. Python,
+and nearly every language a beginner meets next, writes `( )` in both places, which fits "static Python". It also
+leaves `[ ]` to lists alone, so each bracket means one thing. What's lost is v1's signal that `[ ]` never runs
+anything: `range(from: 1, to: 5)`, say, now looks like the call it is.
+
+**Tankun's words.** From multifinity's chat (Nov 19): "If kids ask why, then I'll probably say there's maybe not a
+real reason. So, maybe switch to `()`? `proc add()` and `add()` don't look the same". Asked "`( )` for parameters and
+calls?", the owner chose: "yea".
