@@ -79,9 +79,8 @@ A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned
 
 An `extern.rust` procedure that can fail lists its failures in its header as any procedure does; its Rust function
 returns Rust's `Result`, with the failures named in the macro, as in `fails = "not_found, unreadable"`, and PlainCompiler
-refuses a program whose macro and header disagree (D110).
-
-**Not decided:** what happens when an extern procedure's Rust code itself goes wrong.
+refuses a program whose macro and header disagree (D110). If its Rust code panics, going wrong rather than failing on purpose, the program stops with an
+`internal error:` naming the procedure, with status 7 (D111).
 
 ## Families
 

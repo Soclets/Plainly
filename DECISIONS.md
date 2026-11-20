@@ -3430,3 +3430,37 @@ header at build time means a failure the Plainly code doesn't expect can't happe
 
 **Tankun's words.** Asked "Should a failing `extern.rust` procedure return Rust's `Result`, with its failures named in
 the macro and checked against the Plainly header when PlainCompiler builds the program?", the owner chose: "yea".
+
+## D111. A panic in an `extern.rust` procedure stops the program as an internal error, with status 7
+
+2026-11-20.
+
+**Chosen.** When an `extern.rust` procedure's Rust code panics (goes wrong, rather than failing on purpose, D110), D108's
+macro catches the panic at the edge, and the program stops with an `internal error:` and exit status 7 (D82):
+
+```
+internal error: the Rust code of `load_text` went wrong, not your Plainly code
+ 7 |     let level: Text = load_text("level1.txt") ?? "";
+   |                       ^^^^^^^^^
+ what:    index out of bounds: the len is 3 but the index is 5
+ why:     this is a bug in `load_text`'s Rust code, in the program's `rust` folder.
+```
+
+- The first line names the procedure; the snippet shows the Plainly line that called it.
+- `what:` is Rust's own panic message.
+- It's a bug, not a failure, so Plainly code can't handle it with `?`, `??` or `otherwise:`.
+- Status 7 now means code below the program's Plainly went wrong: PlainCompiler, PlainGC, PlainOracle, or an
+  `extern.rust` procedure's Rust code.
+
+**Weighed.**
+- A new kind and status for Rust bugs, like `rust failed:` with status 8. One more kind to learn, for what's still a
+  bug below the Plainly code.
+- Turning a panic into an ordinary failure for the caller to handle. Every call to an `extern.rust` procedure would
+  need handling for a bug that shouldn't happen.
+
+**Why this won.** A bug is fixed rather than handled, and one kind and status for every bug below the Plainly code
+keeps the list short, while the message still says exactly where the bug is.
+
+**Tankun's words.** Asked "Should a panic in an `extern.rust` procedure stop the program as an `internal error:` with
+status 7, naming the procedure, showing the Plainly call, and giving Rust's panic message as the `what:`?", the owner
+chose: "yea".
