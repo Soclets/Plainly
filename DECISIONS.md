@@ -3552,3 +3552,34 @@ and nothing needs setting.
 Tankun said: "So, what about optional settings later, and default to utilize the current hardware entirely, but leave a
 little". Then, asked "Should the heap's hard limit be the machine's memory minus a reserve, with the pacer aiming at a
 soft target of about twice what's in use, and no settings until one is needed?", the owner chose: "yea".
+
+## D115. Running out of memory stops the program as a failed check, status 4
+
+2026-11-20.
+
+**Chosen.** When the program needs memory and everything up to D114's hard limit is still in use, the program stops
+with `check failed:` and exit status 4, at the line that needed the memory, with the numbers in `when:`:
+
+```
+check failed: game.plainly:12:19, line 12 column 19
+12 |         history = history & guess_text;
+   |                   ^^^^^^^^^^^^^^^^^^^^
+ what:    the program ran out of memory
+ when:    14.4 GiB in use, the most it may use on this computer
+ why:     everything the program keeps is still in use, so PlainGC can't free any of it.
+```
+
+It can't be handled with `?`, `??` or `otherwise:`. This replaces PlainCompiler's placeholder, a `NotDesignedYet` with
+status 3.
+
+**Weighed.**
+- A new kind and status, like `out of memory:` with status 8. Clear, but one more kind for what works like any other
+  failed check.
+- An error the program can catch, as in Java. Plainly has no catching, almost any line can need memory, and a game
+  rarely has a sensible way to carry on.
+
+**Why this won.** Running out is a limit hit while running, at a line that can be shown, just like overflow, so it
+reads and exits the same way.
+
+**Tankun's words.** Asked "Should running out of memory stop the program as a `check failed:` with status 4, at the
+line that needed the memory, with the numbers in `when:`?", the owner chose: "yea".

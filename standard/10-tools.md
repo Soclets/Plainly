@@ -60,8 +60,9 @@ PlainGC (D51), a garbage collector in the style of Java's ZGC, frees memory (D69
   program allocates and how long a collection takes (D113).
 - **The heap may use the machine's memory less a reserve** of 10% or 1 GiB, whichever is bigger, and the pacer aims
   at about twice what the program is really using, so a small program stays small. There are no settings (D114).
+- **Running out of memory** stops the program with `check failed:` and status 4, at the line that needed the memory
+  (D115).
 
-**Not decided:** what happens when memory runs out.
 
 ## Build modes
 
