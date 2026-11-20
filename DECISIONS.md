@@ -2486,3 +2486,34 @@ means "run this", and reading a length runs nothing.
 
 **Tankun's words.** "students.length?", "Why no `()`, btw just `len`", then, asked "`students.len`, read with no
 `()`?", the owner chose: "yea".
+
+## D80. Lists change with `.add`, `.remove`, and `=` on an item
+
+2026-11-20.
+
+**Chosen.**
+
+```
+students.add("Churn");
+students.add("Tankun", pos: 1);
+students.remove(pos: 2);
+students[pos: 1] = "Mia";
+```
+
+- **`.add(item)` puts the item at the end;** `.add(item, pos: n)` or `.add(item, offset: n)` puts it at that place,
+  moving the later items along.
+- **`.remove(pos: n)`** or **`.remove(offset: n)`** takes an item out, closing the gap.
+- **`list[pos: n] = value`** (or `offset: n`) changes one item, with `=` as for a variable (D14).
+
+Each needs a `var` list (D77), and a bad position is a failed check (D75).
+
+(Other list methods, like finding an item, joining lists, or taking a part of one, aren't decided yet.)
+
+**Weighed.**
+- `append` and `insert`, Python's names. `add` is the plain word, and one name with an optional place covers both, as
+  multifinity's notes had it.
+
+**Why this won.** Plain words, reading as English, with the same `pos:` and `offset:` as reaching an item (D75) and the
+same `=` as changing a variable (D14).
+
+**Tankun's words.** Asked "`.add`, `.remove`, and changing an item with `=`?", the owner chose: "yea".

@@ -161,9 +161,15 @@ A value's methods are called with a plain `.` after it, and a method that change
 `var` (D77):
 
 ```
-students.add("Mult");
-students.remove(pos: 1);
+students.add("Churn");
+students.add("Tankun", pos: 1);
+students.remove(pos: 2);
+students[pos: 1] = "Mia";
 ```
+
+- **`.add(item)`** puts it at the end, and **`.add(item, pos: n)`** or `offset: n` at that place (D80).
+- **`.remove(pos: n)`** or `offset: n` takes an item out (D80).
+- **`list[pos: n] = value`** changes one item (D80).
 
 After a value's `.`, a name with no `( )` is a fact the value already knows, read without running anything. A list's
 number of items is `.len` (D79):
@@ -172,7 +178,7 @@ number of items is `.len` (D79):
 let count: Whole = students.len;
 ```
 
-**Not decided:** which other methods and facts lists and text have; how a type's methods are declared; changing an item;
+**Not decided:** which other methods and facts lists and text have; how a type's methods are declared;
 going through a list.
 
 ## Converting
