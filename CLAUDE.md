@@ -78,6 +78,17 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in Rust and C alike, so a check can
    list any decision nothing carries out yet.
 
+## Prompting
+
+Owner, 2026-11-20, carrying over Plainly v1's IMPLEMENTATION.md rule 4 (itself from Cyborg's rule 11):
+
+Before prompting a subagent or a new session, a session downloads the current prompting guide for that AI as Markdown
+and reads the file itself, in full, and again after every compaction. Never through a fetch tool's summary, which can
+drop parts. Prompts for other sessions are written in `design/` as one copiable block, checked against the guide before
+they're handed over, including how a long-running session keeps going and when it stops. A prompt that's already been
+pasted is never the fix: changes go to that session as a message. Messaging another session isn't prompting, and is
+written like one colleague talking to another.
+
 ## PlainOracle's C problems
 
 PlainOracle is written in C as an experiment, to see how many problems C causes (D52). Any session working on it
