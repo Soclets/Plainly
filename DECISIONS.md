@@ -642,3 +642,31 @@ text, and an apostrophe inside, as in `"Don't"`, needs nothing special. Plainly 
 `Text`.
 
 **Tankun's words.** Asked "`Text`, written in double quotes?", the owner chose: "yea".
+
+## D22. `be.Type(value)` converts a value to a type
+
+2026-11-20.
+
+**Chosen.** Converting is `be` narrowed by the type the value becomes:
+
+```
+let $typed: Text = ask("Your guess: ");
+let $guess: Whole = be.Whole($typed);
+show_msg(be.Text($guess));
+```
+
+Converting a value to the type it already is, like `be.Text` of a `Text`, is refused, since it does nothing.
+
+`be.Whole("abc")` can't give a number, so converting can fail. (How a failure is handled, and what may be converted
+to what, aren't decided yet.)
+
+**Weighed.**
+- The type called like a procedure, as Python's `int("42")`. It hides that converting is an action that can fail, and
+  makes a type look like a procedure.
+- A procedure per conversion, like `text_to_whole`. A new name for every pair of types.
+
+**Why this won.** `be` ("become") narrowed by the type's own name is a real narrowing (D18), so nothing new is learnt
+for each type. Refusing a conversion that does nothing catches a misunderstanding instead of hiding it. This is
+Plainly v1's D6 and D90.
+
+**Tankun's words.** Asked "`be.Type(value)` for converting?", the owner chose: "yea".

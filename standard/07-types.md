@@ -25,3 +25,23 @@ show_msg("Don't give up!");
 Single quotes aren't used for text (D21).
 
 **Not decided:** a quote inside text, and other escapes; empty text; joining and comparing text; lists.
+
+## Converting
+
+A value is converted with `be` narrowed by the type it becomes (D22):
+
+```
+be.Type(value)
+```
+
+where `Type` is the type it becomes and `value` the value converted.
+
+```
+let $guess: Whole = be.Whole($typed);
+show_msg(be.Text($guess));
+```
+
+- **Converting to the type a value already is, is refused,** since it does nothing (D22).
+- **A conversion can fail,** as `be.Whole("abc")` does (D22).
+
+**Not decided:** how a failure is handled; what may be converted to what.

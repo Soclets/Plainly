@@ -17,6 +17,7 @@ message".
 | `if`, `else` | | D16 |
 | `at_least`, `at_most` | | D17 |
 | `while` | | D19 |
+| `be` | | D22 |
 
 **Not decided:** every other keyword.
 
