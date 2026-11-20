@@ -1,0 +1,3 @@
+proc.main:
+    show_msg.loud("Hi");
+end proc.main

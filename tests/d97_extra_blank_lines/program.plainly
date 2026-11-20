@@ -1,0 +1,7 @@
+proc.main:
+    show_msg("a");
+
+
+
+    show_msg("b");
+end proc.main

@@ -1,0 +1,5 @@
+refused: program.plainly:1:19, line 1 column 19
+ 1 | proc add(Whole x, x) returns Whole:
+   |                   ^
+ what:    two parameters are named `x`
+ why:     each parameter needs its own name.

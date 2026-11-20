@@ -1,0 +1,5 @@
+refused: program.plainly:2:14, line 2 column 14
+ 2 |     show_msg.loud("Hi");
+   |              ^^^^
+ what:    `show_msg` has no narrowing `.loud`
+ why:     `show_msg`'s narrowings are `.fmt` and `.same_line`.

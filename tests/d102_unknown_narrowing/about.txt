@@ -1,0 +1,1 @@
+A narrowing a word doesn't have is refused, and the why lists the word's narrowings. D18, D102; standard ch. 1 and 11.

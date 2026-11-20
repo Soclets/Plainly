@@ -1,0 +1,7 @@
+proc add(Whole x, x) returns Whole:
+    return 0;
+end proc add
+
+proc.main:
+    show_msg("Hi");
+end proc.main

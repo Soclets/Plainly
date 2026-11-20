@@ -1,0 +1,1 @@
+Three blank lines in a row are refused with a what: and no fix:, since deleting lines can't be shown as a line. D97, D101, D102; standard ch. 2 and 11.
