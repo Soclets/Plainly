@@ -508,3 +508,53 @@ end if
 is Plainly v1's D35.
 
 **Tankun's words.** Asked "`if`, `else if`, `else` and `end if` like that?", the owner chose: "yea".
+
+## D17. Comparisons: `==`, `!=`, `<`, `>`, `at_least` and `at_most`
+
+2026-11-20.
+
+**Chosen.**
+
+```
+$lives == 0
+$guess != $secret
+$guess < $secret
+$score > $best
+$hp at_least 1
+$hp at_most 100
+```
+
+- `==` and `!=` for equal and not equal; `<` and `>` for less and greater.
+- `at_least` and `at_most` instead of `>=` and `<=`.
+- `<` and `>` have a space on each side, since `< >` also fills in a type with no spaces, as in `List<Whole>` (D3).
+
+(Comparing two pieces of text, and combining conditions, aren't decided yet.)
+
+**Weighed.**
+- `>=` and `<=`, as in nearly every language. They're where beginners trip: which way round, whether the number
+  itself counts, `<=` or `=<`.
+- `=` for equality, as in maths. `=` already gives a value (D13, D14), and `=` inside a condition is refused (D14).
+
+**Why this won.** Symbols where they're read at a glance, words where they aren't: `==`, `!=`, `<` and `>` are
+understood without reading them in your head, and `at_least` and `at_most` say exactly whether the number counts. The
+spacing rule keeps comparisons and types apart. This is Plainly v1's D33 and D34.
+
+**Tankun's words.** Asked "Those six comparisons?", the owner chose: "yea, `proc . main` also shouldn't be legal"
+(the second half is D18).
+
+## D18. A narrowing's `.` has no spaces around it
+
+2026-11-20.
+
+**Chosen.** The `.` of a narrowing touches the words on both sides: `proc.main`, `show_msg.same_line`. Writing
+`proc . main`, or a space on either side, is refused, with the joined form as the fix.
+
+**Weighed.**
+- Allowing spaces, as many languages do around `.`. The same thing could then be written several ways, against one
+  spelling per thing (D2), and `proc . main` reads like three separate words.
+
+**Why this won.** A narrowing and its word are one name, `proc.main`, and should look like one, every time. Tankun
+raised it.
+
+**Tankun's words.** In answer to D17's question: "yea, `proc . main` also shouldn't be legal". Taken as the rule for
+every narrowing, not `proc.main` alone.

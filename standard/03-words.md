@@ -15,6 +15,7 @@ message".
 | `let` | | D13 |
 | `var` | variable | D2, D13 |
 | `if`, `else` | | D16 |
+| `at_least`, `at_most` | | D17 |
 
 **Not decided:** every other keyword.
 
@@ -47,5 +48,6 @@ Each kind of bracket has one job (D3):
 | `:` | ends an opening line | D8 |
 | `$` | starts a variable's name | D11 |
 | `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
-| `.` | narrows | D4, D6 |
+| `.` | narrows, touching the words on both sides | D4, D6, D18 |
+| `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |

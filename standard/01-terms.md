@@ -22,7 +22,8 @@ The words this standard uses, each defined before a chapter relies on it.
 - **Value:** a piece of data, like a number or a piece of text.
 - **Type:** the kind of a value, like a whole number or text, as in `Whole` (chapter 7).
 - **Narrowing:** a word after a `.` that makes another word more specific, as `.main` makes `proc` mean the procedure
-  the program starts with, and `.same_line` makes `show_msg` leave its line open.
+  the program starts with, and `.same_line` makes `show_msg` leave its line open. The `.` has no spaces around it
+  (D18).
 
 ## Procedures
 

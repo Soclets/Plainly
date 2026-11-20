@@ -25,7 +25,24 @@ else:
 end if
 ```
 
-**Not decided:** comparisons, and what a condition may be.
+## Comparisons
+
+```
+$lives == 0
+$guess != $secret
+$guess < $secret
+$score > $best
+$hp at_least 1
+$hp at_most 100
+```
+
+- **`==` and `!=`:** equal and not equal (D17).
+- **`<` and `>`:** less and greater, with a space on each side, so they're never mistaken for a type's `< >`, which has
+  none (D3, D17).
+- **`at_least` and `at_most`:** instead of `>=` and `<=` (D17).
+- **A lone `=` in a condition is refused** (D14).
+
+**Not decided:** comparing two pieces of text; combining conditions; what else a condition may be.
 
 ## After an `if` that leaves
 
