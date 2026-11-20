@@ -14,6 +14,8 @@ pub struct TypedProgram {
 
 pub struct TypedProcedure {
     pub name: String,
+    /// For an `extern.rust` procedure (D36, D107), its failures, in the header's order (D110); its body is in Rust.
+    pub external: Option<Vec<String>>,
     pub parameters: Vec<VariableId>,
     pub returns: Option<Type>,
     /// Every variable and parameter, by its id.

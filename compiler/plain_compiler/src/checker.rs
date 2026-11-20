@@ -32,6 +32,8 @@ struct Signature {
     parameters: Vec<(Option<String>, Option<Type>)>,
     gives: Gives,
     place: Place,
+    /// The failures it lists after `fails` (D39), which every call must deal with (D23).
+    failures: Vec<String>,
 }
 
 /// What an expression gives, while checking.
@@ -109,6 +111,12 @@ pub fn check_program(
                         "only the program's start runs `proc.main`, so it's never given anything.",
                     ),
                 );
+            }
+            if let Some(external) = procedure.external {
+                messages.push(Message::not_designed_yet(
+                    external,
+                    "`proc.main` written in Rust isn't decided yet",
+                ));
             }
             if let Some(returns) = &procedure.returns {
                 messages.push(Message::not_designed_yet(
@@ -252,6 +260,11 @@ fn signature_of(procedure: &Procedure, messages: &mut Vec<Message>) -> Signature
             None => Gives::Nothing,
         },
         place: procedure.name.place,
+        failures: procedure
+            .failures
+            .iter()
+            .map(|failure| failure.text.clone())
+            .collect(),
     }
 }
 
@@ -342,9 +355,12 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             ));
         }
         let (body, flow) = checker.check_block(&procedure.body);
+        // An `extern.rust` procedure's body is in Rust, so it has no ways through to check (D36).
+        let external = procedure.external.is_some();
 
         // trace: D57
-        if let Some(last) = procedure.body.last()
+        if !external
+            && let Some(last) = procedure.body.last()
             && matches!(last.kind, StatementKind::Return(None))
         {
             checker.messages.push(
@@ -358,6 +374,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         }
         if let Gives::Value(value_type) = gives
             && !flow.always_returns
+            && !external
         {
             let type_text = value_type.map(Type::name).unwrap_or("value");
             checker.messages.push(
@@ -375,6 +392,13 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
 
         TypedProcedure {
             name: procedure.name.text.clone(),
+            external: procedure.external.map(|_| {
+                procedure
+                    .failures
+                    .iter()
+                    .map(|failure| failure.text.clone())
+                    .collect()
+            }),
             parameters,
             returns: match gives {
                 Gives::Value(value_type) => value_type,
@@ -1014,6 +1038,16 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     ));
                     return Checked::unknown(place);
                 }
+                if checked.shape == Shape::Nothing {
+                    self.messages.push(
+                        Message::refused(
+                            call.place,
+                            "this call gives nothing back, so `??` has no value to carry on with",
+                        )
+                        .why("`?? value` carries on with a value in place of the one a call that failed would give."),
+                    );
+                    return Checked::unknown(place);
+                }
                 let expected = match checked.shape {
                     Shape::Value(value_type) => Some(value_type),
                     _ => None,
@@ -1387,6 +1421,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             return Checked::unknown(place);
         };
         let signature = &self.program.signatures[id];
+        let can_fail = !signature.failures.is_empty();
         let parameters: Vec<(Option<String>, Option<Type>)> = signature.parameters.clone();
         let shape = match signature.gives {
             Gives::Nothing => Shape::Nothing,
@@ -1406,17 +1441,22 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             place,
             Some(declared),
         ) {
-            Some(checked) => Checked::new(
-                TypedExpressionKind::Call {
-                    procedure: id,
-                    arguments: checked
-                        .into_iter()
-                        .map(|argument| argument.expression)
-                        .collect(),
-                },
-                shape,
-                place,
-            ),
+            Some(checked) => {
+                let mut call = Checked::new(
+                    TypedExpressionKind::Call {
+                        procedure: id,
+                        arguments: checked
+                            .into_iter()
+                            .map(|argument| argument.expression)
+                            .collect(),
+                    },
+                    shape,
+                    place,
+                );
+                // trace: D110
+                call.can_fail = can_fail;
+                call
+            }
             None => Checked::unknown(place),
         }
     }

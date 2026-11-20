@@ -50,6 +50,40 @@ struct Generator {
     safepoints: Vec<(FuncId, u64, u64, Vec<u64>)>,
     /// PlainGC's word of bad colors, which the load barrier checks every reference against (D69).
     bad_mask: DataId,
+    /// For each `extern.rust` procedure, by id: whether it can fail, and what it gives back (D107, D110).
+    externals: Vec<Option<(bool, Option<IrType>)>>,
+}
+
+/// The symbol of an `extern.rust` procedure's glue, which the `procedure` attribute writes (D108): its name, with
+/// each `.` as `__`, then its shape, so a Rust function and a Plainly declaration that disagree can't be linked.
+pub fn extern_symbol(procedure: &IrProcedure) -> String {
+    let kind = |local_type: IrType| match local_type {
+        IrType::Text => "text",
+        IrType::Whole => "whole",
+        IrType::Bool => "bool",
+    };
+    let takes: Vec<&str> = procedure
+        .parameters
+        .iter()
+        .map(|&parameter| kind(procedure.locals.get(parameter).copied().unwrap_or(IrType::Whole)))
+        .collect();
+    let takes = if takes.is_empty() {
+        "nothing".to_string()
+    } else {
+        takes.join("_")
+    };
+    let gives = procedure.returns.map_or("nothing", kind);
+    let mut symbol = format!(
+        "plainly_procedure_{}_takes_{takes}_gives_{gives}",
+        procedure.name.replace('.', "__")
+    );
+    if let Some(failures) = &procedure.external
+        && !failures.is_empty()
+    {
+        symbol.push_str("_fails_");
+        symbol.push_str(&failures.join("__"));
+    }
+    symbol
 }
 
 /// The version of PlainGC's stack map table this writes (`plain_gc`'s `stack_roots.rs` defines the format).
@@ -95,6 +129,16 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
         site_lengths: Vec::new(),
         safepoints: Vec::new(),
         bad_mask,
+        externals: program
+            .procedures
+            .iter()
+            .map(|procedure| {
+                procedure
+                    .external
+                    .as_ref()
+                    .map(|failures| (!failures.is_empty(), procedure.returns))
+            })
+            .collect(),
     };
     for (index, site) in program.sites.iter().enumerate() {
         let id = generator.define_bytes(&format!("plainly_site_{index}"), site.as_bytes())?;
@@ -103,19 +147,24 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
     }
     for (index, procedure) in program.procedures.iter().enumerate() {
         let signature = generator.signature_of(procedure);
-        let name = if index == program.main {
-            "plainly_proc_dot_main".to_string()
+        let (name, linkage) = if procedure.external.is_some() {
+            // trace: D107, D108
+            (extern_symbol(procedure), Linkage::Import)
+        } else if index == program.main {
+            ("plainly_proc_dot_main".to_string(), Linkage::Local)
         } else {
-            format!("plainly_proc_{}", procedure.name)
+            (format!("plainly_proc_{}", procedure.name), Linkage::Local)
         };
         let id = generator
             .module
-            .declare_function(&name, Linkage::Local, &signature)
+            .declare_function(&name, linkage, &signature)
             .map_err(|error| failed("declaring a procedure", error))?;
         generator.procedures.push(id);
     }
     for (index, procedure) in program.procedures.iter().enumerate() {
-        generator.define_procedure(index, procedure)?;
+        if procedure.external.is_none() {
+            generator.define_procedure(index, procedure)?;
+        }
     }
     let table = generator.define_stack_map_table()?;
     generator.define_entry(program.main, table)?;
@@ -184,10 +233,26 @@ impl Generator {
                 .params
                 .push(AbiParam::new(self.cranelift_type(local_type)));
         }
-        if let Some(returns) = procedure.returns {
+        let can_fail = procedure
+            .external
+            .as_ref()
+            .is_some_and(|failures| !failures.is_empty());
+        if can_fail {
+            // A procedure that can fail writes its value through a pointer and gives back which failure it had,
+            // 0 for none (D110).
+            if procedure.returns.is_some() {
+                signature.params.push(AbiParam::new(self.pointer));
+            }
+            signature.returns.push(AbiParam::new(types::I32));
+        } else if let Some(returns) = procedure.returns {
             signature
                 .returns
                 .push(AbiParam::new(self.cranelift_type(returns)));
+        }
+        if procedure.external.is_some() {
+            // Where it's called, for a panic's message (D111).
+            signature.params.push(AbiParam::new(self.pointer));
+            signature.params.push(AbiParam::new(types::I64));
         }
         signature
     }
@@ -693,19 +758,59 @@ impl Emitter<'_, '_> {
                 to,
                 procedure,
                 arguments,
+                failed,
+                site,
             } => {
                 let id = *self.generator.procedures.get(*procedure).ok_or_else(|| {
                     InternalError::new("a call to a procedure that doesn't exist")
                 })?;
-                let values = arguments
+                let mut values = arguments
                     .iter()
                     .map(|&argument| self.get(argument))
                     .collect::<Result<Vec<_>, _>>()?;
+                let external = self.generator.externals.get(*procedure).copied().flatten();
+                let Some((can_fail, gives)) = external else {
+                    let result = self.call(id, &values);
+                    if let Some(to) = to {
+                        let result = result.ok_or_else(|| {
+                            InternalError::new("a procedure that should give a value gave none")
+                        })?;
+                        self.set(*to, result)?;
+                    }
+                    return Ok(());
+                };
+                // trace: D107, D110, D111
+                let result_slot = match (can_fail, gives) {
+                    (true, Some(_)) => {
+                        let slot = self.builder.create_sized_stack_slot(StackSlotData::new(
+                            StackSlotKind::ExplicitSlot,
+                            8,
+                            3,
+                        ));
+                        let address = self.builder.ins().stack_addr(self.generator.pointer, slot, 0);
+                        values.push(address);
+                        Some(address)
+                    }
+                    _ => None,
+                };
+                let site = site.ok_or_else(|| InternalError::new("a call to Rust has no site"))?;
+                let (site_address, site_length) = self.site(site)?;
+                values.push(site_address);
+                values.push(site_length);
                 let result = self.call(id, &values);
-                if let Some(to) = to {
-                    let result = result.ok_or_else(|| {
-                        InternalError::new("a procedure that should give a value gave none")
-                    })?;
+                if can_fail {
+                    let code = result.ok_or_else(|| InternalError::new("a call to Rust gave no failure number"))?;
+                    let has_failed = self.builder.ins().icmp_imm_s(IntCC::NotEqual, code, 0);
+                    if let Some(failed) = failed {
+                        self.set(*failed, has_failed)?;
+                    }
+                    if let (Some(to), Some(address), Some(gives)) = (to, result_slot, gives) {
+                        let value_type = self.generator.cranelift_type(gives);
+                        let value = self.builder.ins().load(value_type, MemFlagsData::trusted(), address, 0);
+                        self.set(*to, value)?;
+                    }
+                } else if let Some(to) = to {
+                    let result = result.ok_or_else(|| InternalError::new("a call to Rust gave no value"))?;
                     self.set(*to, result)?;
                 }
             }

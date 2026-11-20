@@ -28,6 +28,8 @@ pub struct IrProgram {
 
 pub struct IrProcedure {
     pub name: String,
+    /// For an `extern.rust` procedure, its failures (D110); its body is Rust, linked in (D107), and it has no blocks.
+    pub external: Option<Vec<String>>,
     pub parameters: Vec<LocalId>,
     pub returns: Option<IrType>,
     /// The type of every local, by its id: variables first, then values worked out along the way.
@@ -106,6 +108,10 @@ pub enum IrStep {
         to: Option<LocalId>,
         procedure: usize,
         arguments: Vec<LocalId>,
+        /// For a call to a procedure that can fail (D110): set to whether it failed, and `to` holds nothing then.
+        failed: Option<LocalId>,
+        /// For a call to an `extern.rust` procedure: where it's called, for a panic's message (D111).
+        site: Option<SiteId>,
     },
     /// `show_msg` or `show_msg.same_line` (D6).
     ShowMessage {

@@ -234,7 +234,7 @@ impl<'a> Parser<'a> {
             let token = self.current();
             self.check_indentation(0);
             if token.is_word("proc") {
-                if let Some(procedure) = self.parse_procedure() {
+                if let Some(procedure) = self.parse_procedure(None) {
                     procedures.push(procedure);
                 }
             } else {
@@ -245,10 +245,12 @@ impl<'a> Parser<'a> {
                     TokenKind::Word(word) if word == "comment" => {
                         Message::not_built_yet(token.place, "comment blocks (D74) aren't built yet")
                     }
-                    TokenKind::Word(word) if word == "extern" => Message::not_built_yet(
-                        token.place,
-                        "procedures written in Rust (D36) aren't built yet",
-                    ),
+                    TokenKind::Word(word) if word == "extern" => {
+                        if let Some(procedure) = self.parse_extern() {
+                            procedures.push(procedure);
+                        }
+                        continue;
+                    }
                     _ => Message::not_designed_yet(
                         token.place,
                         "anything outside a procedure, other than a procedure, isn't decided yet",
@@ -280,7 +282,42 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_procedure(&mut self) -> Option<Procedure> {
+    /// `extern.rust proc ...`: a procedure whose body is written in Rust (D36, D107).
+    fn parse_extern(&mut self) -> Option<Procedure> {
+        let extern_token = self.advance();
+        if !self.at_symbol(Symbol::Dot) {
+            self.messages.push(
+                Message::refused(
+                    extern_token.place,
+                    "`extern` needs where the body is written, as in `extern.rust`",
+                )
+                .why("`extern` is narrowed by where the procedure's body is written."),
+            );
+            self.skip_to_next_top_level();
+            return None;
+        }
+        self.advance();
+        let narrowing = self.current();
+        if !narrowing.is_word("rust") {
+            self.messages.push(Message::not_designed_yet(
+                narrowing.place,
+                format!("`extern.{}` isn't decided yet", narrowing.written()),
+            ));
+            self.skip_to_next_top_level();
+            return None;
+        }
+        self.advance();
+        if !self.at_word("proc") {
+            let _ = self.refuse_unexpected("`proc`");
+            self.skip_to_next_top_level();
+            return None;
+        }
+        // trace: D36, D107
+        self.parse_procedure(Some(extern_token.place.to(narrowing.place)))
+    }
+
+    /// A procedure, or with `external` (the place of `extern.rust`) a procedure whose body is in Rust.
+    fn parse_procedure(&mut self, external: Option<Place>) -> Option<Procedure> {
         let proc_token = self.advance();
         let mut is_main = false;
         let name = if self.at_symbol(Symbol::Dot) {
@@ -333,12 +370,21 @@ impl<'a> Parser<'a> {
                 Err(Skip) => header_broken = true,
             }
         }
+        let mut failures = Vec::new();
         if !self.stopped && !header_broken && (self.at_word("or") || self.at_word("fails")) {
-            self.messages.push(Message::not_built_yet(
-                self.current().place,
-                "failures in a procedure's header (D39) aren't built yet",
-            ));
-            header_broken = true;
+            if external.is_some() {
+                // trace: D39, D110
+                match self.parse_failures(returns.is_some()) {
+                    Ok(names) => failures = names,
+                    Err(Skip) => header_broken = true,
+                }
+            } else {
+                self.messages.push(Message::not_built_yet(
+                    self.current().place,
+                    "failures in a Plainly procedure's header (D39) aren't built yet",
+                ));
+                header_broken = true;
+            }
         }
         if self.stopped {
             return None;
@@ -369,6 +415,18 @@ impl<'a> Parser<'a> {
         if self.stopped {
             return None;
         }
+        if external.is_some()
+            && let Some(first) = body.first()
+        {
+            // trace: D36
+            self.messages.push(
+                Message::refused(
+                    first.place,
+                    "an `extern.rust` procedure's body is written in Rust, so nothing goes here but a `labels` line",
+                )
+                .why("an `extern.rust` procedure's body is empty, or holds only a `labels` line."),
+            );
+        }
         let closer = if is_main {
             "end proc.main".to_string()
         } else {
@@ -383,7 +441,33 @@ impl<'a> Parser<'a> {
             returns,
             labels,
             body,
+            external,
+            failures,
         })
+    }
+
+    /// `or fails a, b` after `returns`, or `fails a, b` with no `returns` (D38, D39).
+    fn parse_failures(&mut self, after_returns: bool) -> Result<Vec<Name>, Skip> {
+        if after_returns {
+            if !self.at_word("or") {
+                return Err(self.refuse_unexpected("`or fails`"));
+            }
+            self.advance();
+        }
+        if !self.at_word("fails") {
+            return Err(self.refuse_unexpected("`fails`"));
+        }
+        self.advance();
+        let mut names = Vec::new();
+        loop {
+            let token = self.expect_word("a failure's name")?;
+            names.push(self.name_from(token));
+            if self.at_symbol(Symbol::Comma) {
+                self.advance();
+            } else {
+                return Ok(names);
+            }
+        }
     }
 
     fn stop_unless_line_ends_with_colon(&mut self) {

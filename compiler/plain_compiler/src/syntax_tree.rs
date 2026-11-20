@@ -45,6 +45,10 @@ pub struct Procedure {
     /// The `labels` line (D25).
     pub labels: Vec<LabelPair>,
     pub body: Vec<Statement>,
+    /// Where `extern.rust` is written, for a procedure whose body is in Rust (D36, D107).
+    pub external: Option<Place>,
+    /// The failures listed after `fails` (D39); only an `extern.rust` procedure has them so far (D110).
+    pub failures: Vec<Name>,
 }
 
 #[derive(Clone, Debug)]

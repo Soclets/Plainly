@@ -101,6 +101,34 @@ fn internal_error(what: &str) -> ! {
     std::process::exit(STATUS_INTERNAL_ERROR);
 }
 
+/// Stops the program because an `extern.rust` procedure's Rust code panicked (D111), saying where in the Rust and
+/// what to do (D112).
+fn rust_went_wrong(went_wrong: plainly::glue::RustWentWrong) -> ! {
+    // SAFETY: the glue passes the site PlainCompiler wrote for the call, which lives as long as the program.
+    let site = unsafe { site_text(went_wrong.site, went_wrong.site_length) };
+    // The site starts with the place; D111's message shows only the snippet under its own first line.
+    let snippet = site.split_once('\n').map_or("", |(_, snippet)| snippet);
+    let procedure = went_wrong.procedure;
+    let place = match &went_wrong.place {
+        Some((file, line)) => format!("at {file} line {line}"),
+        None => "in the program's `rust` folder".to_string(),
+    };
+    before_message();
+    let message = format!(
+        "internal error: the Rust code of `{procedure}` went wrong, not your Plainly code\n{snippet}{}{}",
+        labelled_line("what", &went_wrong.message),
+        labelled_line(
+            "why",
+            &format!(
+                "this is a bug in `{procedure}`'s Rust code, {place}; fix it there, or report it to whoever wrote it."
+            )
+        )
+    );
+    let _ = std::io::stderr().write_all(message.as_bytes());
+    // trace: D111, D112
+    std::process::exit(STATUS_INTERNAL_ERROR);
+}
+
 /// Stops the program when PlainGC can't go on: out of memory, or a bug in PlainGC itself.
 fn gc_failed(error: plain_gc::AllocationError) -> ! {
     match error {
@@ -447,6 +475,8 @@ pub unsafe extern "C" fn plainly_overflow(
 pub unsafe extern "C" fn plainly_runtime_start(stack_maps: *const u64, main_frame: usize) {
     // How a program stops when PlainGC fails inside a call that holds handles (D105).
     plain_gc::set_failure_handler(gc_failed);
+    // How a program stops when an `extern.rust` procedure's Rust code panics (D111).
+    plainly::glue::set_rust_went_wrong_handler(rust_went_wrong);
     // SAFETY: passed on from this function's own promise, which the `main` PlainCompiler writes keeps.
     if let Err(error) = unsafe { plain_gc::start(stack_maps, main_frame) } {
         match error {

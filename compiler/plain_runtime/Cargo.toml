@@ -5,7 +5,8 @@ license.workspace = true
 version.workspace = true
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 plain_gc = { path = "../plain_gc" }
+plainly = { path = "../plainly" }

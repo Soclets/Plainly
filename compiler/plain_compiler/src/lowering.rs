@@ -18,8 +18,13 @@ pub fn lower_program(
 ) -> Result<IrProgram, InternalError> {
     let mut sites = Vec::new();
     let mut procedures = Vec::new();
+    let externals: Vec<bool> = program
+        .procedures
+        .iter()
+        .map(|procedure| procedure.external.is_some())
+        .collect();
     for procedure in &program.procedures {
-        procedures.push(lower_procedure(procedure, sources, &mut sites)?);
+        procedures.push(lower_procedure(procedure, sources, &mut sites, &externals)?);
     }
     Ok(IrProgram {
         procedures,
@@ -40,10 +45,27 @@ fn lower_procedure(
     procedure: &TypedProcedure,
     sources: &[SourceFile],
     sites: &mut Vec<String>,
+    externals: &[bool],
 ) -> Result<IrProcedure, InternalError> {
+    if let Some(failures) = &procedure.external {
+        // trace: D36, D107
+        return Ok(IrProcedure {
+            name: procedure.name.clone(),
+            external: Some(failures.clone()),
+            parameters: procedure.parameters.clone(),
+            returns: procedure.returns.map(ir_type),
+            locals: procedure
+                .variables
+                .iter()
+                .map(|&variable| ir_type(variable))
+                .collect(),
+            blocks: Vec::new(),
+        });
+    }
     let mut lowering = Lowering {
         sources,
         sites,
+        externals,
         locals: procedure
             .variables
             .iter()
@@ -65,6 +87,7 @@ fn lower_procedure(
     }
     Ok(IrProcedure {
         name: procedure.name.clone(),
+        external: None,
         parameters: procedure.parameters.clone(),
         returns: procedure.returns.map(ir_type),
         locals: lowering.locals,
@@ -88,6 +111,8 @@ struct BuildingBlock {
 struct Lowering<'a> {
     sources: &'a [SourceFile],
     sites: &'a mut Vec<String>,
+    /// Which procedures are `extern.rust`, by id.
+    externals: &'a [bool],
     locals: Vec<IrType>,
     blocks: Vec<BuildingBlock>,
     current: BlockId,
@@ -338,10 +363,13 @@ impl Lowering<'_> {
                 let to = expression
                     .value_type
                     .map(|value_type| self.new_local(ir_type(value_type)));
+                let site = self.site_for_call(*procedure, expression.place);
                 self.push(IrStep::Call {
                     to,
                     procedure: *procedure,
                     arguments,
+                    failed: None,
+                    site,
                 });
                 return Ok(to);
             }
@@ -352,34 +380,61 @@ impl Lowering<'_> {
             TypedExpressionKind::Format(pieces) => self.lower_format(pieces)?,
             TypedExpressionKind::Fallback { call, fallback } => {
                 // trace: D23
-                let TypedExpressionKind::Library {
-                    procedure: LibraryProcedure::TextToWhole,
-                    arguments,
-                } = &call.kind
-                else {
-                    return Err(InternalError::new(
-                        "`??` after a call that can't fail reached lowering",
-                    ));
-                };
-                let [text] = arguments.as_slice() else {
-                    return Err(InternalError::new(
-                        "`be.Whole` without one argument reached lowering",
-                    ));
-                };
-                let value = self.lower_value(text)?;
                 let to = self.new_local_for(call)?;
-                let succeeded = self.new_local(IrType::Bool);
-                self.push(IrStep::TextToWhole {
-                    to,
-                    succeeded,
-                    value,
-                });
+                // A condition that holds when the call succeeded, or when it failed.
+                let (condition, holds_on_success) = match &call.kind {
+                    TypedExpressionKind::Library {
+                        procedure: LibraryProcedure::TextToWhole,
+                        arguments,
+                    } => {
+                        let [text] = arguments.as_slice() else {
+                            return Err(InternalError::new(
+                                "`be.Whole` without one argument reached lowering",
+                            ));
+                        };
+                        let value = self.lower_value(text)?;
+                        let succeeded = self.new_local(IrType::Bool);
+                        self.push(IrStep::TextToWhole {
+                            to,
+                            succeeded,
+                            value,
+                        });
+                        (succeeded, true)
+                    }
+                    TypedExpressionKind::Call {
+                        procedure,
+                        arguments,
+                    } => {
+                        // trace: D110
+                        let arguments = self.lower_arguments(arguments)?;
+                        let failed = self.new_local(IrType::Bool);
+                        let site = self.site_for_call(*procedure, call.place);
+                        self.push(IrStep::Call {
+                            to: Some(to),
+                            procedure: *procedure,
+                            arguments,
+                            failed: Some(failed),
+                            site,
+                        });
+                        (failed, false)
+                    }
+                    _ => {
+                        return Err(InternalError::new(
+                            "`??` after a call that can't fail reached lowering",
+                        ));
+                    }
+                };
                 let use_fallback = self.new_block();
                 let after = self.new_block();
+                let (if_true, if_false) = if holds_on_success {
+                    (after, use_fallback)
+                } else {
+                    (use_fallback, after)
+                };
                 self.finish_block(BlockEnd::Branch {
-                    condition: succeeded,
-                    if_true: after,
-                    if_false: use_fallback,
+                    condition,
+                    if_true,
+                    if_false,
                 });
                 self.switch_to(use_fallback);
                 let fallback = self.lower_value(fallback)?;
@@ -390,6 +445,15 @@ impl Lowering<'_> {
             }
         };
         Ok(Some(local))
+    }
+
+    /// A call's site, for a call to an `extern.rust` procedure, whose panic's message shows it (D111).
+    fn site_for_call(&mut self, procedure: usize, place: Place) -> Option<SiteId> {
+        self.externals
+            .get(procedure)
+            .copied()
+            .unwrap_or(false)
+            .then(|| self.site(place))
     }
 
     fn lower_arguments(

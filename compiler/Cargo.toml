@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["plain_compiler", "plain_runtime", "plain_gc"]
+members = ["plain_compiler", "plain_runtime", "plain_gc", "plainly", "plainly_macros"]
 
 [workspace.package]
 edition = "2024"
