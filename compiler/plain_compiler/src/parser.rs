@@ -1,7 +1,7 @@
 //! The parser: tokens to the syntax tree (D62), with the layout rules that need no types: indentation (D10),
 //! spacing (D17, D18, D27, D59), `;` (D7) and closers (D8).
 
-use crate::message::{Edit, Message};
+use crate::message::{Edit, Message, RemovedLines};
 use crate::source::{Place, SourceFile};
 use crate::syntax_tree::{
     Argument, BinaryOperator, Callee, Expression, ExpressionKind, LabelPair, Name, Parameter,
@@ -92,7 +92,6 @@ pub fn parse_file(
         messages,
         roles,
         stopped: false,
-        procedure_lines: Vec::new(),
     };
     let procedures = parser.parse_top_level();
     parser.check_spacing();
@@ -113,8 +112,6 @@ struct Parser<'a> {
     roles: Vec<Role>,
     /// Set when a broken opening line leaves it unclear what was meant, so checking stops (D55).
     stopped: bool,
-    /// The first and last line of each procedure, for the blank line check.
-    procedure_lines: Vec<(usize, usize)>,
 }
 
 impl<'a> Parser<'a> {
@@ -285,7 +282,6 @@ impl<'a> Parser<'a> {
 
     fn parse_procedure(&mut self) -> Option<Procedure> {
         let proc_token = self.advance();
-        let first_line = proc_token.place.line;
         let mut is_main = false;
         let name = if self.at_symbol(Symbol::Dot) {
             self.advance();
@@ -382,8 +378,6 @@ impl<'a> Parser<'a> {
             format!("end proc {}", name.text)
         };
         self.expect_closer(0, &closer);
-        self.procedure_lines
-            .push((first_line, self.previous().place.line));
         Some(Procedure {
             name,
             is_main,
@@ -1746,27 +1740,39 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Blank lines between procedures are what every example shows; inside one, they aren't decided (standard
-    /// chapter 2).
+    /// Blank lines are allowed anywhere, at most one in a row (D97).
     fn check_blank_lines(&mut self) {
-        let mut reported = Vec::new();
-        for &(first, last) in &self.procedure_lines {
-            for line in first + 1..last {
-                if self.lines.get(line - 1).is_some_and(|facts| facts.blank) {
-                    reported.push(line);
-                }
+        // trace: D97
+        let mut line = 1;
+        while line <= self.lines.len() {
+            let is_blank = |line: usize| self.lines.get(line - 1).is_some_and(|facts| facts.blank);
+            if !is_blank(line) {
+                line += 1;
+                continue;
             }
-        }
-        for line in reported {
-            self.messages.push(Message::not_designed_yet(
-                Place {
-                    file: self.file,
-                    line,
-                    column: 1,
-                    length: 1,
-                },
-                "blank lines inside a procedure aren't decided",
-            ));
+            let mut run = 1;
+            while is_blank(line + run) {
+                run += 1;
+            }
+            if run > 1 {
+                let mut message = Message::refused(
+                    Place {
+                        file: self.file,
+                        line: line + 1,
+                        column: 1,
+                        length: 1,
+                    },
+                    "",
+                )
+                .why("one blank line is enough to separate the parts of a program.");
+                message.what = None;
+                message.removed_lines = Some(RemovedLines {
+                    first_line: line + 1,
+                    count: run - 1,
+                });
+                self.messages.push(message);
+            }
+            line += run;
         }
     }
 }

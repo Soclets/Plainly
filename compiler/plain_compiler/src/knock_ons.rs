@@ -1,7 +1,7 @@
 //! Sorting out knock-on errors (D55 rule 4): the first error's single fix is applied in memory and the program
 //! checked again. Anything that disappears was caused by it, and gets a `because:` pointing back at it (D54).
 
-use crate::message::{Because, Edit, Kind, Message, fixed_line};
+use crate::message::{Because, Edit, Kind, Message, RemovedLines, fixed_line};
 use crate::source::{Place, SourceFile};
 
 /// What identifies a message across the two checks: where it is, moved to match the fixed line, and what it says.
@@ -23,26 +23,70 @@ fn kind_number(kind: Kind) -> u8 {
     }
 }
 
-/// A message's key, in the fixed sources' places. `edit` moved everything after it on its line.
-fn key(message: &Message, edit: Option<&Edit>) -> Key {
+/// The first error's fix: a change to one line, or blank lines removed (D97).
+enum Change {
+    Edit(Edit),
+    RemoveLines(usize, RemovedLines),
+}
+
+/// A message's key, in the fixed sources' places: the change moved everything after it on its line, or every line
+/// after the removed ones.
+fn key(message: &Message, change: Option<&Change>) -> Key {
+    let mut line = message.place.line;
     let mut column = message.place.column;
-    if let Some(edit) = edit
-        && message.place.file == edit.place.file
-        && message.place.line == edit.place.line
-        && message.place.column >= edit.place.column + edit.place.length
-    {
-        let added = edit.replacement.chars().count() as isize - edit.place.length as isize;
-        column = (column as isize + added).max(1) as usize;
+    match change {
+        Some(Change::Edit(edit))
+            if message.place.file == edit.place.file
+                && message.place.line == edit.place.line
+                && message.place.column >= edit.place.column + edit.place.length =>
+        {
+            let added = edit.replacement.chars().count() as isize - edit.place.length as isize;
+            column = (column as isize + added).max(1) as usize;
+        }
+        Some(Change::RemoveLines(file, removed))
+            if message.place.file == *file && line >= removed.first_line + removed.count =>
+        {
+            line -= removed.count;
+        }
+        _ => {}
     }
     (
         kind_number(message.kind),
         message.place.file,
-        message.place.line,
+        line,
         column,
         message.what.clone(),
         message.why.clone(),
         message.edit.as_ref().map(|edit| edit.replacement.clone()),
     )
+}
+
+/// The sources with the change made.
+fn with_change(sources: &[SourceFile], change: &Change) -> Vec<SourceFile> {
+    match change {
+        Change::Edit(edit) => with_edit(sources, edit),
+        Change::RemoveLines(file, removed) => sources
+            .iter()
+            .enumerate()
+            .map(|(index, source)| {
+                let text = if index == *file {
+                    source
+                        .text
+                        .split_inclusive('\n')
+                        .enumerate()
+                        .filter(|(number, _)| {
+                            let line = number + 1;
+                            line < removed.first_line || line >= removed.first_line + removed.count
+                        })
+                        .map(|(_, line)| line)
+                        .collect()
+                } else {
+                    source.text.clone()
+                };
+                SourceFile::new(source.shown_path.clone(), text)
+            })
+            .collect(),
+    }
 }
 
 /// The sources with `edit` made.
@@ -84,17 +128,19 @@ pub fn sort_out(
     else {
         return;
     };
-    let Some(edit) = messages[first].edit.clone() else {
-        return;
+    let change = match (&messages[first].edit, messages[first].removed_lines) {
+        (_, Some(removed)) => Change::RemoveLines(messages[first].place.file, removed),
+        (Some(edit), None) => Change::Edit(edit.clone()),
+        (None, None) => return,
     };
     let first_place: Place = messages[first].place;
-    let fixed = with_edit(sources, &edit);
+    let fixed = with_change(sources, &change);
     let remaining: Vec<Key> = check(&fixed)
         .iter()
         .map(|message| key(message, None))
         .collect();
     for (index, message) in messages.iter_mut().enumerate() {
-        if index == first || remaining.contains(&key(message, Some(&edit))) {
+        if index == first || remaining.contains(&key(message, Some(&change))) {
             continue;
         }
         message.because = Some(Because {
@@ -164,6 +210,6 @@ mod tests {
         };
         let later = Message::refused(place(1, 5), "same");
         let moved = Message::refused(place(1, 7), "same");
-        assert_eq!(key(&later, Some(&edit)), key(&moved, None));
+        assert_eq!(key(&later, Some(&Change::Edit(edit))), key(&moved, None));
     }
 }

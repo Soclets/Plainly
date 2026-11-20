@@ -342,3 +342,20 @@ fn d94_a_variable_can_not_take_a_procedure_name() {
     let parameter = "proc roll returns Whole:\n    return 4;\nend proc roll\n\nproc show(roll: Whole):\n    show_msg(be.Text(roll));\nend proc show\n\nproc.main:\n    show(roll());\nend proc.main\n";
     assert_eq!(found(parameter), refused_on(5));
 }
+
+#[test]
+fn d97_one_blank_line_at_a_time() {
+    let one = "proc.main:\n    let a: Whole = 1;\n\n    show_msg(be.Text(a));\nend proc.main\n\nproc helper:\n    show_msg(\"x\");\nend proc helper\n";
+    assert_eq!(found(one), vec![]);
+    let three =
+        "proc.main:\n    let a: Whole = 1;\n\n\n\n    show_msg(be.Text(a));\nend proc.main\n";
+    let found = messages(three);
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].place.line, 4);
+    assert_eq!(
+        found[0]
+            .removed_lines
+            .map(|removed| (removed.first_line, removed.count)),
+        Some((4, 2))
+    );
+}
