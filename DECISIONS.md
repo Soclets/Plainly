@@ -3289,3 +3289,23 @@ by Rust's own compiler before the program runs, rather than turning up as garbag
 **Tankun's words.** Asked "Should handles last for one call, with Rust's borrow checker stopping any look at a value
 from crossing a collection, plus kept handles for values Rust stores beyond a call?", the owner chose: "yea. Is there a
 rule about including optimizations from the start?" (the question is answered in chat, not a decision).
+
+## D106. After `ask`, the line counts as ended when the answer was typed at a terminal
+
+2026-11-20.
+
+**Chosen.** For D104, after `ask` the output's line counts as ended when the answer was typed at a terminal, since the
+player's Enter has already moved the cursor down, and as still open when the answer came from a file or another
+program, since nothing was shown on screen. The runtime checks whether its standard input is a terminal.
+
+**Weighed.**
+- Counting the line as still open after every `ask`, as D104 read literally. In a terminal, a message right after an
+  `ask` would follow a stray blank line.
+- Counting it as ended after every `ask`. With answers fed from a file, as in
+  `plainly run game.plainly --working < answers.txt`, a message would land right after `Your guess: `.
+
+**Why this won.** It follows what the player actually saw, so a message starts on a fresh line with no blank line
+before it in both cases. Tests feed their input from files, so they keep the line break D104 gives them.
+
+**Tankun's words.** Asked "After `ask`, should the line count as ended when the answer was typed at a terminal, and as
+still open when it came from a file?", the owner chose: "yea".

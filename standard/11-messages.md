@@ -23,7 +23,8 @@ refused: game.plainly:5:5, line 5 column 5
 - **No error codes, and no "did you mean" guesses** (D54).
 - **A message never starts mid-line:** every message goes to standard error, and when a program stops while its
   output's last line is still open, as after `show_msg.same_line`, the runtime first ends that line on standard
-  output (D104).
+  output (D104). After `ask`, the line counts as ended when the answer was typed at a terminal, and as still open
+  when it came from a file or another program (D106).
 - **Every error is shown** (D54).
 
 ## One mistake, one message
