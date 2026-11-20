@@ -2643,3 +2643,33 @@ Three drafts shown the first time but not in the table answered here go in the n
 on a `let`, the missing closer at the end of a file, and a missing `:` or `=` in a declaration.
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no.".
+
+## D86. The text after every label starts at the same column, the width of `because:`
+
+2026-11-20.
+
+**Chosen.** In every message, the text after `fix:`, `what:`, `when:`, `because:` and `why:` starts at the same column,
+one space after the longest label, `because:`, whether or not that message has a `because:`:
+
+```
+ what:    `lives` can't be given a new value
+ because: line 2 declares it with `let`
+ why:     only a `var` can be given a new value.
+```
+
+and, in a message with no `because:`:
+
+```
+ fix:     `    let tries: Whole = 0;`
+ why:     every statement ends with `;`.
+```
+
+**Weighed.**
+- The widest label in each message, so a message without `because:` sits closer. The column then shifts from message
+  to message.
+
+**Why this won.** One rule, with nothing to work out, and every message lines up the same way at a glance. It's how
+the compiler session already prints them.
+
+**Tankun's words.** Asked "Text after every label starts at the same column, the width of `because:`?", the owner
+chose: "yea".

@@ -37,7 +37,10 @@ refused: game.plainly:5:5, line 5 column 5
 
 Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables.
 
-**Not decided:** the wording of every other message; where the label column lines up; how columns are counted in text
+The text after every label starts at the same column, one space after the longest label, `because:`, in every message
+(D86).
+
+**Not decided:** the wording of every other message; how columns are counted in text
 beyond plain English letters.
 
 ## Exit statuses
