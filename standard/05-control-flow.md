@@ -101,6 +101,12 @@ while tries < 7:
 end while
 ```
 
+## Running several things at once
+
+A Plainly program can run several parts of itself at once (D66).
+
+**Not decided:** how it's written; how parts talk to each other; what may be shared between them.
+
 ## After an `if` that leaves
 
 When any way through an `if` leaves, by `return`, `break` or a failure, nothing may follow its `end if` in the same

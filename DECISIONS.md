@@ -2042,8 +2042,8 @@ decided yet.)
   they bring the hardest bugs (two parts changing one thing at once, results that differ between runs), and they're
   easy to add later but hard to take back.
 
-**Why this won.** Tankun's choice: real-time terminal games want music, timers and enemies moving on their own, and
-it's better designed in from the start than bolted on later.
+**Why this won.** Tankun's choice; their reason isn't recorded yet. Real-time terminal games can want music, timers
+and enemies moving on their own, and designing it in from the start avoids bolting it on later.
 
 **Tankun's words.** "no. What about compiling? Para, concur, cached, background?" (quoted in D65 too), "What is the
 diff?", then, asked "Should Plainly programs themselves run one step at a time in v2, with threads in the language
