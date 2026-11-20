@@ -38,7 +38,14 @@ show_msg("Don't give up!");
 
 Single quotes aren't used for text (D21).
 
-**Not decided:** a quote inside text, and other escapes; empty text; joining and comparing text; lists.
+`&` joins two pieces of text. A number joined with `&` is refused, with `be.Text(...)` as the fix, so it's always
+visible where a number becomes text (D22, D28):
+
+```
+show_msg("You got it in " & be.Text($tries) & " tries.");
+```
+
+**Not decided:** filling values into text; a quote inside text, and other escapes; empty text; comparing text; lists.
 
 ## Converting
 

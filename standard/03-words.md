@@ -56,5 +56,6 @@ Each kind of bracket has one job (D3):
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |
 | `+`, `-` | add and subtract, with a space on each side; a `-` with no space after it negates | D27 |
+| `&` | joins text | D28 |
 | `?` | passes a failure up | D23 |
 | `??` | handles a failure on one line | D23 |

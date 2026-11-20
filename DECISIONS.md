@@ -830,3 +830,27 @@ let $back: Whole = -$speed;
 types. Keeping `+` for numbers means a `+` always adds. This is Plainly v1's D1, D84 and D86.
 
 **Tankun's words.** Asked "`+` and `-` like that?", the owner chose: "yea".
+
+## D28. `&` joins text, and doesn't convert numbers by itself
+
+2026-11-20.
+
+**Chosen.** `&` joins two pieces of text. A number joined with `&` is refused, with `be.Text(...)` as the fix (D22),
+so it's always visible where a number becomes text:
+
+```
+show_msg("Hello, " & $name & "!");
+show_msg("You got it in " & be.Text($tries) & " tries.");
+```
+
+(Filling values into text, and `&` next to `+` or `-` without brackets, aren't decided yet.)
+
+**Weighed.**
+- `+`, as in Python. D27 keeps `+` for numbers, so `"5" + 3` can't be misread.
+- Converting numbers by itself, as JavaScript does. `"5" & 3` would quietly mean something, and where a number becomes
+  text would be hidden.
+
+**Why this won.** `&` reads as "and", is what Ada, Visual Basic and Excel use, and has no other job in Plainly. This
+is Plainly v1's D1 and D6, and multifinity's notes.
+
+**Tankun's words.** Asked "`&` joins text, with no automatic converting?", the owner chose: "yea".
