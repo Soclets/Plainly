@@ -7,7 +7,7 @@ the test results (`python3 compiler/run_tests.py`).
 
 **Milestone 1 is done.**
 
-- **All 12 tests pass** on `plainly run --working`.
+- **All 17 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including the five message tests for D85.
 - **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Runs Plainly's tests (tests/README.md) against PlainCompiler.
 
-Builds the compiler's workspace, then runs each test as
+Builds the compiler's workspace, then runs each test from inside its own folder as
 
-    plainly run tests/NAME/program.plainly --working < tests/NAME/input.txt
+    cd tests/NAME
+    plainly run program.plainly --working < input.txt
 
 and compares standard output, standard error and the exit status exactly with the
 expected files. A test with a check.py also runs `python3 -I check.py` in its folder,
@@ -44,14 +45,13 @@ def show_difference(what, expected, actual):
 def run_test(name):
     """Returns a list of problems; an empty list means the test passed."""
     folder = os.path.join(TESTS_FOLDER, name)
-    program = os.path.join("tests", name, "program.plainly")
     input_path = os.path.join(folder, "input.txt")
     standard_input = read_bytes(input_path) if os.path.exists(input_path) else b""
     problems = []
     try:
         result = subprocess.run(
-            [PLAINLY, "run", program, "--working"],
-            cwd=REPOSITORY,
+            [PLAINLY, "run", "program.plainly", "--working"],
+            cwd=folder,
             input=standard_input,
             capture_output=True,
             timeout=TIME_LIMIT_SECONDS,
