@@ -27,6 +27,9 @@ A variable declared inside a block (an `if`'s way, an `else`, a loop's body, an 
 ends. After it, the name can be declared again as a new variable, and a `var` from outside that was changed inside
 keeps its new value (D93).
 
+While a variable is in use, in its own block or any block inside it, its name can't be declared again, and a variable
+can't take a procedure's name (D94).
+
 ## Changing
 
 A `var` gets a new value with its name, `=` and the value, as a statement of its own (D14):

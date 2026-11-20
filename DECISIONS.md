@@ -2881,3 +2881,36 @@ declared again, since that's a new variable. A `var` declared outside and change
 crashed v1's oracle. The compiler session asked (its Q11).
 
 **Tankun's words.** Asked "Variables declared in a block end with the block?", the owner chose: "yea".
+
+## D94. A name in use can't be declared again, and a variable can't take a procedure's name
+
+2026-11-20.
+
+**Chosen.**
+- **While a variable is in use,** in its own block or any block inside it, its name can't be declared again. Two
+  things get two names:
+
+  ```
+  let typed: Text = ask("Your guess: ");
+  let guess: Whole = be.Whole(typed) ?? 0;
+  ```
+
+  After a block ends, a name declared inside it can be declared again (D93).
+- **A variable can't take a procedure's name,** since without `$` (D58), `roll` the variable and `roll()` the
+  procedure would look alike.
+
+Both are refused.
+
+(The messages' wording isn't decided yet.)
+
+**Weighed.**
+- `shadow` in front, as Plainly v1 chose (its D91): `shadow let guess: Whole = be.Whole(guess) ?? 0;` declares a name
+  again, visibly, and may change its type. A keyword for a habit, reusing a name, that mostly saves thinking of a second
+  one.
+- Allowing it freely, as Python does. A reader has to work out which `guess` each line means.
+
+**Why this won.** Two names for two things is what reading needs: a reader never has to ask which `guess` a line
+means. The compiler session asked (its Q12).
+
+**Tankun's words.** Asked "Names in use can't be declared again, and a variable can't take a procedure's name?" with
+`shadow` as the alternative, the owner chose: "yea"; then, asked to confirm it was the first, the owner chose: "yea".
