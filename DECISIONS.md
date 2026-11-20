@@ -1963,3 +1963,32 @@ terminal from Rust. This is Plainly v1's D49.
 
 **Tankun's words.** Asked "The standard library built on `crossterm`, terminal first, with a GUI only as a later
 package?", the owner chose: "yea, if ever".
+
+## D64. A program is every `.plainly` file in its folder; packages go in a manifest; `package::` settles a clash
+
+2026-11-20.
+
+**Chosen.**
+- **A program is every `.plainly` file (D35) in its folder.** There are no imports between a program's own files: a
+  procedure in one file calls one in another directly, in any order. There's exactly one `proc.main` across them all.
+- **Packages are listed once, in a manifest file in the folder,** and their procedures are then usable in every file,
+  with no imports.
+- **Names are used bare,** as in `draw(...)`. When two packages both have a name, the bare name is refused, with the
+  fix naming each package's version: `crossterm::draw(...)`. `::` names a package, one level deep, never a path inside
+  one.
+
+Every name in a program shares one space, so two of its files can't both declare the same procedure.
+
+(The manifest's name and format, versions, and where packages come from aren't decided yet.)
+
+**Weighed.**
+- Import lines at the top of each file, as Python has. More to write in every file, and "which file is this from?"
+  puzzles.
+- Paths, like Rust's `std::io::stdin`. Tankun refused paths in Plainly v1 ("I don't agree with paths, though").
+- A space of names per file. Two files could both have `helper`, at the cost of imports between them.
+
+**Why this won.** It's Go's shape: a folder is a program, so a beginner never writes an import, and the rare clash is
+settled on the spot with the package's name. This is Plainly v1's D39 with v2's files.
+
+**Tankun's words.** Asked "One program per folder, a manifest for packages, bare names with `package::` only for a
+clash?", the owner chose: "yea".

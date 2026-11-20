@@ -70,6 +70,7 @@ own (D60).
 | `:` | ends an opening line | D8 |
 | `=` | gives a variable its first value, or a `var` a new one | D13, D14 |
 | `.` | narrows, touching the words on both sides | D4, D6, D18 |
+| `::` | names a package, when two packages share a name | D64 |
 | `==`, `!=`, `<`, `>` | compare, with a space on each side of `<` and `>` | D17 |
 | `\|>` | passes a value along a slide | D5 |
 | `+`, `-` | add and subtract, with a space on each side; a `-` with no space after it negates | D27 |

@@ -49,3 +49,18 @@ Since every block ends with its closer, indentation never decides where a block 
 ## Files
 
 A Plainly file's name ends in `.plainly`, as in `game.plainly` (D35).
+
+A program is every `.plainly` file in its folder, with exactly one `proc.main` across them. There are no imports: a
+procedure in one file calls one in another directly, in any order (D64).
+
+## Packages
+
+Packages are listed once, in a manifest file in the program's folder, and their procedures are then usable in every
+file (D64). Names are used bare. When two packages both have a name, the bare name is refused, and the package's name
+goes in front with `::`, one level deep (D64):
+
+```
+crossterm::draw(...);
+```
+
+**Not decided:** the manifest's name and format; versions; where packages come from.
