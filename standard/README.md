@@ -21,6 +21,6 @@ happened; this standard says what the rules are today (D12).
 2. [Lines and blocks](02-lines-and-blocks.md): `;`, `:` and `end`, and indentation
 3. [Words](03-words.md): keywords, names and brackets
 4. [Procedures](04-procedures.md): definitions, calls, `proc.main`, slides and `show_msg`
-5. [Control flow](05-control-flow.md): what may follow an `if`
+5. [Control flow](05-control-flow.md): `if`, and what may follow it
 6. [Variables](06-variables.md): `let` and `var`
 7. [Types](07-types.md): `Whole`

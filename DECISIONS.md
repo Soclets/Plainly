@@ -476,3 +476,35 @@ Other sizes, if they come, are different types with names of their own, not seco
 needs, and matches Rust, so anything crossing over to Rust keeps its value. One name per type follows D2.
 
 **Tankun's words.** Asked "`Whole`, a 64-bit signed whole number, with no other name?", the owner chose: "yea".
+
+## D16. `if`, `else if`, `else` and `end if`
+
+2026-11-20.
+
+**Chosen.**
+
+```
+if $guess < $secret:
+    show_msg("Too low");
+else if $guess > $secret:
+    show_msg("Too high");
+else:
+    show_msg("Correct!");
+end if
+```
+
+- `if`, its condition and `:`, with no brackets and no `then`.
+- Any number of `else if`, then at most one `else:`, each with its own body.
+- One `end if` closes the whole chain (D8).
+
+(Comparisons like `<`, and what a condition may be, aren't decided yet.)
+
+**Weighed.**
+- `elif`, as in Python. It's a made-up contraction, not short for any one word, so it breaks D2's "learn the concept,
+  then type it short".
+- Brackets around the condition, as in C, or `then`, as in Lua. Both are noise once `:` ends the line.
+
+**Why this won.** It's Python's shape with plain words, ending each opening line with `:` like every block (D8). This
+is Plainly v1's D35.
+
+**Tankun's words.** Asked "`if`, `else if`, `else` and `end if` like that?", the owner chose: "yea".

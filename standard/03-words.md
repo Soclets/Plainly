@@ -14,6 +14,7 @@ message".
 | `.same_line` | | D6 |
 | `let` | | D13 |
 | `var` | variable | D2, D13 |
+| `if`, `else` | | D16 |
 
 **Not decided:** every other keyword.
 
