@@ -585,6 +585,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                                         format!("`{}` can't be given a new value", name.text),
                                     )
                                     .because(
+                                        // trace: D87
                                         format!("line {} declares it with `let`", declared.line),
                                         Place {
                                             length: 3,
@@ -829,6 +830,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     checked.expression.place,
                     "this call can fail, and nothing here deals with the failure",
                 )
+                // trace: D87
                 .why("every call that can fail deals with its failure, with `?`, `??` or `otherwise:`."),
             );
             checked.can_fail = false;
@@ -1066,6 +1068,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             replacement: "&".to_string(),
                         };
                         Message::refused_with_fix(operator_place, edit)
+                            // trace: D87
                             .why("`+` is only for numbers, and `&` joins text.")
                     } else {
                         Message::refused(
@@ -1102,6 +1105,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             format!("`&` joins text, and this is a `{}`", side_type.name()),
                         ),
                     }
+                    // trace: D87
                     .why("`&` joins two pieces of text, and a number becomes text only where `be.Text` says so.");
                     self.messages.push(message);
                 }
@@ -1165,6 +1169,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                             types.1.name()
                         ),
                     )
+                    // trace: D87
                     .why("a comparison is between two values of the same type.")
                 } else if types.0 == Type::Text {
                     Message::not_designed_yet(
@@ -1245,6 +1250,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         place,
                         "`be` needs the type the value becomes, as in `be.Text`",
                     )
+                    // trace: D87
                     .why("a value is converted with `be` narrowed by the type it becomes."),
                 );
                 Checked::unknown(place)
@@ -1680,6 +1686,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         place,
                         format!("this value is already a `{}`, so `{written}` does nothing", to.name()),
                     )
+                    // trace: D87
                     .why("converting a value to the type it already is does nothing, so it's refused."),
                 );
                 return Checked::unknown(place);

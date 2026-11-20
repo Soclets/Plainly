@@ -7,7 +7,7 @@ the test results (`python3 compiler/run_tests.py`).
 
 **Milestone 1 is done.**
 
-- **All 17 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including the five message tests for D85.
+- **All 20 tests pass** on `plainly run --working`, run from inside each test's folder (tests/README.md), including message tests for D85 and D87.
 - **The guessing game builds and plays** (`plainly build examples/guessing_game.plainly --working`): played by hand
   with a binary search (won in 6 tries), with every guess too low (7 tries, then "Out of tries! It was 97."), and with
   `abc` as a guess (treated as 0, as `?? 0` says).
@@ -108,8 +108,12 @@ refused: game.plainly:7:5, line 7 column 5
 closer before a line, and a missing `:` on an opening line (D8); indentation and tabs (D10); a declaration with no type
 (D13); `=` on a `let`, without its `because:` line, and `=` in a condition (D14); missing spaces around `<`, `>`, `+`,
 `-` and `*` (D17, D27, D59); spaces around a narrowing's `.` (D18); single quotes (D21). Each is marked
-`// trace: D85` in the code. In the next batch: the `because:` for `=` on a `let`, the missing closer at the end of a
-file, and a missing `:` or `=` in a declaration.
+`// trace: D85` in the code.
+
+**Approved in D87,** word for word as drafted: the `because:` for `=` on a `let`; the file ending before a closer
+(D8); a missing `:` or `=` in a declaration (D13); comparing two types (D17); converting to the type a value already
+is, and `be` with no type (D22); an unhandled call that can fail (D23); `+` on two texts (D27, D28); a number joined
+with `&` (D28); a keyword as a name (D58). Each is marked `// trace: D87`.
 
 ### Refusals
 

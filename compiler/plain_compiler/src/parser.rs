@@ -567,6 +567,7 @@ impl<'a> Parser<'a> {
                     token.place,
                     format!("`{text}` is a keyword, so it can't be a name"),
                 )
+                // trace: D87
                 .why("a name can't be one of Plainly's own words."),
             );
         } else if !is_plain_name(&text) {
@@ -658,6 +659,7 @@ impl<'a> Parser<'a> {
             let (place, what) = if token.kind == TokenKind::EndOfFile {
                 (
                     self.place_after(self.previous()),
+                    // trace: D87
                     format!("the file ends before `{expected}`"),
                 )
             } else {
@@ -823,6 +825,7 @@ impl<'a> Parser<'a> {
                         place: Place { length: 0, ..place },
                         replacement: ":".to_string(),
                     },
+                    // trace: D87
                     "a declaration writes `:` between the variable's name and its type.",
                 );
             } else {
@@ -850,6 +853,7 @@ impl<'a> Parser<'a> {
                     place: Place { length: 0, ..place },
                     replacement: "= ".to_string(),
                 },
+                // trace: D87
                 "a declaration gives its variable a first value after `=`.",
             );
         } else {
