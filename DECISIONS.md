@@ -175,3 +175,31 @@ added in a step's `( )` matches Elixir and Plainly v1's pipe (its D29, D30), and
 something: a full call writes all its arguments in `( )`.
 
 **Tankun's words.** Asked "Slides like that?", the owner chose: "yea".
+
+## D6. `show_msg` ends the line, and `show_msg.same_line` doesn't
+
+2026-11-20.
+
+**Chosen.** `show_msg` shows text and ends the line, like Python's `print`. `show_msg.same_line` shows text and leaves
+the line open, for prompts and drawing.
+
+```
+show_msg("Hello, World!");
+show_msg.same_line("Your guess: ");
+```
+
+The docs teach "`msg` is short for message" (D2).
+
+**Weighed.**
+- `append_msg` for the second one (multifinity's chat: "You're appending the message to output"). "Append" is
+  programmer jargon for "add to the end", and a beginner may read it as adding to a message rather than to the
+  screen; it also gives two unrelated-looking names to nearly one job.
+- `show_msg.no_new_line`. It names what's missing rather than what you get.
+- No newline by itself, writing it out every time. Most prints want one, and a beginner who forgets it gets
+  everything on one line.
+
+**Why this won.** Showing a message is one thing, so it's one procedure, and the narrowing names its one difference,
+the way `.main` narrows `proc`. `.same_line` says exactly what appears on screen. This is Plainly v1's D12 with v2's
+name.
+
+**Tankun's words.** Asked "`show_msg` ends the line, and `show_msg.same_line` doesn't?", the owner chose: "yea".
