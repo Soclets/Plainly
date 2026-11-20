@@ -5,15 +5,13 @@
 //! Every message's wording here is a draft (D54), listed in `compiler/PROGRESS.md`.
 
 use std::io::{BufRead, Write};
-use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 // trace: D56
 const STATUS_NOT_YET: i32 = 3;
 const STATUS_CHECK_FAILED: i32 = 4;
 
-/// The size of a text's length, written before its bytes.
-const LENGTH_SIZE: usize = 8;
+const STATUS_INTERNAL_ERROR: i32 = 7;
 
 // ----- Messages -----
 
@@ -70,42 +68,68 @@ unsafe fn site_text<'a>(site: *const u8, site_length: i64) -> &'a str {
 
 // ----- Text -----
 
-/// Makes new text through PlainGC, holding `bytes`.
+/// Stops the program because PlainGC or the code PlainCompiler made went wrong (D82). Its wording is a draft.
+fn internal_error(what: &str) -> ! {
+    let _ = std::io::stdout().flush();
+    let message = format!(
+        "internal error: PlainGC itself went wrong, not your program\n{}{}",
+        labelled_line("what", what),
+        labelled_line(
+            "why",
+            "this is a bug in PlainGC. Please report it at https://github.com/Soclets/Plainly/issues, with the \
+             program that caused it."
+        )
+    );
+    let _ = std::io::stderr().write_all(message.as_bytes());
+    // trace: D82
+    std::process::exit(STATUS_INTERNAL_ERROR);
+}
+
+/// Makes new text through PlainGC, holding `bytes`. A `Text` is a PlainGC object of kind `Bytes` (D69).
+///
+/// A collection can happen here and move every object, so callers copy what they need out of other texts first.
 fn new_text(bytes: &[u8]) -> *const u8 {
-    let Some(memory) = plain_gc::allocate(LENGTH_SIZE + bytes.len()).map(NonNull::as_ptr) else {
-        let message = format!(
-            "NotDesignedYet: the program ran out of memory\n{}",
-            labelled_line(
-                "what",
-                "what a program does when memory runs out isn't decided"
-            )
-        );
-        let _ = std::io::stdout().flush();
-        let _ = std::io::stderr().write_all(message.as_bytes());
-        std::process::exit(STATUS_NOT_YET);
+    let memory = match plain_gc::allocate(plain_gc::ObjectKind::Bytes, bytes.len()) {
+        Ok(memory) => memory.as_ptr(),
+        Err(plain_gc::AllocationError::OutOfMemory) => {
+            let message = format!(
+                "NotDesignedYet: the program ran out of memory\n{}",
+                labelled_line(
+                    "what",
+                    "what a program does when memory runs out isn't decided"
+                )
+            );
+            let _ = std::io::stdout().flush();
+            let _ = std::io::stderr().write_all(message.as_bytes());
+            std::process::exit(STATUS_NOT_YET);
+        }
+        Err(plain_gc::AllocationError::Internal(what)) => internal_error(&what),
     };
-    let length = bytes.len() as u64;
-    // SAFETY: `memory` is a fresh allocation of `LENGTH_SIZE + bytes.len()` bytes, aligned to 8 (plain_gc's
-    // ALIGNMENT), so the length fits at its start and the bytes right after it, and nothing else uses it yet.
+    // SAFETY: `memory` is a fresh object with a payload of `bytes.len()` bytes, starting `PAYLOAD_OFFSET` bytes in,
+    // and nothing else uses it yet.
     unsafe {
-        memory.cast::<u64>().write(length);
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), memory.add(LENGTH_SIZE), bytes.len());
+        std::ptr::copy_nonoverlapping(
+            bytes.as_ptr(),
+            memory.add(plain_gc::PAYLOAD_OFFSET),
+            bytes.len(),
+        );
     }
     memory
 }
 
+/// A text's bytes. They stay put only until the next allocation, which may move them.
+///
 /// # Safety
 ///
-/// `text` must be a `Text` made by [`new_text`].
+/// `text` must be a `Text` made by [`new_text`], still live.
 unsafe fn text_bytes<'a>(text: *const u8) -> &'a [u8] {
     if text.is_null() {
         return &[];
     }
-    // SAFETY: the caller promises `text` came from `new_text`, which wrote its length at its start and that many
-    // bytes after it. PlainGC never frees it, so it stays valid.
+    // SAFETY: the caller promises `text` is a live PlainGC object of kind `Bytes`, whose payload holds the text.
     unsafe {
-        let length = text.cast::<u64>().read() as usize;
-        std::slice::from_raw_parts(text.add(LENGTH_SIZE), length)
+        let length = plain_gc::payload_length(text);
+        std::slice::from_raw_parts(text.add(plain_gc::PAYLOAD_OFFSET), length)
     }
 }
 
@@ -367,9 +391,27 @@ pub unsafe extern "C" fn plainly_overflow(
 
 // ----- Start and end -----
 
-/// Runs before `proc.main`.
+/// Runs before `proc.main`: starts PlainGC with the program's stack map table and the frame pointer of its `main`.
+///
+/// # Safety
+///
+/// `stack_maps` must point to the stack map table PlainCompiler wrote into this program, and `main_frame` must be
+/// the frame pointer of its `main`.
 #[unsafe(no_mangle)]
-pub extern "C" fn plainly_runtime_start() {
+pub unsafe extern "C" fn plainly_runtime_start(stack_maps: *const u64, main_frame: usize) {
+    // SAFETY: passed on from this function's own promise, which the `main` PlainCompiler writes keeps.
+    if let Err(error) = unsafe { plain_gc::start(stack_maps, main_frame) } {
+        match error {
+            plain_gc::AllocationError::Internal(what) => internal_error(&what),
+            plain_gc::AllocationError::OutOfMemory => {
+                internal_error("PlainGC ran out of memory while starting")
+            }
+        }
+    }
+    seed_random();
+}
+
+fn seed_random() {
     // Seeding isn't decided (D26), so each run starts from the clock and the process.
     let nanoseconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -382,6 +424,14 @@ pub extern "C" fn plainly_runtime_start() {
 /// Runs after `proc.main` ends.
 #[unsafe(no_mangle)]
 pub extern "C" fn plainly_runtime_end() {
+    if std::env::var_os("PLAINGC_REPORT").is_some_and(|value| value == "1")
+        && let Some((collections, moved)) = plain_gc::report()
+    {
+        let _ = writeln!(
+            std::io::stderr(),
+            "PlainGC: {collections} collections, {moved} objects moved"
+        );
+    }
     if std::io::stdout().flush().is_err() {
         output_failed();
     }
@@ -426,7 +476,7 @@ mod tests {
 
     #[test]
     fn d26_random_stays_in_range() {
-        plainly_runtime_start();
+        seed_random();
         for _ in 0..1000 {
             // SAFETY: a null site is never read when `low` isn't above `high`.
             let number = unsafe { plainly_random(1, 6, std::ptr::null(), 0) };

@@ -59,12 +59,23 @@ and the compiler depends on nothing but that interface.
 
 ### Steps
 
-1. **Stop-the-world mark and compact.** Not started. In detail below.
+1. ~~**Stop-the-world mark and compact.**~~ Done (2026-11-20). In detail below.
 2. **Moving with a load barrier:** PlainCompiler emits a barrier on every reference read, and forwarding finds a moved
    object from an old reference.
 3. **Marking while the program runs.**
 4. **Moving while the program runs.**
 5. **Handles for `extern.rust` code,** once the design session says how they work.
+
+### Status
+
+- **Step 1 works.** Every `Text` is a PlainGC object. Collections find their roots precisely through Cranelift's
+  stack maps, mark, and compact by evacuating sparse pages; texts held in variables, parameters and deep recursion
+  survive being moved, with every value right afterwards.
+- **Every run passes:** each of the 21 tests in `tests/` and the 6 stress programs in `compiler/gc_tests/`, run both as
+  they are and in collect-often mode: 54 runs. In collect-often mode the stress programs make up to 100,000
+  collections and move up to 240,000 objects each.
+- PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
+  freeing, moving, forwarding, and reading the stack map table.
 
 ### Step 1 in detail
 
@@ -84,7 +95,11 @@ and the compiler depends on nothing but that interface.
   page, rewrites every root and every reference inside live objects, and frees the evacuated and empty pages.
 - **One heap behind one lock,** so worker threads (D68) can share it later without redoing this.
 - **Collect-often mode:** with `PLAINGC_STRESS=1` in the environment, PlainGC collects at every allocation and
-  evacuates every page. Plainly programs can't read the environment, so no program can see it.
+  evacuates every page. `PLAINGC_REPORT=1` makes the runtime show how many collections ran and how many objects
+  moved, at the end. Plainly programs can't read the environment, so no program can see either.
+- **Frame pointers:** Cranelift keeps them (`preserve_frame_pointers`), and so does the runtime
+  (`compiler/.cargo/config.toml`), so the walk for roots never loses its way. `main` hands its own frame pointer to
+  the runtime at start, so the walk knows where to stop.
 - **Tests:** Rust unit tests for objects, allocation, marking, moving and forwarding with explicit roots; stress
   programs in `compiler/gc_tests/` that allocate heavily and check every value; and every test in `tests/` run in
   collect-often mode as well.
@@ -96,14 +111,18 @@ and the compiler depends on nothing but that interface.
 - **How much memory the heap may use:** no limit beyond the system's.
 - **When memory runs out:** the existing `NotDesignedYet` message, status 3.
 - **Which pages are compacted:** pages less than 75% live.
-- **A bug in PlainGC itself:** `internal error:` with status 7 (D82), its wording a draft.
+- **A bug in PlainGC itself:** `internal error:` with status 7 (D82), its wording a draft: "PlainGC itself went
+  wrong, not your program", and why: "this is a bug in PlainGC. Please report it at ..., with the program that
+  caused it."
+- **Small and large pages:** 256 KiB small pages, objects over 32 KiB in a page of their own. These are the
+  collector's own, which no program can see, so they need no decision.
 
 ## How to run it
 
 ```
 cd compiler && cargo build --workspace
 compiler/target/debug/plainly run tests/d04_hello_world/program.plainly --working
-python3 compiler/run_tests.py            # every test
+python3 compiler/run_tests.py            # every test and stress program, as they are and in collect-often mode
 python3 compiler/run_tests.py d16_if     # one test
 ```
 

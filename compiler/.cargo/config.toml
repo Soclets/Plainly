@@ -1,0 +1,4 @@
+# PlainGC finds roots by walking the chain of frame pointers, so every frame on the way, the runtime's included,
+# keeps one (D69).
+[build]
+rustflags = ["-C", "force-frame-pointers=yes"]

@@ -1,0 +1,11 @@
+proc.main:
+    let first: Text = ask("First: ");
+    var n: Whole = 0;
+    while n < 2000:
+        let garbage: Text = be.Text(n) & "?";
+        n = n + 1;
+    end while
+    let second: Text = ask("Second: ");
+    let number: Whole = be.Whole(ask("Number: ")) ?? 0;
+    show_msg.fmt("{first} and {second}, then {number}");
+end proc.main

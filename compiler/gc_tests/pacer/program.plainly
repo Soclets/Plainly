@@ -1,0 +1,11 @@
+proc.main:
+    let kept: Text = "kept through every collection";
+    var last: Text = "";
+    var n: Whole = 0;
+    while n < 150000:
+        last = "number " & be.Text(n);
+        n = n + 1;
+    end while
+    show_msg(kept);
+    show_msg(last);
+end proc.main

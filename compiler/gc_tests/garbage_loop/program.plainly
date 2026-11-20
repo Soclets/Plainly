@@ -1,0 +1,19 @@
+proc.main:
+    let kept: Text = "kept from the start";
+    var total: Text = "";
+    var count: Whole = 0;
+    var n: Whole = 0;
+
+    while n < 20000:
+        let garbage: Text = "garbage " & be.Text(n) & " of many";
+        count = count + 1;
+        if count == 1000:
+            total = total & be.Text(n) & ";";
+            count = 0;
+        end if
+        n = n + 1;
+    end while
+
+    show_msg(kept);
+    show_msg(total);
+end proc.main

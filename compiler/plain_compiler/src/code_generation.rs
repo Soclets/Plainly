@@ -43,7 +43,13 @@ struct Generator {
     texts: HashMap<Vec<u8>, DataId>,
     sites: Vec<DataId>,
     site_lengths: Vec<i64>,
+    /// Each call where references are live, for PlainGC: the procedure, the call's return address as an offset into
+    /// it, the frame's size, and the references' slots as offsets from the stack pointer (D69).
+    safepoints: Vec<(FuncId, u64, u64, Vec<u64>)>,
 }
+
+/// The version of PlainGC's stack map table this writes (`plain_gc`'s `stack_roots.rs` defines the format).
+const STACK_MAP_TABLE_VERSION: u64 = 1;
 
 /// Compiles the program to an object file's bytes, in `working` mode: no optimizations (D46).
 pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
@@ -54,6 +60,10 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
     flags
         .set("is_pic", "true")
         .map_err(|error| failed("asking Cranelift for position-independent code", error))?;
+    // PlainGC finds each frame's references by walking the chain of frame pointers (D69).
+    flags
+        .set("preserve_frame_pointers", "true")
+        .map_err(|error| failed("asking Cranelift to keep frame pointers", error))?;
     let isa = cranelift_native::builder()
         .map_err(|error| failed("finding this computer's processor", error))?
         .finish(settings::Flags::new(flags))
@@ -76,6 +86,7 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
         texts: HashMap::new(),
         sites: Vec::new(),
         site_lengths: Vec::new(),
+        safepoints: Vec::new(),
     };
     for (index, site) in program.sites.iter().enumerate() {
         let id = generator.define_bytes(&format!("plainly_site_{index}"), site.as_bytes())?;
@@ -98,7 +109,8 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
     for (index, procedure) in program.procedures.iter().enumerate() {
         generator.define_procedure(index, procedure)?;
     }
-    generator.define_entry(program.main)?;
+    let table = generator.define_stack_map_table()?;
+    generator.define_entry(program.main, table)?;
     let product = generator.module.finish();
     product
         .emit()
@@ -124,7 +136,7 @@ fn declare_runtime(
     let whole = types::I64;
     let bool_type = types::I8;
     Ok(RuntimeFunctions {
-        start: declare("plainly_runtime_start", &[], &[])?,
+        start: declare("plainly_runtime_start", &[pointer, pointer], &[])?,
         end: declare("plainly_runtime_end", &[], &[])?,
         text_from_bytes: declare("plainly_text_from_bytes", &[pointer, whole], &[pointer])?,
         text_join: declare("plainly_text_join", &[pointer, pointer], &[pointer])?,
@@ -220,11 +232,63 @@ impl Generator {
         self.module
             .define_function(id, &mut context)
             .map_err(|error| failed(&format!("compiling `{}`", procedure.name), error))?;
+        // trace: D69
+        let compiled = context.compiled_code().ok_or_else(|| {
+            InternalError::new("Cranelift kept no compiled code to read stack maps from")
+        })?;
+        for (return_offset, frame_size, stack_map) in compiled.buffer.user_stack_maps() {
+            let slots = stack_map
+                .entries()
+                .map(|(_, offset)| u64::from(offset))
+                .collect();
+            self.safepoints
+                .push((id, u64::from(*return_offset), u64::from(*frame_size), slots));
+        }
         Ok(())
     }
 
-    /// The C `main` the operating system starts: it starts the runtime, runs `proc.main` (D4), and ends.
-    fn define_entry(&mut self, main: usize) -> Result<(), InternalError> {
+    /// Writes the table of every safepoint into the program, for PlainGC to find its roots (D69).
+    fn define_stack_map_table(&mut self) -> Result<DataId, InternalError> {
+        let word = |value: u64| value.to_ne_bytes();
+        let mut bytes = Vec::new();
+        bytes.extend(word(STACK_MAP_TABLE_VERSION));
+        bytes.extend(word(self.safepoints.len() as u64));
+        let mut description = DataDescription::new();
+        let mut addresses = Vec::new();
+        for (procedure, return_offset, frame_size, slots) in &self.safepoints {
+            // The procedure's address is filled in when the program is linked.
+            addresses.push((bytes.len(), *procedure));
+            bytes.extend(word(0));
+            bytes.extend(word(*return_offset));
+            bytes.extend(word(*frame_size));
+            bytes.extend(word(slots.len() as u64));
+            for slot in slots {
+                bytes.extend(word(*slot));
+            }
+        }
+        for (offset, procedure) in addresses {
+            let reference = self
+                .module
+                .declare_func_in_data(procedure, &mut description);
+            let offset = u32::try_from(offset)
+                .map_err(|_| InternalError::new("the stack map table is too big"))?;
+            description.write_function_addr(offset, reference);
+        }
+        description.set_align(8);
+        description.define(bytes.into_boxed_slice());
+        let id = self
+            .module
+            .declare_data("plainly_stack_maps", Linkage::Local, false, false)
+            .map_err(|error| failed("declaring the stack map table", error))?;
+        self.module
+            .define_data(id, &description)
+            .map_err(|error| failed("defining the stack map table", error))?;
+        Ok(id)
+    }
+
+    /// The C `main` the operating system starts: it starts the runtime, with the stack map table and its own frame
+    /// pointer, where PlainGC's walk for roots stops; then runs `proc.main` (D4), and ends.
+    fn define_entry(&mut self, main: usize, table: DataId) -> Result<(), InternalError> {
         let mut signature = self.module.make_signature();
         signature.params.push(AbiParam::new(types::I32));
         signature.params.push(AbiParam::new(self.pointer));
@@ -241,7 +305,14 @@ impl Generator {
             let block = builder.create_block();
             builder.append_block_params_for_function_params(block);
             builder.switch_to_block(block);
-            for function in [self.runtime.start, self.procedures[main], self.runtime.end] {
+            let table = self.module.declare_data_in_func(table, builder.func);
+            let table = builder.ins().symbol_value(self.pointer, table);
+            let frame = builder.ins().get_frame_pointer(self.pointer);
+            let start = self
+                .module
+                .declare_func_in_func(self.runtime.start, builder.func);
+            builder.ins().call(start, &[table, frame]);
+            for function in [self.procedures[main], self.runtime.end] {
                 let reference = self.module.declare_func_in_func(function, builder.func);
                 builder.ins().call(reference, &[]);
             }
@@ -269,8 +340,13 @@ impl Emitter<'_, '_> {
     fn emit_procedure(&mut self, procedure: &IrProcedure) -> Result<(), InternalError> {
         for &local_type in &procedure.locals {
             let cranelift_type = self.generator.cranelift_type(local_type);
-            self.variables
-                .push(self.builder.declare_var(cranelift_type));
+            let variable = self.builder.declare_var(cranelift_type);
+            if local_type == IrType::Text {
+                // A reference: Cranelift keeps it in a stack slot across every call, for PlainGC (D69).
+                // trace: D69
+                self.builder.declare_var_needs_stack_map(variable);
+            }
+            self.variables.push(variable);
         }
         for _ in &procedure.blocks {
             self.blocks.push(self.builder.create_block());
