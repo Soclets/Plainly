@@ -405,6 +405,7 @@ pub unsafe extern "C" fn plainly_overflow(
             ("when", when),
             (
                 "why",
+                // trace: D92
                 "a `Whole` holds whole numbers from -9223372036854775808 to 9223372036854775807."
                     .to_string(),
             ),

@@ -95,6 +95,7 @@ pub fn check_program(
                 messages.push(
                     Message::refused(procedure.header_place, "this program has two `proc.main`s")
                         .because("the first is here", first.header_place)
+                        // trace: D92
                         .why("a program has exactly one `proc.main`, where it starts."),
                 );
             } else {
@@ -131,7 +132,8 @@ pub fn check_program(
                     format!("there's already a procedure named `{}`", procedure.name.text),
                 )
                 .because("it's declared here", procedures[first].name.place)
-                .why("every name in a program shares one space, so two procedures can't have one name."),
+                // trace: D92
+                .why("every procedure in a program needs its own name, since a call has to know which one it means."),
             );
         } else {
             by_name.insert(procedure.name.text.clone(), id);
@@ -150,6 +152,7 @@ pub fn check_program(
                 },
                 "this program has no `proc.main`",
             )
+            // trace: D92
             .why("a program starts with `proc.main`."),
         );
         return None;
@@ -457,10 +460,12 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 )
             };
             self.messages
+                // trace: D92
                 .push(message.why("a call writes the procedure's name and `( )`."));
         } else {
             self.messages.push(
                 Message::refused(place, format!("there's no variable named `{name}` here"))
+                    // trace: D92
                     .why("a variable is declared with `let` or `var` before it's used."),
             );
         }
@@ -797,6 +802,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                 Some(edit) => Message::refused_with_fix(place, edit)
                     .why("a number becomes text only where `be.Text` says so."),
                 None => Message::refused(place, what)
+                    // trace: D92
                     .why("a value's type has to match where it's used."),
             };
             self.messages.push(message);
@@ -1296,6 +1302,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                         callee.place,
                         format!("there's no procedure named `{}`", callee.written()),
                     )
+                    // trace: D92
                     .why("a call names a procedure the program or the library has."),
                 );
                 self.check_arguments_alone(slid, arguments);
@@ -1325,9 +1332,11 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                     callee.place,
                     format!("`{name}` is a variable, not a procedure"),
                 )
+                // trace: D92
                 .why("only a procedure can be called.")
             } else {
                 Message::refused(callee.place, format!("there's no procedure named `{name}`"))
+                    // trace: D92
                     .why("a call names a procedure the program or the library has.")
             };
             self.messages.push(message);
@@ -1758,6 +1767,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
         let [argument] = arguments else {
             self.messages.push(
                 Message::refused(place, "`.fmt` takes one piece of text")
+                    // trace: D92
                     .why("`.fmt` fills in the braces of the text it's given."),
             );
             self.check_arguments_alone(None, arguments);
@@ -1858,6 +1868,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                                 brace_place,
                                 format!("there's no variable named `{inside}` here"),
                             )
+                            // trace: D92
                             .why("braces in `.fmt` text hold a variable's name, checked at compile time.")
                         };
                         self.messages.push(message);
@@ -1869,6 +1880,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
             {
                 self.messages.push(
                     Message::refused(brace_place, "braces in `.fmt` text hold only a variable's name")
+                        // trace: D92
                         .why("text never hides a calculation or a call; work it out into a variable first."),
                 );
                 refused = true;

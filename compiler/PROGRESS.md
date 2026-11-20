@@ -128,6 +128,22 @@ type (D23); the four `labels` messages (D25); `-` on something that isn't a numb
 `show_msg.same_line.fmt` (D31); both parameter forms (D61); `&` next to maths (D72). Each is marked `// trace: D89`.
 "But" is used the same way in the drafts still waiting.
 
+**Approved in D92:** the `.fmt` messages (D29); two `proc.main`s, two procedures with one name, and no `proc.main`
+(D64); an unknown variable or procedure, a procedure without `( )`, a variable called, a value or argument of the
+wrong type; the parser's three messages; overflow at runtime (D46); `internal error:`, `can't read:` and the missing
+mode. Each is marked `// trace: D92`.
+
+**Still waiting for wording:**
+- two parameters with one name; a narrowing written twice; an unknown narrowing of `show_msg` or `be.Text`; anything
+  after an `if`'s `else:` part but `end if`;
+- D81's three: two comparisons in a row, an operator after a slide's step, `??` not after a call;
+- the `because:` on a knock-on error (D83): "it follows from the error at line N column M";
+- `internal error:`'s first line, "PlainCompiler itself went wrong, not your program";
+- the other command mistakes: no command, `x` isn't a command, no file, two files, two modes, `check` needs no mode,
+  `x` isn't a mode; and `can't read:` with "a Plainly file's name ends in `.plainly`" or "it isn't UTF-8 text";
+- every `NotBuiltYet` and `NotDesignedYet` message's `what:`, at compile time and at runtime (D56 leaves their wording
+  open), and where a runtime message starts when the program's line is still open (Q23).
+
 ### Refusals
 
 | Decision | Refused | `fix:` or `what:` | `why:` |

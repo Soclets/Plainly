@@ -209,16 +209,19 @@ impl<'a> Parser<'a> {
         let message = if token.kind == TokenKind::EndOfFile {
             Message::refused(
                 token.place,
+                // trace: D92
                 format!("the file ends where {expected} should be"),
             )
         } else if token.first_on_line {
             Message::refused(
                 self.place_after(self.previous()),
+                // trace: D92
                 format!("the line ends where {expected} should be"),
             )
         } else {
             Message::refused(
                 token.place,
+                // trace: D92
                 format!("{expected} should be here, not `{}`", token.written()),
             )
         };

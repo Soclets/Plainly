@@ -107,7 +107,8 @@ fn run_command(arguments: &[String]) -> u8 {
         (Action::Check, None) => {}
         (Action::Check, Some(_)) => return command_mistake("`check` needs no mode"),
         (_, None) => {
-            return command_mistake("`run` and `compile` need a mode: `--working` or `--final`");
+            // trace: D92
+            return command_mistake("run and compile need a mode: --working or --final");
         }
         (_, Some("--working")) => {}
         (_, Some("--final")) => {
@@ -134,6 +135,7 @@ fn run_command(arguments: &[String]) -> u8 {
 /// Reads the program: every `.plainly` file in the named file's folder (D35, D64).
 fn read_program(file: &Path) -> Result<Vec<SourceFile>, u8> {
     let unreadable = |path: &Path, what: String| {
+        // trace: D92
         eprint!(
             "can't read: {}\n{}",
             path.display(),
