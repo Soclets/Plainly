@@ -241,3 +241,5 @@ uses a placeholder until it's decided.
 - **Q28. Standard chapter 7** still lists maths order under "Not decided", though D72 decides it.
 - **Q29. `??` after a slide's step,** as in `typed |> be.Whole ?? 0`. D81 gives `??` to the call right before it,
   and a step isn't written as a call. `NotDesignedYet`.
+- **Q30. Where the labels' text starts in a message:** always after the width of `because:`, as now, or after the
+  widest label in that message. D84's example shows two spaces after `fix:`, which is illustrative only.
