@@ -48,6 +48,14 @@ Callers can't tell it apart from any other procedure. `extern` is short for exte
 
 **Not decided:** how values cross into Rust; what an extern procedure does when it fails.
 
+## Families
+
+**Not decided.** Tankun is refining families in Cyborg first (2026-11-20), since they're one of their biggest ideas.
+Discussed so far, and not decided: a family as a word and its narrowings declared together, like `show_msg` and
+`show_msg.same_line`, in a `fam.kind` block holding only that kind (`fam.proc`, `fam.handler`), and not the
+module-like grouping Cyborg's families grew into. Once families are in, the `msg` family turned down in D20
+(`msg.show`, `msg.ask`) is worth reopening, since it was judged as a narrowing, not as a family.
+
 ## Calls
 
 A call writes the procedure's name and `( )`, with its arguments inside, even when there are none (D3, D4):
