@@ -20,10 +20,12 @@ Each test is a folder named after its main decision, as in `d16_if/`:
 A test passes when, run as
 
 ```
-plainly run tests/NAME/program.plainly --working < tests/NAME/input.txt
+cd tests/NAME
+plainly run program.plainly --working < input.txt
 ```
 
-(with no input when there's no `input.txt`), its standard output, standard error and exit status match the expected
+from inside the test's own folder, so a message names the file as `program.plainly` (with no input when there's no
+`input.txt`), its standard output, standard error and exit status match the expected
 files exactly. PlainCompiler's own messages go to standard error. Once PlainOracle exists, every test runs on
 `plainly oracle` too, with the same expected files (D50).
 

@@ -1,0 +1,5 @@
+refused: program.plainly:2:19, line 2 column 19
+ 2 |     show_msg("Hi")
+   |                   ^
+ fix:     `    show_msg("Hi");`
+ why:     every statement ends with `;`.

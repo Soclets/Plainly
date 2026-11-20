@@ -1,0 +1,5 @@
+refused: program.plainly:2:14, line 2 column 14
+ 2 |     show_msg('hi');
+   |              ^^^^
+ fix:     `    show_msg("hi");`
+ why:     text is written in double quotes, never single ones like `'hi'`.

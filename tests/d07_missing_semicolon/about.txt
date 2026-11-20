@@ -1,0 +1,1 @@
+A missing ; is refused, with the whole corrected line as the fix. D7, D54, D84, D85, D86; standard ch. 2 and 11.

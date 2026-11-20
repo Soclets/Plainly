@@ -1,0 +1,1 @@
+Text in single quotes is refused, with double quotes as the fix. D21, D54, D84, D85, D86; standard ch. 7 and 11.

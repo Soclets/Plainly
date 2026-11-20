@@ -1,0 +1,5 @@
+refused: program.plainly:2:1, line 2 column 1
+ 2 |   show_msg("Hi");
+   | ^^
+ fix:     `    show_msg("Hi");`
+ why:     each level of indentation is 4 spaces, and tabs aren't used.
