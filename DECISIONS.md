@@ -2113,8 +2113,8 @@ orders between runs, and two workers each waiting on the other freeze, as in eve
 **Weighed.**
 - Shared memory with locks (A), as Java, C#, Python and C++ have. It covers every gap above, and pairs well with a
   ZGC-style collector, but a forgotten lock gives data races, bugs that differ between runs and vanish when looked for.
-  Tankun weighed it in a 60-minute class: half the hour would go on a score that's "sometimes wrong", and a program
-  passing for the student could fail for the teacher.
+  Played through a 60-minute class, as Tankun asked: half the hour would go on a score that's sometimes wrong, and a
+  program passing for the student could fail for the teacher.
 - Ownership, as Cyborg and Rust prevent races with. It makes every program, threaded or not, follow borrowing rules:
   "Ah, Ownership is too much to learn" (Tankun). A garbage collector can replace ownership's memory job, but not its
   race job: Go and Java have collectors and data races.
