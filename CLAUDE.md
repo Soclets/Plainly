@@ -108,8 +108,7 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
    the design session first. (From Cyborg's rule 18.)
-5. **Keep up with decisions.** Pull and read any new entries in DECISIONS.md after every working step, and after every
-   pull. If a new decision redesigns the part you're building right now, like a new syntax for it, stop your turn
+5. **Keep up with decisions.** After every working step, pull, and read any new entries in DECISIONS.md. If a new decision redesigns the part you're building right now, like a new syntax for it, stop your turn
    straight away, even halfway through, without finishing or committing the old version, and say what you stopped on.
    Carry on once Tankun or the design session says how. If the change is small, like `end if` becoming `end`, don't
    stop: carry on, but with the new decision, changing what you'd already written to match. Any other small decision in
@@ -117,6 +116,9 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    how a whole part works, gets built after you finish what you're doing; ask the design session if it's unclear. The
    design session messages only for what's urgent, like a decision that changes what a session is building right now,
    for what needs explaining, or to wake an idle session. (From Cyborg's rule 16, with Tankun's change for redesigns.)
+6. **Cores.** On Tankun's 10-core Mac: the design session 1, the compiler session 3, and the oracle session 3 once it
+   exists. That covers builds and tests, as in `cargo build -j 3`, `CARGO_BUILD_JOBS=3` and
+   `cargo test -- --test-threads=3`. (From Cyborg's rule 9.)
 
 ## Prompting
 
