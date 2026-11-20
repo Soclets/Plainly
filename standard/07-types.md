@@ -28,7 +28,22 @@ let back: Whole = -speed;
 let total: Whole = price * count;
 ```
 
-**Not decided:** going past the range; dividing; maths order; how whole numbers are written; other
+### Dividing
+
+```
+let half: Whole = 8 / 2;            // 4
+let each: Whole = 7 div.floor 2;    // 3, and -7 div.floor 2 is -4
+let each: Whole = 7 div.trunc 2;    // 3, and -7 div.trunc 2 is -3
+```
+
+- **`/` divides exactly.** A remainder is a failed check that stops the program in both modes (D46, D70).
+- **`div.floor` rounds down to the nearest whole number below;** **`div.trunc` cuts the fraction off,** toward zero
+  (D70).
+- **A bare `div` is refused** (D70).
+
+`div` is short for divide and `trunc` for truncate (D2).
+
+**Not decided:** remainders; dividing by zero; going past the range; maths order; how whole numbers are written; other
 number types.
 
 ## `Bool`

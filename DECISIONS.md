@@ -2159,3 +2159,42 @@ threads. The cost lands on PlainCompiler's load barriers and on Rust code holdin
 
 **Tankun's words.** "Does ZGC-style GC help?" and "ZGC-style GC + A seems very fun" (D67), then, asked "ZGC-style
 PlainGC, replacing D48's Go-style?", the owner chose: "yea".
+
+## D70. `/` divides exactly; `div.floor` and `div.trunc` round
+
+2026-11-20.
+
+**Chosen.**
+
+```
+let half: Whole = 8 / 2;            // 4
+let each: Whole = 7 div.floor 2;    // 3, and -7 div.floor 2 is -4
+let each: Whole = 7 div.trunc 2;    // 3, and -7 div.trunc 2 is -3
+```
+
+- **`/` divides exactly,** with a space on each side, pairing with `*` (D59). A remainder, as in `7 / 2`, is a failed
+  check, like overflow: it stops the program in both build modes (D46), with a message pointing to `div.floor` and
+  `div.trunc`. `/` is for when the numbers divide evenly, so a remainder is a bug.
+- **`div.floor` rounds down to the nearest whole number below,** so -3.5 becomes -4. Python's `//`.
+- **`div.trunc` cuts the fraction off,** toward zero, so -3.5 becomes -3. What C, Java and Rust's `/` do. `trunc` is
+  short for truncate, and `div` for divide (D2).
+- **A bare `div` is refused:** it always says how it rounds.
+
+(Remainders, dividing by zero, dividing floats, and the messages' wording aren't decided yet.)
+
+**Weighed.**
+- `div.exact`, a failure the program must handle, as in Plainly v1 (its D85). As `/`, every exact division would need
+  `?` or `??`, even `8 / 2`.
+- `/` with one default rounding, as Python's `//` or C's `/`. The rounding of negatives is then a surprise to whoever
+  expected the other.
+- `div.down` and `div.toward_zero`, Plainly v1's words. `.trunc` names the operation in the real word (Tankun asked for it); and "down" gives only a direction, where "floor" says it stops at the nearest whole number
+  (Tankun pointed this out).
+
+**Why this won.** `/` reads like maths, where `8 / 2` is exactly 4, and keeps the most common operator free of
+failure handling. Rounding division names how it rounds, in the words learners meet everywhere else; floor matters in
+games, where positions divided into tiles go wrong with truncation as soon as they're negative.
+
+**Tankun's words.** "Let's design div", "What about `/` is exact only", "What is `div.down` and `div.toward_zero`. Is
+that `.trunc`? If so, just say it like that", "What does floor do?", "Ah, so we could use `.down` for floor", "Why is
+it called floor?", "`.down` doesn't sound like it says there's a limit, though", then, asked "`/` exact with a
+remainder as a failed check, and `div.floor` and `div.trunc` for rounding?", the owner chose: "yea".

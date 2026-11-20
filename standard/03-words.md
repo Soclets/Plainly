@@ -29,6 +29,7 @@ message".
 | `returns` | | D37 |
 | `return` | | D57 |
 | `fam` | family | D2, D41 |
+| `div`, `.floor`, `.trunc` | divide, truncate | D2, D70 |
 | `handler` | | D42 |
 | `include` | | D43 |
 | `copy`, `share` | | D49 |
@@ -75,6 +76,7 @@ own (D60).
 | `\|>` | passes a value along a slide | D5 |
 | `+`, `-` | add and subtract, with a space on each side; a `-` with no space after it negates | D27 |
 | `*` | multiplies, with a space on each side | D59 |
+| `/` | divides exactly, with a space on each side | D70 |
 | `&` | joins text | D28 |
 | `?` | passes a failure up | D23 |
 | `??` | handles a failure on one line | D23 |
