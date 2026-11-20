@@ -45,6 +45,17 @@ why this one won, and quotes Tankun's own words, such as
 one it replaces. The "why" matters most. Log a decision as soon as it's made,
 before moving on to the next question.
 
+Tankun's words are quoted whole and exactly, typos included, never in pieces
+or trimmed. When a message can't be quoted, write a marker without quotes
+instead: *too long* (over 300 characters in DECISIONS.md, or over 60 in a
+commit subject) or *has code* (a code block, or in a commit subject any
+backticks). Pick by a check, never by feel: write the whole message to a file
+(shell quoting breaks on apostrophes) and run
+
+```
+python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has code" if "```" in m else "too long" if len(m)>300 else "quote", "| commit:", "has code" if "`" in m else "too long" if len(m)>60 else "quote")' message.txt
+```
+
 ## Git
 
 - Branch `main`; remote `Soclets/Plainly` (public).
