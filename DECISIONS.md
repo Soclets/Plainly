@@ -299,3 +299,30 @@ Plainly v1's D50 and Cyborg's D430, completed. Long guard chains become flat `el
 
 **Tankun's words.** Tankun spotted D8's first example breaking this: has code. Asked "After an `if` where any way leaves, nothing follows `end if`?",
 the owner chose: "yea".
+
+## D10. Bodies are indented 4 spaces per level, and anything else is refused
+
+2026-11-20.
+
+**Chosen.** A block's body is indented one level inside its opening line and its closer, and a block inside a body one
+level further. One level is 4 spaces. Any other indentation, a tab included, is refused while building, with the whole
+corrected line as the fix.
+
+```
+proc.main:
+    show_msg("Hello, World!");
+end proc.main
+```
+
+**Weighed.**
+- A formatter, `plainly format`, rewriting files as Go's `gofmt` does, with the checker not caring. A beginner has
+  to know to run it.
+- Free indentation. A body's lines drift, so code can read wrong while running right.
+- Tabs, or a width of the writer's choosing. Programs would look different from one another.
+
+**Why this won.** Since D8 ends every block with `end`, indentation never decides where a block ends, so it's only
+about looks, and "built for reading" wants every program to look the same. Python gets that by making indentation
+meaningful; Plainly gets it by checking it. A refusal with the corrected line teaches it the first time. This is
+Plainly v1's D70 and D74.
+
+**Tankun's words.** Asked "4 spaces per level, required, tabs refused?", the owner chose: "yea".
