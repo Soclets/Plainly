@@ -4,7 +4,7 @@
 //!
 //! Every message's wording here is a draft (D54), listed in `compiler/PROGRESS.md`.
 
-use std::io::{BufRead, Write};
+use std::io::{BufRead, IsTerminal, Write};
 
 use plain_gc::AllocationError;
 use plain_gc::handles::{Call, Handle, Text};
@@ -329,6 +329,11 @@ pub unsafe extern "C" fn plainly_ask(
     }
     // A last line with no Enter after it still counts as an answer (D96).
     if line.ends_with(b"\n") {
+        // Typed at a terminal, the player's Enter has already ended the line on screen (D106).
+        // trace: D106
+        if std::io::stdin().is_terminal() {
+            LINE_OPEN.store(false, Ordering::SeqCst);
+        }
         line.pop();
         if line.ends_with(b"\r") {
             line.pop();

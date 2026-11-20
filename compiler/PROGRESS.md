@@ -292,7 +292,9 @@ built, with its decisions) and the `NotDesignedYet` pattern ("X isn't decided ye
 narrowings ("`random` has no narrowings.", "`be.Whole` can't be narrowed further."). Each is marked
 `// trace: D103` where it's made.
 
-**Decided in D104:** a runtime message first ends the program's open output line, if there is one (Q23).
+**Decided in D104 and D106:** a runtime message first ends the program's open output line, if there is one (Q23);
+after `ask`, the line counts as ended when the answer was typed at a terminal, and as still open when it came from a
+file or a pipe.
 
 **Still waiting for wording:** nothing.
 
