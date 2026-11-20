@@ -23,3 +23,4 @@ happened; this standard says what the rules are today (D12).
 4. [Procedures](04-procedures.md): definitions, calls, `proc.main`, slides and `show_msg`
 5. [Control flow](05-control-flow.md): what may follow an `if`
 6. [Variables](06-variables.md): `let` and `var`
+7. [Types](07-types.md): `Whole`

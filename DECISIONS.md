@@ -450,3 +450,29 @@ so the two can't be confused. It's how Python and most languages write a change,
 finds every one. Keeping `=` out of conditions catches the `=`-for-`==` typo.
 
 **Tankun's words.** Asked "A bare `=` changes a `var`, and `change` goes?", the owner chose: "yea".
+
+## D15. `Whole` is a 64-bit signed whole number, with no other name
+
+2026-11-20.
+
+**Chosen.** `Whole` holds a whole number from -9223372036854775808 to 9223372036854775807, negatives included: a
+64-bit signed integer, Rust's `i64`. It has no second name: there's no `i64` meaning the same thing.
+
+```
+let $secret: Whole = 42;
+```
+
+Other sizes, if they come, are different types with names of their own, not second names for `Whole`.
+
+(Going past the range, and how whole numbers are written, aren't decided yet.)
+
+**Weighed.**
+- `Whole` and `i64` both, as in Plainly v1 (its D65). Two spellings for one type, against D2.
+- 32 bits, as C's and Java's `int`. It runs out at about 2.1 billion, which a score or a timer in milliseconds can
+  reach.
+- Unlimited size, as Python's `int`. Every calculation gets slower and needs memory, for a range a game never uses.
+
+**Why this won.** "Whole number" is the school-maths term, so the name teaches itself. 64 bits is far more than a game
+needs, and matches Rust, so anything crossing over to Rust keeps its value. One name per type follows D2.
+
+**Tankun's words.** Asked "`Whole`, a 64-bit signed whole number, with no other name?", the owner chose: "yea".
