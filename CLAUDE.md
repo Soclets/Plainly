@@ -136,6 +136,18 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
     collect-often mode. A new test from the design session may fail until what it tests is built. Output matches the
     expected files byte for byte, and a building session never edits an expected file: a test that looks wrong goes to
     the design session (D12). (From Cyborg's rule 5.)
+12. **The oracle stays apart.** The compiler session reads the tests, never PlainOracle's source, and the oracle session
+    never reads PlainCompiler's. If one copied the other, their bugs would agree, and comparing them would prove
+    nothing.
+    A random program generator, in `check/`, is written from `standard/`, never from either implementation's source,
+    so what counts as a valid program comes from the standard, not from one implementation's reading of it. It builds
+    programs from a syntax tree with one printer, and tracks what it doesn't generate, since all passing doesn't mean
+    covered. A live comparison runs PlainOracle and PlainCompiler as black boxes on every generated program and every
+    test, in every build mode and in collect-often mode, and shrinks any difference to the smallest program that still
+    shows it. A difference is a bug in one of them, and the standard decides which, or DECISIONS.md where the standard
+    is silent; if both are silent, it's a question for Tankun. Findings about PlainCompiler go to the compiler session
+    without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
+    source, can write a second, independent generator. (From Cyborg's rule 3.)
 
 ## Prompting
 
