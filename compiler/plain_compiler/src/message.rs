@@ -129,7 +129,9 @@ impl Message {
         );
         text.push_str(&source_snippet(sources, self.place, number_width));
         if let Some(edit) = &self.edit {
-            text.push_str(&labelled_line("fix", &fixed_line(sources, edit)));
+            // trace: D84
+            let fixed = format!("`{}`", fixed_line(sources, edit));
+            text.push_str(&labelled_line("fix", &fixed));
         } else if let Some(what) = &self.what {
             text.push_str(&labelled_line("what", what));
         }

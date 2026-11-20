@@ -91,7 +91,7 @@ header (`fails`), `?`, `?? ignore`, `?? crash`, `otherwise:`, `case`, `instead`,
 
 Every wording below is a draft. All use D54's layout: the kind, the place twice, the source line with `^` under the
 part in question, then `fix:` or `what:`, `when:`, `because:` and `why:` where known. Every `fix:` shows the whole
-corrected line (Q18). A sample:
+corrected line, in backticks (D84). A sample:
 
 ```
 refused: game.plainly:7:5, line 7 column 5
@@ -224,8 +224,7 @@ uses a placeholder until it's decided.
 - **Q17. What the command's file means, and where `build` puts its file.** D64 makes a program every `.plainly` file
   in its folder, so `plainly run games/guess.plainly` compiles every `.plainly` file in `games/`. `plainly build`
   writes the executable into the current folder, named after the file (`guess`).
-- **Q18. What `fix:` shows.** Every fix shows the whole corrected line, as D10 says for indentation; D31's example
-  shows only `show_msg.fmt.same_line`.
+- **Q18. Answered by D84:** `fix:` shows the whole corrected line, in backticks so its indentation shows.
 - **Q19. Answered by D83:** each knock-on stays a message of its own, with a `because:` pointing back to the first
   error. The `because:` line's wording comes with the wording batches.
 - **Q20. Answered:** fixed in standard chapter 11.
