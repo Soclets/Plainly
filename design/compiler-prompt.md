@@ -1,9 +1,9 @@
 # Prompt for PlainCompiler's first session
 
-Paste everything below the line into a new Claude Code session opened in `/Users/ts/Plainly v2`.
+Copy the block below (GitHub shows a copy button on it) and paste it into a new Claude Code session opened in
+`/Users/ts/Plainly v2`.
 
----
-
+````text
 <context>
 You're building PlainCompiler, the compiler for Plainly, a programming language that Tankun is designing with a
 separate Claude session, the design session. Plainly is "static Python, built for reading", aimed first at offline
@@ -133,3 +133,4 @@ change or revert files outside `compiler/`. If a push is refused because the des
 4. Start with hello world, end to end: parse it, check it, lower it, compile it with Cranelift, link it with the
    runtime, run it. Then widen the subset one test at a time.
 </first_steps>
+````
