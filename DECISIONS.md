@@ -1425,3 +1425,19 @@ check means a shipped game is exactly as safe as the one that was tested. Tankun
 **Tankun's words.** In D45's answer (quoted there), Tankun proposed `--Working` and `--Final`. Asked "Two modes,
 `Working` and `Final`, where `Final` never drops a check, with no default and lowercase flags?", the owner chose: "yea,
 lowercase in docs too?"
+
+## D47. Build modes are written lowercase everywhere
+
+2026-11-20.
+
+**Chosen.** The modes are `working` and `final` everywhere: on the command line, in the docs and in messages, as in
+"build in `working` mode" and "build with `--working` to find the line".
+
+**Weighed.**
+- `Working` and `Final`, capitalised in docs and messages, as Plainly v1 wrote them. Each mode would have two spellings,
+  the flag's and the name's.
+
+**Why this won.** One spelling per thing (D2), and a reader sees exactly what they type. Tankun raised it.
+
+**Tankun's words.** "yea, lowercase in docs too?" (in D46's answer), then, asked "Modes written lowercase everywhere,
+docs and messages included?", the owner chose: "yea".

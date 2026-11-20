@@ -21,4 +21,6 @@ Every build names one of two modes, `--working` or `--final`. There's no default
 In final mode, checks the optimizer proves can never fail are removed, and the NaN check after every float operation
 becomes the CPU's own flags, read where a value leaves a procedure, so its message names the procedure (D46).
 
-**Not decided:** how the modes are written in docs and messages; each check's message.
+The modes are written lowercase everywhere, docs and messages included: `working` and `final` (D47).
+
+**Not decided:** each check's message.
