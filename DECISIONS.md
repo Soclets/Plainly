@@ -2914,3 +2914,38 @@ means. The compiler session asked (its Q12).
 
 **Tankun's words.** Asked "Names in use can't be declared again, and a variable can't take a procedure's name?" with
 `shadow` as the alternative, the owner chose: "yea"; then, asked to confirm it was the first, the owner chose: "yea".
+
+## D95. Which text `be.Whole` reads
+
+2026-11-20.
+
+**Chosen.** `be.Whole` is forgiving about what players really type, and strict about everything else:
+
+| Text | Result |
+|---|---|
+| `42`, ` 42`, `42 ` | 42: spaces around the number are ignored |
+| `-7` | -7 |
+| `+5` | 5 |
+| `007` | 7: leading zeros are fine |
+| `-0` | 0 |
+| `abc`, empty, `4 2`, `4.5`, `1,000`, `1_000` | fails |
+| a number too big or too small for a `Whole` | fails |
+
+A failure is handled with `?`, `??` or `otherwise:` (D23), like any other. A number that doesn't fit is bad input, not a
+bug in the program, so it fails rather than stopping as a failed check.
+
+(The failure's name isn't decided yet.)
+
+**Weighed.**
+- Only digits with an optional `-`, as the compiler did until now. A player typing ` 42` stopped the guessing game.
+- Commas between groups of three digits, `1,000` as a thousand, as English and Thai write it. In much of Europe and
+  South America `1,000` means one, so it was left out.
+- No `+`. Harmless and unambiguous to accept, and Python's `int("+5")` does too; refusing it would only annoy someone
+  who's right.
+- A too-big number as a failed check at runtime (D46). It comes from input, not a mistake in the program.
+
+**Why this won.** `be.Whole` is mostly used on what a player typed (D20), so a stray space or a leading zero shouldn't
+count as "not a number". The compiler session found the gap (its Q13).
+
+**Tankun's words.** "Isn't `1,000` 1000?", "nvm then", "Why is `+` and `-` allowed?", then, asked "`be.Whole` accepting
+spaces around the number, a `+` or `-`, and leading zeros, with everything else failing?", the owner chose: "yea".
