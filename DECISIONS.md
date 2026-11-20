@@ -1846,3 +1846,29 @@ is one whole symbol doing two jobs.
 symbol rule by whole symbols keeps it honest about `=` and `!=`.
 
 **Tankun's words.** Decided with D58, in the same answer (quoted there).
+
+## D60. A symbol has one job in any one place
+
+2026-11-20.
+
+**Chosen.** A symbol may do different jobs in different places, but only one job in any one place:
+- `-` between two values subtracts, and right before one negates (D27);
+- `<` and `>` between two values compare (D17), and right after a type's name fill it in (D3);
+- `*` between two values multiplies (D59), and right after a dot marks a handler that can jump (D42).
+
+Two jobs for one symbol in the same place would be refused as a design. A longer symbol, like `==`, `!=`, `|>` or
+`??`, is a symbol of its own, so the pieces inside it don't count.
+
+This replaces D59's wording of the rule ("each symbol, read as a whole, has one job"), which `-` and `< >` already
+broke. D59's choice of `*` stands.
+
+**Weighed.**
+- "One job unless spacing or position tells the jobs apart at a glance", as the design claude first put it. It says
+  the same thing more loosely; Tankun's version names the real line: the place.
+- One job per symbol everywhere, as first assumed. `-` and `< >` already break it, and so would `.*`.
+
+**Why this won.** What a symbol does is decided by where it's written, never guessed from the meaning around it, just
+as a reader learns `-5` and `a - b` apart without thinking. Tankun put it this way.
+
+**Tankun's words.** "So, what should the loosen rule be?", "No, I meant the symbol", "They aren't in the same place",
+then, asked "Record it: a symbol has one job in any one place?", the owner chose: "yea".

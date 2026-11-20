@@ -60,8 +60,9 @@ Each kind of bracket has one job (D3):
 
 ## Symbols
 
-Each symbol, read as a whole, has one job. A longer symbol counts as its own, so `!=` and `.*` are different symbols
-from `=` and `*` (D59).
+A symbol has one job in any one place: `-` between two values subtracts and right before one negates, and `*` between
+two values multiplies and right after a dot marks a handler. A longer symbol, like `!=` or `|>`, is a symbol of its
+own (D60).
 
 | Symbol | Meaning | Decided in |
 |---|---|---|
