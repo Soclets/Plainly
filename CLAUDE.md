@@ -96,7 +96,10 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
    so, or before anything hard to undo, which still needs Tankun's OK. This is a rule, not just a prompt, because a
    session's first prompt doesn't survive compaction, and this file does. (From Cyborg's rule 17.)
 3. **Style and lints.** `rustfmt`, `clippy`, and comments that say why, not what. Every crate has
-   `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` and `#![warn(clippy::pedantic)]`. Every crate
+   `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` and `#![warn(clippy::pedantic)]`, and denies
+   `clippy::indexing_slicing`, `clippy::todo`, `clippy::unimplemented`, `clippy::unreachable`,
+   `clippy::undocumented_unsafe_blocks` and `clippy::dbg_macro`, so no hidden panic is left and every `unsafe` block's
+   `// SAFETY:` comment is checked. `clippy::nursery` stays off, for its false alarms. Every crate
    also has `#![forbid(unsafe_code)]`, except the runtime, PlainGC and the `plainly` crate's glue (D108), where each
    `unsafe` block has a comment saying why it's safe. A bad program never crashes PlainCompiler: if PlainCompiler
    itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle, in C, builds with Clang,
