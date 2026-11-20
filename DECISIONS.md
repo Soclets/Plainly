@@ -2978,3 +2978,36 @@ it as "I'm done". It keeps `ask` simple for every program. The compiler session 
 **Tankun's words.** "Doesn't  Control + Z mean undo?", "Does it mean end program?", "Isn't Control + C copy?", "any
 danger?", "handle?", "Why not just `?? save_game()`?", then, asked "When input runs out, `ask` ends the program
 quietly with status 0, and a last line without Enter still counts?", the owner chose: "yea".
+
+## D97. Blank lines are allowed anywhere, at most one in a row
+
+2026-11-20.
+
+**Chosen.** A blank line may separate the parts of a procedure, or procedures from each other, anywhere in a file. Two
+or more blank lines in a row are refused, with the fix closing them up to one.
+
+```
+proc.main:
+    let secret: Whole = random(from: 1, to: 100);
+    var tries: Whole = 0;
+
+    while tries < 7:
+        ...
+    end while
+end proc.main
+```
+
+where `...` stands for the loop's body.
+
+(Whether a blank line may have spaces on it, and the message's wording, aren't decided yet.)
+
+**Weighed.**
+- Blank lines only between procedures, as the compiler accepted until now. A long procedure can't be split into
+  readable parts.
+- Any number in a row. A run of blank lines says nothing a single one doesn't, and programs would stop looking alike
+  (D10).
+
+**Why this won.** One blank line splits a procedure into parts the way paragraphs split a page, and capping it at one
+keeps every program looking the same. The compiler session asked (its Q7).
+
+**Tankun's words.** Asked "Blank lines allowed anywhere, at most one in a row?", the owner chose: "yea".

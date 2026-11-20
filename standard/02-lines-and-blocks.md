@@ -66,7 +66,9 @@ end comment old_scoring
 
 where `...` stands for the procedure's body.
 
-**Not decided:** blank lines; how a statement's later lines are indented.
+A blank line may separate parts of a procedure, or procedures, anywhere; two or more in a row are refused (D97).
+
+**Not decided:** how a statement's later lines are indented.
 
 ## Files
 
