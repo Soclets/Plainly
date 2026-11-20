@@ -3037,3 +3037,28 @@ the spacing every example uses, and anything else is refused with the corrected 
 Go gets from `gofmt`, built into the checker, with the fix in every refusal. The compiler session asked (its Q8).
 
 **Tankun's words.** Asked "All spacing fixed as above, with anything else refused?", the owner chose: "yea".
+
+## D99. A name is lowercase letters, digits and `_` between words, starting with a letter
+
+2026-11-20.
+
+**Chosen.** A name, of a variable, a procedure, a label or a failure, is made of:
+- lowercase English letters `a` to `z`, digits, and `_` joining words, as in `player2`, `x1` and `hp_max_2`;
+- starting with a letter, so `2player` is refused;
+- with no capitals, so a name is never mistaken for a type, which is capitalised (`Whole`, `List`);
+- with `_` only between words: never at the start or end, nor two in a row (`_x`, `x_`, `hp__max` are refused).
+
+(Letters beyond English, and the messages' wording, aren't decided yet.)
+
+**Weighed.**
+- Only lowercase words joined by `_`, as the compiler accepted until now. Digits are what games need most:
+  `player2`, `x1`.
+- Capitals in names, as in `playerName`. Without `$` (D58), a capitalised name could look like a type.
+- Any letter, as Python allows. Which letters count, and how two spellings of one letter compare, are questions better
+  left until someone needs them; v2 has no Thai (multifinity's notes).
+
+**Why this won.** Names stay easy to read and impossible to confuse with types or numbers. The compiler session asked
+(its Q9).
+
+**Tankun's words.** Asked "Names as lowercase letters, digits and `_` between words, starting with a letter?", the
+owner chose: "yea".

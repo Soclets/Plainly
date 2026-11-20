@@ -48,7 +48,10 @@ it's used. A procedure's name is a plain word too, like `larger` or `roll_dice` 
 A name can't be a keyword: a program using a keyword as a name is refused, and a keyword added later can make an older
 program need a rename (D58).
 
-**Not decided:** which characters a name may hold; how words in a name are joined.
+A name is lowercase English letters `a` to `z`, digits, and `_` between words, starting with a letter: `player2`,
+`hp_max_2`. No capitals, and `_` never at the start or end, nor two in a row (D99).
+
+**Not decided:** letters beyond English.
 
 ## Brackets
 
