@@ -132,6 +132,10 @@ Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyb
     or marks **Not decided**, stops with `NotDesignedYet` (D56), and the question goes to Tankun through the design
     session. Something decided but not built yet stops with `NotBuiltYet`, never `NotDesignedYet`. (From Cyborg's
     rule 4.)
+11. **Tests.** A building session never pushes while a test that passed before now fails, in either mode or in
+    collect-often mode. A new test from the design session may fail until what it tests is built. Output matches the
+    expected files byte for byte, and a building session never edits an expected file: a test that looks wrong goes to
+    the design session (D12). (From Cyborg's rule 5.)
 
 ## Prompting
 
