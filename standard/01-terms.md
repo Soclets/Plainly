@@ -41,6 +41,8 @@ The words this standard uses, each defined before a chapter relies on it.
 
 ## Checking and running
 
+- **Garbage collector:** the part of a running program that frees memory nothing uses any more (chapter 10).
+
 - **While building:** when a program is checked and turned into something that can run, before it runs.
 - **While running:** when the built program runs.
 - **Failure:** something a procedure can give back instead of its result, which every call must deal with (chapter

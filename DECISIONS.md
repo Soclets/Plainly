@@ -1441,3 +1441,42 @@ lowercase in docs too?"
 
 **Tankun's words.** "yea, lowercase in docs too?" (in D46's answer), then, asked "Modes written lowercase everywhere,
 docs and messages included?", the owner chose: "yea".
+
+## D48. Memory is managed by a Go-style garbage collector that never moves objects
+
+2026-11-20.
+
+**Chosen.** Plainly frees memory with a tracing garbage collector in the style of Go's:
+- it marks what's still in use while the program keeps running, so pauses stay well under a millisecond whatever the
+  memory size;
+- it never moves objects, so an `extern.rust` procedure (D36) can hold a plain pointer during a call;
+- it needs only a write barrier, a check when a reference is stored;
+- it groups objects by size, which keeps memory tidy without moving anything;
+- it's precise, finding every reference through the stack maps Cranelift records (D45).
+
+It may be built first as a simple mark-and-sweep with the same never-moving promise, growing into the full design
+without changing any program.
+
+**Weighed.**
+- A simple mark-and-sweep only. Simplest to build, but its pauses grow with memory, which limits Plainly if it grows
+  past terminal games.
+- A moving, generational collector, as Java's and .NET's. Fast, but `extern.rust` code would need to pin objects.
+- Reference counting, Swift-style, with copy-on-write. It frees memory the moment it's unused and appealed as fun to
+  build ("But Swift-style seems fun, though"), but its count updates thread through the whole compiler, and with
+  `share` (D49) it leaks cycles unless the programmer marks links `weak` or a backup cycle collector is added, as
+  Python has. Tankun pointed out that for terminal games its main gains, no pauses and flat memory, are worth little
+  ("Wait, look at our target, CLI games").
+- Hylo's mutable value semantics: nothing is ever shared, so memory needs no runtime bookkeeping. The purest, but a
+  research design, and it rules out `share` entirely.
+- Ownership, as Rust's and Cyborg's. Borrowing rules are wrong for "static Python".
+
+**Why this won.** Tankun asked for "the more flexible kind": Go's design scales from a small terminal game to anything
+bigger, like a GUI package, with the same promises, handles every cycle `share` can make, and keeps Rust code simple
+because nothing moves. This is Plainly v1's D38 (PlainGC). Its cost is size, roughly 5,000 to 12,000 lines of Rust by
+v1's estimate, which the simple first version spreads out.
+
+**Tankun's words.** "How about Swift-style?", "Wait, look at our target, CLI games", "But Swift-style seems fun,
+though. What's share?", "What's Hylo's", "What is share for, though?", "What about RC with `share` and `copy` when
+needed?", "So, what about `share` & `copy` with GC? What kind of GC, though. I would take the more flexible kind",
+then, asked "Go-style GC (non-moving, collecting while the program runs), with `copy` and `share` required when
+assigning a list or record?", the owner chose: "yea".

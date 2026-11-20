@@ -9,6 +9,17 @@ The web playground runs the oracle compiled to WebAssembly (D45).
 
 **Not decided:** the command's name and its parts; the oracle's language.
 
+## Memory
+
+A garbage collector in the style of Go's frees memory (D48):
+- **it marks what's in use while the program keeps running,** so pauses stay well under a millisecond;
+- **it never moves objects,** so an `extern.rust` procedure can hold a plain pointer during a call;
+- **it needs only a write barrier,** a check when a reference is stored;
+- **it groups objects by size;**
+- **it's precise,** finding references through Cranelift's stack maps.
+
+It may first be built as a simple mark-and-sweep with the same never-moving promise (D48).
+
 ## Build modes
 
 Every build names one of two modes, `--working` or `--final`. There's no default (D46).
