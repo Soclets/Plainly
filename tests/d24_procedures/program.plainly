@@ -20,8 +20,8 @@ proc show_if_positive($n: Whole):
 end proc show_if_positive
 
 proc.main:
-    show_msg(be.Text(heal(50, by: 10, times: 2)));
-    show_msg(be.Text(larger(3, 9)));
+    heal(50, by: 10, times: 2) |> be.Text |> show_msg;
+    larger(3, 9) |> be.Text |> show_msg;
     show_if_positive(-1);
     show_if_positive(5);
 end proc.main

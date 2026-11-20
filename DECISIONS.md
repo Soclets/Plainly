@@ -3927,3 +3927,44 @@ gives its value reads naturally.
 
 **Tankun's words.** Asked "Should a variable be allowed to share a procedure's name, now that `$` keeps them apart?",
 the owner chose: "yea".
+
+## D128. One or two calls are written as calls; three or more in a chain are a slide
+
+2026-11-20.
+
+**Chosen.** Whether a chain of calls, each the first argument of the next, is written as calls or as a slide is decided
+by its length, so each has one spelling:
+
+```
+show_msg("Hi");                                     one call: a call
+show_msg(be.Text($n));                              two: a call
+$points |> double |> be.Text |> show_msg;           three or more: a slide
+```
+
+- One or two calls are written as calls: `$n |> be.Text |> show_msg` is refused, with `show_msg(be.Text($n))` as the
+  fix.
+- Three or more are written as a slide: `show_msg(be.Text(double($points)))` is refused, with the slide as the fix.
+- A call that starts a slide counts, as in `larger(3, 9) |> be.Text |> show_msg`.
+- So D81's fix for an operator after a slide's step brackets a slide of three or more, `($x |> f |> g |> h) + 1`; a
+  shorter one is a call, `f($x) + 1`.
+
+Both forms stay: `( )` for a call (D4), slides for chains (D5). The refusals' wording comes with a later batch.
+
+**Weighed.**
+- Slides replacing `( )` altogether, as Tankun asked. One way to call, and `$` makes a bare procedure name safe, but
+  procedures with two equal inputs get lopsided (`3 |> larger(9)`), calls inside expressions need brackets anyway,
+  conditions get harder to read, and it's far from the Python Plainly is modelled on.
+- No rule, the writer choosing. Two spellings for every chain, against D2's aim.
+- Sliding whenever one call is inside another. `show_msg(be.Text($n))` would need a slide, the guessing game's
+  `be.Whole(ask(...)) ?? 0` would need `??` after a slide's step (still undecided), and nested calls inside `&` would
+  need brackets around slides.
+- Only refusing a one-step slide. Chains would still have two spellings.
+
+**Why this won.** Short calls read like Python, and slides appear exactly where reading inside out starts to hurt:
+shown three-deep calls next to their slides, the nested ones read from the middle outwards with brackets to match at
+the end. The line at three is a judgement: two-deep nesting is still easy to read, and three-deep is where it stops
+being.
+
+**Tankun's words.** "What if pipes replaced?", "slides", "I meant what if they replaced ()", "Yeah, they seem both
+useful. But should we enforce a rule on when to use `|>`?", "Show me three-deep with no slide", then, shown them after
+being asked "Should calls be one or two deep, and three or more always be a slide?", the owner chose: "yea".

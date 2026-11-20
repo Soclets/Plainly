@@ -181,9 +181,21 @@ A slide passes the value on the left of `|>` into the next step as its first arg
 in the order it runs (D5):
 
 ```
-$points |> be.Text |> show_msg;
+$points |> double |> be.Text |> show_msg;
 $score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
 ```
+
+When to slide is decided by length, so each chain has one spelling (D128): one or two calls are written as calls, and
+three or more in a chain, each the first argument of the next, are written as a slide.
+
+```
+show_msg("Hi");
+show_msg(be.Text($n));
+$points |> double |> be.Text |> show_msg;
+```
+
+So `$n |> be.Text |> show_msg` is refused, with `show_msg(be.Text($n))` as the fix, and
+`show_msg(be.Text(double($points)))` is refused, with the slide as the fix.
 
 - **A step with nothing else to pass is bare,** with no `( )`: `|> be.Text`.
 - **A step with more arguments takes `( )` for those only:** `|> clamp(min: 0, max: 100)`, and the slid value goes in
@@ -192,7 +204,7 @@ $score |> clamp(min: 0, max: 100) |> be.Text |> show_msg;
 A step isn't a whole call, so it doesn't write `()` as a call does: the step names the procedure, and the slide calls
 it (D4, D5).
 
-`|>` comes last in the order of operators, so a slide takes everything on its left, as in `a + 1 |> be.Text` (D73).
+`|>` comes last in the order of operators, so a slide takes everything on its left, as in `$a + 1 |> double |> be.Text |> show_msg` (D73).
 
 **Not decided:** `clamp`, which the example uses.
 
