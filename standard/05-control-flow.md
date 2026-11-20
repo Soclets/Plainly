@@ -62,6 +62,26 @@ while $tries < 5:
 end while
 ```
 
+## `break`
+
+`break;` leaves the innermost loop it's in. There's no `continue`: ending one pass early is an `if` around the rest
+(D32).
+
+```
+while $tries < 7:
+    let $guess: Whole = be.Whole(ask("Your guess: ")) ?? 0;
+    $tries = $tries + 1;
+    if $guess < $secret:
+        show_msg("Too low");
+    else if $guess > $secret:
+        show_msg("Too high");
+    else:
+        show_msg.fmt("Correct! You got it in {$tries} tries.");
+        break;
+    end if
+end while
+```
+
 ## After an `if` that leaves
 
 When any way through an `if` leaves, by `return`, `break` or a failure, nothing may follow its `end if` in the same
@@ -83,4 +103,4 @@ proc larger($a: Whole, $b: Whole) returns Whole:
 end proc larger
 ```
 
-**Not decided:** `return`, `break`, failures, other loops, and every other part of control flow.
+**Not decided:** `return`, failing on purpose, other loops, leaving an outer loop, and every other part of control flow.

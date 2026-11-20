@@ -941,3 +941,36 @@ and `show_msg.same_line.fmt(...)` is refused, with `fix: show_msg.fmt.same_line`
 This is Plainly v1's D14 and Cyborg's rule.
 
 **Tankun's words.** Asked "Narrowings go strongest first, with any other order refused?", the owner chose: "yea".
+
+## D32. `break` leaves the innermost loop, and there's no `continue`
+
+2026-11-20.
+
+**Chosen.** `break;` leaves the innermost loop it's in. An `if` that breaks has the rest of the pass in its other
+ways (D9). There's no `continue`: ending one pass early is an `if` around the rest.
+
+```
+while $tries < 7:
+    let $guess: Whole = be.Whole(ask("Your guess: ")) ?? 0;
+    $tries = $tries + 1;
+    if $guess < $secret:
+        show_msg("Too low");
+    else if $guess > $secret:
+        show_msg("Too high");
+    else:
+        show_msg.fmt("Correct! You got it in {$tries} tries.");
+        break;
+    end if
+end while
+```
+
+(Leaving a loop further out, by naming it, isn't decided yet.)
+
+**Weighed.**
+- `continue`, as in Python and C. In Radium's cold tests every word for it was misread: `continue` as "carry on",
+  `skip` as skipping the whole loop, and `next` and others too (Radium's D77, Plainly v1's D53).
+
+**Why this won.** `break` is the word every language uses, and with D9 the way out of a loop always sits in its own
+branch. Without `continue`, the shape of the code shows which lines a pass runs.
+
+**Tankun's words.** Asked "`break` leaves the innermost loop, and no `continue`?", the owner chose: "yea".
