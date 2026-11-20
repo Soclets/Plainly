@@ -53,7 +53,17 @@ PROGRESS.md and to the design session, with a labelled placeholder meanwhile.
 
 The stops that are wanted: group 5 while lists aren't built; bedtime (8:30 PM, CLAUDE.md); Tankun telling you to
 stop; and anything hard to undo, which still needs Tankun's OK first.
+
+Your context will be compacted automatically as it fills, so never stop or rush because of how much context is left.
+Commit often, and keep PROGRESS.md current enough that after a compaction you can carry on from it and `git log`.
 </keep_going>
+
+<general_solutions>
+Each optimization must work for every program it applies to, not for the tests or the benchmarks. Never recognise a
+benchmark by its name or shape: the fib trick (6) has to come from detecting procedures with no side effects,
+inlining and merging repeated calls in general, exactly as GCC does it, so that any pure recursive procedure gains,
+not `fib` alone. If a test or the standard looks wrong, tell the design session rather than working around it.
+</general_solutions>
 
 <tests>
 - **Both modes, every program:** run every test in `tests/` and every program in `compiler/gc_tests/` with `--working`
