@@ -804,3 +804,29 @@ say "a number from 1 to 100". Keeping the plain name for game randomness leaves 
 secrets later, the split Plainly v1's D25 made.
 
 **Tankun's words.** Asked "`random(from:, to:)`, both ends included?", the owner chose: "yea".
+
+## D27. `+` adds and `-` subtracts, and a `-` with no space after it negates
+
+2026-11-20.
+
+**Chosen.**
+
+```
+$tries = $tries + 1;
+let $left: Whole = 5 - $tries;
+let $back: Whole = -$speed;
+```
+
+- `+` adds and `-` subtracts numbers, with a space on each side.
+- A `-` right before a number or a name, with no space after it, makes it negative: `-7`, `-$speed`.
+- `+` is only for numbers; text is joined some other way.
+
+(Going past `Whole`'s range, multiplying, dividing, maths order, and joining text aren't decided yet.)
+
+**Weighed.**
+- `+` for joining text as well, as in Python. `"5" + 3` could then be misread as joining or as adding.
+
+**Why this won.** Spacing tells subtracting (`$a - $b`) from negating (`-$b`), as D17's spacing tells comparisons from
+types. Keeping `+` for numbers means a `+` always adds. This is Plainly v1's D1, D84 and D86.
+
+**Tankun's words.** Asked "`+` and `-` like that?", the owner chose: "yea".

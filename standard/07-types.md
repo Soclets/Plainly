@@ -11,7 +11,21 @@ let $secret: Whole = 42;
 
 `Whole` has no second name. Other sizes, if they come, are different types with names of their own (D15).
 
-**Not decided:** going past the range; how whole numbers are written; other number types.
+### Arithmetic
+
+`+` adds and `-` subtracts, with a space on each side. A `-` with no space after it makes a number or a name negative
+(D27):
+
+```
+$tries = $tries + 1;
+let $left: Whole = 5 - $tries;
+let $back: Whole = -$speed;
+```
+
+`+` is only for numbers (D27).
+
+**Not decided:** going past the range; multiplying and dividing; maths order; how whole numbers are written; other
+number types.
 
 ## `Text`
 
