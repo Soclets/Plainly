@@ -202,7 +202,8 @@ pub fn source_snippet(sources: &[SourceFile], place: Place, number_width: usize)
     )
 }
 
-/// A labelled line, with every label's text starting in the same column (D54).
+/// A labelled line, with every label's text starting in the same column, one space after `because:` (D54, D86).
 pub fn labelled_line(label: &str, text: &str) -> String {
+    // trace: D86
     format!(" {:<9}{text}\n", format!("{label}:"))
 }

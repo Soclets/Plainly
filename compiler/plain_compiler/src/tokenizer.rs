@@ -261,7 +261,6 @@ fn tokenize_line(
                 .position(|&other| other == '\'');
             if let Some(offset) = closing {
                 let inside: String = characters[index + 1..index + 1 + offset].iter().collect();
-                let written: String = characters[index..index + 2 + offset].iter().collect();
                 let replacement = format!("\"{inside}\"");
                 messages.push(
                     Message::refused_with_fix(
@@ -271,10 +270,8 @@ fn tokenize_line(
                             replacement,
                         },
                     )
-                    .why(format!(
-                        // trace: D85
-                        "text is written in double quotes, never single ones like `{written}`"
-                    )),
+                    // trace: D85
+                    .why("text is written in double quotes, never single ones like `'hi'`."),
                 );
                 index += offset + 2;
                 // Carry on as if it were written with double quotes.
