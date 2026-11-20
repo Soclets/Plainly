@@ -104,6 +104,13 @@ refused: game.plainly:7:5, line 7 column 5
  why:     only a `var` can be given a new value.
 ```
 
+**Approved in D85,** word for word as drafted: a missing `;` (D7); a wrong closer, `;` after a closer, a missing
+closer before a line, and a missing `:` on an opening line (D8); indentation and tabs (D10); a declaration with no type
+(D13); `=` on a `let`, without its `because:` line, and `=` in a condition (D14); missing spaces around `<`, `>`, `+`,
+`-` and `*` (D17, D27, D59); spaces around a narrowing's `.` (D18); single quotes (D21). Each is marked
+`// trace: D85` in the code. In the next batch: the `because:` for `=` on a `let`, the missing closer at the end of a
+file, and a missing `:` or `=` in a declaration.
+
 ### Refusals
 
 | Decision | Refused | `fix:` or `what:` | `why:` |

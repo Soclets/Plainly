@@ -602,6 +602,7 @@ impl<'a> Parser<'a> {
                     place: Place { length: 0, ..place },
                     replacement: ":".to_string(),
                 },
+                // trace: D85
                 "a block's opening line ends with `:`.",
             );
         } else {
@@ -644,6 +645,7 @@ impl<'a> Parser<'a> {
             };
             self.messages.push(
                 Message::refused_with_fix(place, edit)
+                    // trace: D85
                     .why("each level of indentation is 4 spaces, and tabs aren't used."),
             );
         }
@@ -666,6 +668,7 @@ impl<'a> Parser<'a> {
             };
             self.messages.push(
                 Message::refused(place, what)
+                    // trace: D85
                     .why("every block ends with `end` and what it closes."),
             );
             self.stopped = true;
@@ -687,8 +690,10 @@ impl<'a> Parser<'a> {
         if written != expected {
             let place = start.to(end_place);
             let why = if written == format!("{expected};") {
+                // trace: D85
                 "a closer stands alone, with no `;`."
             } else {
+                // trace: D85
                 "a closer is `end` and what it closes."
             };
             self.refuse_with_edit(
@@ -803,6 +808,7 @@ impl<'a> Parser<'a> {
                         name.place,
                         format!("`{}` needs its type, written after a `:`", name.text),
                     )
+                    // trace: D85
                     .why("a declaration always writes the variable's type."),
                 );
                 return Err(Skip);
@@ -950,6 +956,7 @@ impl<'a> Parser<'a> {
                     place: Place { length: 0, ..place },
                     replacement: ";".to_string(),
                 },
+                // trace: D85
                 "every statement ends with `;`.",
             );
             return Ok(());
@@ -1271,6 +1278,7 @@ impl<'a> Parser<'a> {
                     place,
                     replacement: "==".to_string(),
                 },
+                // trace: D85
                 "`=` gives a variable a value, and is never part of a condition; `==` compares.",
             );
         }
@@ -1754,6 +1762,7 @@ impl<'a> Parser<'a> {
 fn decided_spacing(token: &Token, role: Role) -> Option<&'static str> {
     if token.is_symbol(Symbol::Dot) || token.is_symbol(Symbol::DotStar) {
         // trace: D18
+        // trace: D85
         return Some("a narrowing's `.` touches the words on both sides.");
     }
     if role == Role::PrefixMinus {
@@ -1769,6 +1778,7 @@ fn decided_spacing(token: &Token, role: Role) -> Option<&'static str> {
     ];
     if role == Role::BinaryOperator && spaced.iter().any(|&symbol| token.is_symbol(symbol)) {
         // trace: D17, D27, D59
+        // trace: D85
         return Some("`<`, `>`, `+`, `-` and `*` between two values have a space on each side.");
     }
     None

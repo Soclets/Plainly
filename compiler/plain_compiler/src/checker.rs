@@ -591,6 +591,7 @@ impl<'a, 'b> ProcedureChecker<'a, 'b> {
                                             ..declared
                                         },
                                     )
+                                    // trace: D85
                                     .why("only a `var` can be given a new value."),
                                 );
                                 None
