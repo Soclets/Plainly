@@ -89,8 +89,8 @@ fn internal_error(what: &str) -> ! {
 ///
 /// A collection can happen here and move every object, so callers copy what they need out of other texts first.
 fn new_text(bytes: &[u8]) -> *const u8 {
-    let memory = match plain_gc::allocate(plain_gc::ObjectKind::Bytes, bytes.len()) {
-        Ok(memory) => memory.as_ptr(),
+    let reference = match plain_gc::allocate(plain_gc::ObjectKind::Bytes, bytes.len()) {
+        Ok(reference) => reference,
         Err(plain_gc::AllocationError::OutOfMemory) => {
             let message = format!(
                 "NotDesignedYet: the program ran out of memory\n{}",
@@ -105,6 +105,7 @@ fn new_text(bytes: &[u8]) -> *const u8 {
         }
         Err(plain_gc::AllocationError::Internal(what)) => internal_error(&what),
     };
+    let memory = plain_gc::address(reference);
     // SAFETY: `memory` is a fresh object with a payload of `bytes.len()` bytes, starting `PAYLOAD_OFFSET` bytes in,
     // and nothing else uses it yet.
     unsafe {
@@ -114,22 +115,38 @@ fn new_text(bytes: &[u8]) -> *const u8 {
             bytes.len(),
         );
     }
-    memory
+    // Compiled code holds the colored reference (D69).
+    reference as *const u8
 }
 
 /// A text's bytes. They stay put only until the next allocation, which may move them.
 ///
 /// # Safety
 ///
-/// `text` must be a `Text` made by [`new_text`], still live.
+/// `text` must be a colored reference to a `Text` made by [`new_text`], still live, that has passed the load
+/// barrier, as every reference compiled code passes has.
 unsafe fn text_bytes<'a>(text: *const u8) -> &'a [u8] {
-    if text.is_null() {
+    let object = plain_gc::address(text as u64);
+    if object.is_null() {
         return &[];
     }
-    // SAFETY: the caller promises `text` is a live PlainGC object of kind `Bytes`, whose payload holds the text.
+    // SAFETY: the caller promises `text` is up to date, so `object` is a live PlainGC object of kind `Bytes`, whose
+    // payload holds the text.
     unsafe {
-        let length = plain_gc::payload_length(text);
-        std::slice::from_raw_parts(text.add(plain_gc::PAYLOAD_OFFSET), length)
+        let length = plain_gc::payload_length(object);
+        std::slice::from_raw_parts(object.add(plain_gc::PAYLOAD_OFFSET), length)
+    }
+}
+
+/// The load barrier's slow path, which compiled code calls for a reference of a bad color (D69).
+#[unsafe(no_mangle)]
+pub extern "C" fn plainly_gc_heal(reference: *const u8) -> *const u8 {
+    match plain_gc::heal(reference as u64) {
+        Ok(healed) => healed as *const u8,
+        Err(plain_gc::AllocationError::Internal(what)) => internal_error(&what),
+        Err(plain_gc::AllocationError::OutOfMemory) => {
+            internal_error("PlainGC's barrier ran out of memory")
+        }
     }
 }
 
@@ -425,11 +442,11 @@ fn seed_random() {
 #[unsafe(no_mangle)]
 pub extern "C" fn plainly_runtime_end() {
     if std::env::var_os("PLAINGC_REPORT").is_some_and(|value| value == "1")
-        && let Some((collections, moved)) = plain_gc::report()
+        && let Some((collections, moved, healed)) = plain_gc::report()
     {
         let _ = writeln!(
             std::io::stderr(),
-            "PlainGC: {collections} collections, {moved} objects moved"
+            "PlainGC: {collections} collections, {moved} objects moved, {healed} references healed"
         );
     }
     if std::io::stdout().flush().is_err() {

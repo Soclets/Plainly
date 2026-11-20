@@ -1,14 +1,18 @@
-//! The heap: pages of objects, allocation, and a collection that marks and compacts with the program stopped
-//! (step 1 of PlainGC, D69).
+//! The heap: pages of objects, allocation, and collections, with the program stopped for now (PlainGC's steps 1
+//! and 2, D69).
 //!
 //! As in ZGC, the heap is made of pages. Small objects are bump-allocated in small pages; an object too big for that
-//! gets a large page of its own and is never moved. A collection marks everything reachable from the roots, then
-//! evacuates the live objects of sparse pages into fresh pages, rewrites every reference to them through a
-//! forwarding table, and frees the pages it emptied.
+//! gets a large page of its own and is never moved. Every stored reference is colored (`color.rs`). A collection
+//! marks everything reachable from the roots, healing each reference it passes; then evacuates the live objects of
+//! sparse pages into fresh pages, recording where each went in a forwarding table, and frees the pages it emptied. It
+//! doesn't rewrite any reference: it changes the good color instead, so every older reference goes through the load
+//! barrier's slow path, which finds the object through the forwarding table. The next collection's marking heals
+//! every reference it reaches, and then that forwarding table is dropped.
 
 use std::alloc::{Layout, alloc_zeroed, dealloc};
 use std::collections::{BTreeMap, HashMap};
 
+use crate::color::{FIRST_COLOR, address, colored, next_color};
 use crate::object::{MAX_LENGTH, ObjectKind, WORD, header, object_size, read_header};
 
 /// The size of a small page.
@@ -33,7 +37,7 @@ pub enum HeapError {
     Internal(String),
 }
 
-/// Visits every root, each a place holding a reference that the collector may rewrite.
+/// Visits every root, each a place holding a colored reference that the collector may heal.
 pub type RootVisitor<'a> = dyn FnMut(&mut dyn FnMut(&mut usize)) -> Result<(), HeapError> + 'a;
 
 struct Page {
@@ -130,15 +134,25 @@ fn references_in(address: usize) -> Result<Vec<usize>, HeapError> {
     }
 }
 
-/// Reads the reference stored at `place`.
-fn read_reference(place: usize) -> usize {
+/// Reads the colored reference stored at `place`.
+fn read_reference(place: usize) -> u64 {
     // SAFETY: `place` is a word inside a live object of kind `References`, found by `references_in`.
-    unsafe { (place as *const usize).read() }
+    unsafe { (place as *const u64).read() }
 }
 
-fn write_reference(place: usize, value: usize) {
+fn write_reference(place: usize, value: u64) {
     // SAFETY: as for `read_reference`.
-    unsafe { (place as *mut usize).write(value) }
+    unsafe { (place as *mut u64).write(value) }
+}
+
+/// A reference brought up to date: good-colored, and pointing where its object is now. A reference of a bad color
+/// may point where its object was before the last collection moved it; the forwarding table says where it went.
+fn heal_with(forwarding: &HashMap<usize, usize>, good: u64, reference: u64) -> u64 {
+    if reference == 0 || reference & good != 0 {
+        return reference;
+    }
+    let old = address(reference);
+    colored(forwarding.get(&old).copied().unwrap_or(old), good)
 }
 
 /// What a collection did, for tests and for the pacer.
@@ -159,6 +173,13 @@ pub struct Heap {
     pub allocated_since_collection: usize,
     /// Bytes live after the last collection.
     pub live_after_collection: usize,
+    /// The good color: references of any other color go through the barrier's slow path.
+    good: u64,
+    /// Where each object the last collection moved went, by its old address, kept until the next collection's
+    /// marking has healed every reference to it.
+    forwarding: HashMap<usize, usize>,
+    /// How many references the barrier's slow path has healed.
+    pub healed: usize,
 }
 
 // SAFETY: a `Heap` owns its pages' memory outright, and is only ever reached through the one lock in `lib.rs`, so
@@ -178,7 +199,26 @@ impl Heap {
             current: None,
             allocated_since_collection: 0,
             live_after_collection: 0,
+            good: FIRST_COLOR,
+            forwarding: HashMap::new(),
+            healed: 0,
         }
+    }
+
+    /// The good color.
+    pub fn good_color(&self) -> u64 {
+        self.good
+    }
+
+    /// A reference to the object at `address`, good-colored.
+    pub fn reference_to(&self, address: usize) -> u64 {
+        colored(address, self.good)
+    }
+
+    /// The load barrier's slow path: heals a reference of a bad color (D69).
+    pub fn heal(&mut self, reference: u64) -> u64 {
+        self.healed += 1;
+        heal_with(&self.forwarding, self.good, reference)
     }
 
     /// The page holding the object at `address`, if it's in the heap.
@@ -244,8 +284,9 @@ impl Heap {
         Ok(address)
     }
 
-    /// A collection, with the program stopped: marks everything reachable from the roots, then compacts. With
-    /// `evacuate_everything`, every small page with a live object is evacuated, so tests reach the moving path.
+    /// A collection, with the program stopped: marks everything reachable from the roots, healing every reference
+    /// it passes, then evacuates sparse pages and changes the good color. With `evacuate_everything`, every small
+    /// page with a live object is evacuated, so tests reach the moving path.
     pub fn collect(
         &mut self,
         roots: &mut RootVisitor<'_>,
@@ -253,6 +294,8 @@ impl Heap {
     ) -> Result<CollectionReport, HeapError> {
         let mut report = CollectionReport::default();
         self.mark(roots, &mut report)?;
+        // Every reference marking reached is healed, so the last collection's forwarding is no longer needed.
+        self.forwarding.clear();
 
         // Which pages to evacuate, and which to free outright.
         let mut evacuated = Vec::new();
@@ -271,7 +314,6 @@ impl Heap {
         // Survivors go into fresh pages, never into a page being evacuated.
         self.current = None;
         let mut forwarding: HashMap<usize, usize> = HashMap::new();
-        let mut moved = Vec::new();
         for &start in &evacuated {
             let objects = match self.pages.get(&start) {
                 Some(page) => page
@@ -289,41 +331,26 @@ impl Heap {
                 // fresh bytes in another page, so the two can't overlap.
                 unsafe { std::ptr::copy_nonoverlapping(old as *const u8, new as *mut u8, size) };
                 forwarding.insert(old, new);
-                moved.push(new);
             }
         }
-        report.moved_objects = moved.len();
+        report.moved_objects = forwarding.len();
 
-        // Every reference to a moved object now goes to its new place: roots, then references inside live objects.
-        let forward = |value: usize| forwarding.get(&value).copied().unwrap_or(value);
-        roots(&mut |slot: &mut usize| *slot = forward(*slot))?;
-        let mut live = moved;
-        for (start, page) in &self.pages {
-            if evacuated.contains(start) || freed.contains(start) {
-                continue;
-            }
-            for address in page.objects()? {
-                if page.is_marked(address) {
-                    live.push(address);
-                }
-            }
-        }
-        for object in live {
-            for place in references_in(object)? {
-                write_reference(place, forward(read_reference(place)));
-            }
-        }
-
+        // No reference is rewritten: a new good color sends every older one through the barrier's slow path, and
+        // the forwarding table finds each moved object from its old address.
+        // trace: D69
         for start in evacuated.iter().chain(&freed) {
             self.pages.remove(start);
         }
+        self.forwarding = forwarding;
+        self.good = next_color(self.good);
         report.freed_pages = evacuated.len() + freed.len();
         self.allocated_since_collection = 0;
         self.live_after_collection = report.live_bytes;
         Ok(report)
     }
 
-    /// Marks every object reachable from the roots, counting each page's live bytes.
+    /// Marks every object reachable from the roots, healing each reference on the way and counting each page's live
+    /// bytes.
     fn mark(
         &mut self,
         roots: &mut RootVisitor<'_>,
@@ -333,29 +360,33 @@ impl Heap {
             page.marks.iter_mut().for_each(|cell| *cell = 0);
             page.live_bytes = 0;
         }
+        let (forwarding, good) = (&self.forwarding, self.good);
         let mut work = Vec::new();
         roots(&mut |slot: &mut usize| {
-            if *slot != 0 {
-                work.push(*slot);
+            let healed = heal_with(forwarding, good, *slot as u64);
+            *slot = healed as usize;
+            if healed != 0 {
+                work.push(address(healed));
             }
         })?;
-        while let Some(address) = work.pop() {
-            let Some(page) = self.page_of_mut(address) else {
+        while let Some(object) = work.pop() {
+            let Some(page) = self.page_of_mut(object) else {
                 return Err(HeapError::Internal(format!(
-                    "a reference to {address:#x} points outside PlainGC's heap"
+                    "a reference to {object:#x} points outside PlainGC's heap"
                 )));
             };
-            if !page.mark(address) {
+            if !page.mark(object) {
                 continue;
             }
-            let (_, length) = object_at(address)?;
+            let (_, length) = object_at(object)?;
             page.live_bytes += object_size(length);
             report.live_objects += 1;
             report.live_bytes += object_size(length);
-            for place in references_in(address)? {
-                let reference = read_reference(place);
-                if reference != 0 {
-                    work.push(reference);
+            for place in references_in(object)? {
+                let healed = heal_with(&self.forwarding, self.good, read_reference(place));
+                write_reference(place, healed);
+                if healed != 0 {
+                    work.push(address(healed));
                 }
             }
         }
@@ -372,30 +403,62 @@ impl Heap {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::color::bad_mask;
 
-    fn write_bytes(address: usize, bytes: &[u8]) {
-        // SAFETY: tests write into the payload of a `Bytes` object allocated with at least `bytes.len()` bytes.
+    /// A text object's reference, good-colored, as allocation gives it.
+    fn text(heap: &mut Heap, value: &str) -> u64 {
+        let object = heap.allocate(ObjectKind::Bytes, value.len()).unwrap_or(0);
+        // SAFETY: the object was just allocated with a payload of `value.len()` bytes.
         unsafe {
-            std::ptr::copy_nonoverlapping(bytes.as_ptr(), (address + WORD) as *mut u8, bytes.len())
+            std::ptr::copy_nonoverlapping(value.as_ptr(), (object + WORD) as *mut u8, value.len())
         };
+        heap.reference_to(object)
     }
 
-    fn read_bytes(address: usize) -> Vec<u8> {
-        let (_, length) = object_at(address).unwrap_or((ObjectKind::Bytes, 0));
-        // SAFETY: as for `write_bytes`, reading the payload back.
-        unsafe { std::slice::from_raw_parts((address + WORD) as *const u8, length).to_vec() }
+    fn list(heap: &mut Heap, items: &[u64]) -> u64 {
+        let object = heap
+            .allocate(ObjectKind::References, items.len() * WORD)
+            .unwrap_or(0);
+        for (index, &item) in items.iter().enumerate() {
+            write_reference(object + WORD + index * WORD, item);
+        }
+        heap.reference_to(object)
     }
 
-    fn text(heap: &mut Heap, value: &str) -> usize {
-        let address = heap.allocate(ObjectKind::Bytes, value.len()).unwrap_or(0);
-        write_bytes(address, value.as_bytes());
-        address
+    /// Reads through a reference as compiled code does: the barrier first, healing a bad-colored reference.
+    fn read(heap: &mut Heap, reference: &mut u64) -> usize {
+        if *reference & bad_mask(heap.good_color()) != 0 {
+            *reference = heap.heal(*reference);
+        }
+        address(*reference)
+    }
+
+    fn text_at(heap: &mut Heap, reference: &mut u64) -> String {
+        let object = read(heap, reference);
+        let (_, length) = object_at(object).unwrap_or((ObjectKind::Bytes, 0));
+        // SAFETY: `object` is a live text object with a payload of `length` bytes.
+        let bytes = unsafe { std::slice::from_raw_parts((object + WORD) as *const u8, length) };
+        String::from_utf8_lossy(bytes).into_owned()
+    }
+
+    /// The `index`th reference in a list, read through the barrier, which heals it where it's stored.
+    fn item(heap: &mut Heap, list: &mut u64, index: usize) -> u64 {
+        let object = read(heap, list);
+        let place = object + WORD + index * WORD;
+        let mut reference = read_reference(place);
+        read(heap, &mut reference);
+        write_reference(place, reference);
+        reference
     }
 
     /// Collects with `roots` as the only roots.
-    fn collect(heap: &mut Heap, roots: &mut [usize], everything: bool) -> CollectionReport {
+    fn collect(heap: &mut Heap, roots: &mut [u64], everything: bool) -> CollectionReport {
         let mut visit = |visitor: &mut dyn FnMut(&mut usize)| {
-            roots.iter_mut().for_each(&mut *visitor);
+            for root in roots.iter_mut() {
+                let mut slot = *root as usize;
+                visitor(&mut slot);
+                *root = slot as u64;
+            }
             Ok(())
         };
         heap.collect(&mut visit, everything).unwrap_or_default()
@@ -426,12 +489,10 @@ mod tests {
     #[test]
     fn marking_follows_references_and_skips_garbage() {
         let mut heap = Heap::new();
-        let list = heap.allocate(ObjectKind::References, 2 * WORD).unwrap_or(0);
         let a = text(&mut heap, "a");
         let b = text(&mut heap, "b");
         let _garbage = text(&mut heap, "garbage");
-        write_reference(list + WORD, a);
-        write_reference(list + 2 * WORD, b);
+        let list = list(&mut heap, &[a, b]);
         let report = collect(&mut heap, &mut [list], false);
         assert_eq!(report.live_objects, 3);
     }
@@ -449,21 +510,63 @@ mod tests {
     }
 
     #[test]
-    fn moving_rewrites_roots_and_references_inside_objects() {
+    fn a_collection_changes_the_good_color() {
         let mut heap = Heap::new();
-        let list = heap.allocate(ObjectKind::References, 2 * WORD).unwrap_or(0);
+        let mut kept = text(&mut heap, "kept");
+        let before = heap.good_color();
+        collect(&mut heap, &mut [kept], false);
+        assert_ne!(heap.good_color(), before);
+        assert_ne!(kept & bad_mask(heap.good_color()), 0);
+        assert_eq!(text_at(&mut heap, &mut kept), "kept");
+        assert_eq!(kept & bad_mask(heap.good_color()), 0);
+    }
+
+    #[test]
+    fn the_barrier_finds_a_moved_object_from_its_old_reference() {
+        let mut heap = Heap::new();
+        let mut first = text(&mut heap, "first");
+        let before = address(first);
+        collect(&mut heap, &mut [first], true);
+        // The root still holds the old address: nothing rewrote it, and only the barrier heals it.
+        assert_eq!(address(first), before);
+        assert_eq!(text_at(&mut heap, &mut first), "first");
+        assert_ne!(address(first), before);
+        assert_eq!(heap.healed, 1);
+    }
+
+    #[test]
+    fn references_inside_objects_are_forwarded_too() {
+        let mut heap = Heap::new();
         let a = text(&mut heap, "first");
         let b = text(&mut heap, "second");
-        write_reference(list + WORD, a);
-        write_reference(list + 2 * WORD, b);
-        let mut roots = [list, b];
-        let report = collect(&mut heap, &mut roots, true);
+        let mut list = list(&mut heap, &[a, b]);
+        let report = collect(&mut heap, &mut [list], true);
         assert_eq!(report.moved_objects, 3);
-        let [list, b] = roots;
-        assert!(heap.holds(list) && heap.holds(b));
-        assert_eq!(read_bytes(read_reference(list + WORD)), b"first");
-        assert_eq!(read_reference(list + 2 * WORD), b);
-        assert_eq!(read_bytes(b), b"second");
+        let mut first = item(&mut heap, &mut list, 0);
+        let mut second = item(&mut heap, &mut list, 1);
+        assert_eq!(text_at(&mut heap, &mut first), "first");
+        assert_eq!(text_at(&mut heap, &mut second), "second");
+    }
+
+    #[test]
+    fn the_next_marking_heals_every_reference_and_drops_the_forwarding() {
+        let mut heap = Heap::new();
+        let a = text(&mut heap, "inside");
+        let mut list = list(&mut heap, &[a]);
+        let mut roots = [list];
+        collect(&mut heap, &mut roots, true);
+        // A second collection that moves nothing: its marking heals the root and the reference in the list.
+        collect(&mut heap, &mut roots, false);
+        list = roots[0];
+        let good = heap.good_color();
+        let object = address(list);
+        // The second collection changed the color again, so heal once more through the empty forwarding table.
+        let healed = heap.heal(list);
+        assert_eq!(address(healed), object);
+        assert!(heap.forwarding.is_empty());
+        let mut inside = item(&mut heap, &mut list, 0);
+        assert_eq!(text_at(&mut heap, &mut inside), "inside");
+        assert_ne!(good, FIRST_COLOR);
     }
 
     #[test]
@@ -471,33 +574,47 @@ mod tests {
         let mut heap = Heap::new();
         let mut kept = Vec::new();
         for number in 0..50_000 {
-            let address = text(&mut heap, &number.to_string());
+            let reference = text(&mut heap, &number.to_string());
             if number % 10 == 0 {
-                kept.push(address);
+                kept.push(reference);
             }
         }
         let pages_before = heap.page_count();
         let report = collect(&mut heap, &mut kept, false);
         assert!(report.moved_objects > 0);
         assert!(heap.page_count() < pages_before);
-        for (index, &address) in kept.iter().enumerate() {
-            assert_eq!(read_bytes(address), (index * 10).to_string().as_bytes());
+        for (index, reference) in kept.iter_mut().enumerate() {
+            assert_eq!(text_at(&mut heap, reference), (index * 10).to_string());
         }
     }
 
     #[test]
     fn a_cycle_is_marked_once_and_moved_whole() {
         let mut heap = Heap::new();
-        let first = heap.allocate(ObjectKind::References, WORD).unwrap_or(0);
-        let second = heap.allocate(ObjectKind::References, WORD).unwrap_or(0);
-        write_reference(first + WORD, second);
-        write_reference(second + WORD, first);
+        let first = list(&mut heap, &[0]);
+        let second = list(&mut heap, &[first]);
+        write_reference(address(first) + WORD, second);
         let mut roots = [first];
         let report = collect(&mut heap, &mut roots, true);
         assert_eq!(report.live_objects, 2);
-        let first = roots[0];
-        let second = read_reference(first + WORD);
-        assert_eq!(read_reference(second + WORD), first);
+        let mut first = roots[0];
+        let mut second = item(&mut heap, &mut first, 0);
+        let back = item(&mut heap, &mut second, 0);
+        assert_eq!(address(back), address(first));
+    }
+
+    #[test]
+    fn several_collections_in_a_row_keep_every_value() {
+        let mut heap = Heap::new();
+        let mut roots = [text(&mut heap, "one"), text(&mut heap, "two")];
+        for round in 0..10 {
+            for _ in 0..1000 {
+                text(&mut heap, "garbage");
+            }
+            collect(&mut heap, &mut roots, round % 2 == 0);
+        }
+        assert_eq!(text_at(&mut heap, &mut roots[0]), "one");
+        assert_eq!(text_at(&mut heap, &mut roots[1]), "two");
     }
 
     #[test]
@@ -506,18 +623,22 @@ mod tests {
         let big = heap
             .allocate(ObjectKind::Bytes, LARGEST_SMALL_OBJECT * 2)
             .unwrap_or(0);
-        let mut roots = [big];
+        let mut roots = [heap.reference_to(big)];
         collect(&mut heap, &mut roots, true);
-        assert_eq!(roots[0], big);
+        assert_eq!(read(&mut heap, &mut roots[0]), big);
         assert!(heap.holds(big));
     }
 
     #[test]
     fn a_reference_outside_the_heap_is_a_bug() {
         let mut heap = Heap::new();
-        let mut roots = [0x10usize];
+        let mut roots = [heap.reference_to(0x10)];
         let mut visit = |visitor: &mut dyn FnMut(&mut usize)| {
-            roots.iter_mut().for_each(&mut *visitor);
+            for root in roots.iter_mut() {
+                let mut slot = *root as usize;
+                visitor(&mut slot);
+                *root = slot as u64;
+            }
             Ok(())
         };
         assert!(matches!(

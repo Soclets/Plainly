@@ -4,18 +4,24 @@
 //!
 //! - [`start`], once, before the program runs, with the stack map table PlainCompiler wrote (its format is in
 //!   `stack_roots.rs`) and the frame pointer of the program's `main`;
-//! - [`allocate`], for every object a program makes, which may collect first;
+//! - [`allocate`], for every object a program makes, which may collect first, and gives a colored reference to it;
+//! - the load barrier (D69): wherever compiled code reads a reference, it checks it against the 64-bit word
+//!   `plainly_gc_bad_mask`; if they share a bit, it calls the slow path, `plainly_gc_heal` in the runtime, which calls
+//!   [`heal`], and stores the healed reference back where it read it;
+//! - colored references (`color.rs`): [`address`] gives the object a reference points to;
 //! - the object layout in `object.rs`: an object's address is its header word, and its payload starts one word after.
 //!
-//! Step 1 is built: a collection stops the program, marks everything reachable from the roots, and compacts by
-//! evacuating sparse pages. The steps still to come are in `compiler/PROGRESS.md`.
+//! Steps 1 and 2 are built: a collection stops the program, marks everything reachable from the roots, and compacts
+//! by evacuating sparse pages; the load barrier finds moved objects through forwarding. The steps still to come are
+//! in `compiler/PROGRESS.md`.
 
+mod color;
 mod heap;
 mod object;
 mod stack_roots;
 
-use std::ptr::NonNull;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use heap::{Heap, HeapError};
 pub use object::{ObjectKind, WORD};
@@ -59,6 +65,12 @@ struct Collector {
     moved_objects: usize,
 }
 
+/// The colors a reference mustn't have to pass the load barrier's fast path: every color but the good one. Compiled
+/// code reads it by this name.
+#[unsafe(no_mangle)]
+#[allow(non_upper_case_globals)]
+pub static plainly_gc_bad_mask: AtomicU64 = AtomicU64::new(color::COLOR_BITS & !color::FIRST_COLOR);
+
 /// The one heap, shared by every thread of the program (D69), behind one lock.
 static COLLECTOR: Mutex<Option<Collector>> = Mutex::new(None);
 
@@ -97,11 +109,12 @@ pub unsafe fn start(stack_maps: *const u64, main_frame: usize) -> Result<(), All
     })
 }
 
-/// Allocates an object of `kind` with a payload of `length` bytes, all zero, collecting first when it's time.
+/// Allocates an object of `kind` with a payload of `length` bytes, all zero, collecting first when it's time. Gives a
+/// good-colored reference to it.
 ///
 /// Any reference the caller holds outside the stack maps' slots may be out of date after this returns, since a
 /// collection moves objects; the runtime reads what it needs from its arguments before allocating.
-pub fn allocate(kind: ObjectKind, length: usize) -> Result<NonNull<u8>, AllocationError> {
+pub fn allocate(kind: ObjectKind, length: usize) -> Result<u64, AllocationError> {
     with_collector(|collector| {
         let started = collector.main_frame != 0;
         let due = collector.heap.allocated_since_collection
@@ -109,10 +122,26 @@ pub fn allocate(kind: ObjectKind, length: usize) -> Result<NonNull<u8>, Allocati
         if started && (collector.stress || due) {
             collect(collector)?;
         }
-        let address = collector.heap.allocate(kind, length)?;
-        NonNull::new(address as *mut u8)
-            .ok_or_else(|| AllocationError::Internal("PlainGC allocated at address 0".to_string()))
+        let object = collector.heap.allocate(kind, length)?;
+        if object == 0 {
+            return Err(AllocationError::Internal(
+                "PlainGC allocated at address 0".to_string(),
+            ));
+        }
+        Ok(collector.heap.reference_to(object))
     })
+}
+
+/// The load barrier's slow path (D69): brings a reference of a bad color up to date, finding a moved object through
+/// the forwarding table.
+pub fn heal(reference: u64) -> Result<u64, AllocationError> {
+    with_collector(|collector| Ok(collector.heap.heal(reference)))
+}
+
+/// The address of the object a reference points to, whatever its color. Only an up-to-date reference, one that has
+/// passed the load barrier, points where its object is now.
+pub fn address(reference: u64) -> *mut u8 {
+    color::address(reference) as *mut u8
 }
 
 /// A collection with the program stopped, with the stack's references as its roots.
@@ -133,13 +162,22 @@ fn collect(collector: &mut Collector) -> Result<(), AllocationError> {
     let report = heap.collect(&mut roots, *stress)?;
     *collections += 1;
     *moved_objects += report.moved_objects;
+    plainly_gc_bad_mask.store(color::bad_mask(heap.good_color()), Ordering::SeqCst);
     Ok(())
 }
 
-/// How many collections have run and how many objects they moved, for PlainGC's own tests: the runtime shows it
+/// How many collections have run, how many objects they moved, and how many references the barrier healed, for
+/// PlainGC's own tests: the runtime shows it
 /// when `PLAINGC_REPORT=1` is in the environment, which no Plainly program can read.
-pub fn report() -> Option<(usize, usize)> {
-    with_collector(|collector| Ok((collector.collections, collector.moved_objects))).ok()
+pub fn report() -> Option<(usize, usize, usize)> {
+    with_collector(|collector| {
+        Ok((
+            collector.collections,
+            collector.moved_objects,
+            collector.heap.healed,
+        ))
+    })
+    .ok()
 }
 
 /// The length of an object's payload, in bytes.
@@ -159,16 +197,24 @@ mod tests {
 
     #[test]
     fn allocation_before_start_never_collects() {
-        let first = allocate(ObjectKind::Bytes, 3).map(NonNull::as_ptr);
-        let second = allocate(ObjectKind::Bytes, 16).map(NonNull::as_ptr);
+        let first = allocate(ObjectKind::Bytes, 3);
+        let second = allocate(ObjectKind::Bytes, 16);
         assert!(
             first
                 .as_ref()
-                .is_ok_and(|pointer| (*pointer as usize).is_multiple_of(WORD))
+                .is_ok_and(|&reference| (address(reference) as usize).is_multiple_of(WORD))
         );
         assert_ne!(first, second);
         // SAFETY: `second` was just allocated with a 16-byte payload.
-        let length = second.map(|pointer| unsafe { payload_length(pointer) });
+        let length = second.map(|reference| unsafe { payload_length(address(reference)) });
         assert_eq!(length, Ok(16));
+    }
+
+    #[test]
+    fn a_fresh_reference_passes_the_barrier() {
+        let reference = allocate(ObjectKind::Bytes, 1).unwrap_or(0);
+        assert_ne!(reference, 0);
+        assert_eq!(reference & plainly_gc_bad_mask.load(Ordering::SeqCst), 0);
+        assert_eq!(heal(reference), Ok(reference));
     }
 }

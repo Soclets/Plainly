@@ -33,6 +33,8 @@ struct RuntimeFunctions {
     ask: FuncId,
     random: FuncId,
     overflow: FuncId,
+    /// The load barrier's slow path (D69).
+    heal: FuncId,
 }
 
 struct Generator {
@@ -46,6 +48,8 @@ struct Generator {
     /// Each call where references are live, for PlainGC: the procedure, the call's return address as an offset into
     /// it, the frame's size, and the references' slots as offsets from the stack pointer (D69).
     safepoints: Vec<(FuncId, u64, u64, Vec<u64>)>,
+    /// PlainGC's word of bad colors, which the load barrier checks every reference against (D69).
+    bad_mask: DataId,
 }
 
 /// The version of PlainGC's stack map table this writes (`plain_gc`'s `stack_roots.rs` defines the format).
@@ -77,6 +81,9 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
     let mut module = ObjectModule::new(builder);
     let pointer = module.target_config().pointer_type();
     let runtime = declare_runtime(&mut module, pointer)?;
+    let bad_mask = module
+        .declare_data("plainly_gc_bad_mask", Linkage::Import, true, false)
+        .map_err(|error| failed("declaring PlainGC's bad colors", error))?;
 
     let mut generator = Generator {
         module,
@@ -87,6 +94,7 @@ pub fn generate(program: &IrProgram) -> Result<Vec<u8>, InternalError> {
         sites: Vec::new(),
         site_lengths: Vec::new(),
         safepoints: Vec::new(),
+        bad_mask,
     };
     for (index, site) in program.sites.iter().enumerate() {
         let id = generator.define_bytes(&format!("plainly_site_{index}"), site.as_bytes())?;
@@ -151,6 +159,7 @@ fn declare_runtime(
             &[pointer, whole, bool_type, whole, whole],
             &[],
         )?,
+        heal: declare("plainly_gc_heal", &[pointer], &[pointer])?,
     })
 }
 
@@ -220,6 +229,7 @@ impl Generator {
                 generator: self,
                 builder,
                 variables: Vec::new(),
+                references: Vec::new(),
                 blocks: Vec::new(),
                 functions: HashMap::new(),
                 data: HashMap::new(),
@@ -331,6 +341,8 @@ struct Emitter<'a, 'b> {
     generator: &'a mut Generator,
     builder: FunctionBuilder<'b>,
     variables: Vec<Variable>,
+    /// Which locals hold references, which every read checks with the load barrier.
+    references: Vec<bool>,
     blocks: Vec<Block>,
     functions: HashMap<FuncId, FuncRef>,
     data: HashMap<DataId, GlobalValue>,
@@ -347,6 +359,7 @@ impl Emitter<'_, '_> {
                 self.builder.declare_var_needs_stack_map(variable);
             }
             self.variables.push(variable);
+            self.references.push(local_type == IrType::Text);
         }
         for _ in &procedure.blocks {
             self.blocks.push(self.builder.create_block());
@@ -398,7 +411,39 @@ impl Emitter<'_, '_> {
             .variables
             .get(local)
             .ok_or_else(|| InternalError::new("a local that doesn't exist"))?;
-        Ok(self.builder.use_var(variable))
+        let value = self.builder.use_var(variable);
+        if self.references.get(local).copied().unwrap_or(false) {
+            return Ok(self.load_barrier(variable, value));
+        }
+        Ok(value)
+    }
+
+    /// The load barrier on a reference just read (D69): if it has any of PlainGC's bad colors, the slow path brings
+    /// it up to date, and the healed reference goes back into the variable, so the next read takes the fast path.
+    fn load_barrier(&mut self, variable: Variable, reference: Value) -> Value {
+        // trace: D69
+        let mask_address = self.address_of(self.generator.bad_mask);
+        let mask = self
+            .builder
+            .ins()
+            .load(types::I64, MemFlagsData::trusted(), mask_address, 0);
+        let bad = self.builder.ins().band(reference, mask);
+        let slow = self.builder.create_block();
+        let done = self.builder.create_block();
+        let healed = self
+            .builder
+            .append_block_param(done, self.generator.pointer);
+        self.builder.set_cold_block(slow);
+        self.builder
+            .ins()
+            .brif(bad, slow, &[], done, &[reference.into()]);
+        self.builder.switch_to_block(slow);
+        let heal = self.generator.runtime.heal;
+        let fresh = self.call(heal, &[reference]).unwrap_or(reference);
+        self.builder.def_var(variable, fresh);
+        self.builder.ins().jump(done, &[fresh.into()]);
+        self.builder.switch_to_block(done);
+        healed
     }
 
     fn set(&mut self, local: usize, value: Value) -> Result<(), InternalError> {

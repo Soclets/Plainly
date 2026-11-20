@@ -60,8 +60,7 @@ and the compiler depends on nothing but that interface.
 ### Steps
 
 1. ~~**Stop-the-world mark and compact.**~~ Done (2026-11-20). In detail below.
-2. **Moving with a load barrier:** PlainCompiler emits a barrier on every reference read, and forwarding finds a moved
-   object from an old reference.
+2. ~~**Moving with a load barrier:**~~ Done (2026-11-20). In detail below.
 3. **Marking while the program runs.**
 4. **Moving while the program runs.**
 5. **Handles for `extern.rust` code,** once the design session says how they work.
@@ -77,6 +76,27 @@ and the compiler depends on nothing but that interface.
 - PlainGC has 14 Rust unit tests: object headers, allocation, large objects, marking through references and cycles,
   freeing, moving, forwarding, and reading the stack map table.
 
+### Step 2 in detail
+
+- **Colored references,** as in ZGC: every stored reference carries one of three color bits in bits 60 to 62, above
+  any address the operating system gives. One color is good at a time; null has none and is always good.
+- **A collection doesn't rewrite references any more.** It marks, healing every reference it reaches; moves live
+  objects out of sparse pages, recording each move in a forwarding table; frees the emptied pages; and changes the
+  good color. Every reference from before is now of a bad color.
+- **The load barrier,** emitted by PlainCompiler on every read of a reference: a load of PlainGC's word of bad colors
+  (`plainly_gc_bad_mask`), an AND, and a branch. Only when they share a bit does it call the slow path,
+  `plainly_gc_heal`, which finds the object through the forwarding table and gives back a good reference; the barrier
+  stores it back in the variable, so the next read is fast. No Plainly object holds references yet (lists aren't
+  built), so the reads compiled code makes are of variables; reads of references inside objects will get the same
+  barrier when lists come.
+- **The forwarding table lasts until the next collection's marking** has healed every reference it reaches; then it's
+  dropped.
+- **The runtime** strips the color from every reference it's given before reading the object.
+- **Checked:** PlainGC has 21 unit tests now, among them the barrier finding a moved object from its old reference,
+  references inside objects forwarded, the next marking healing everything, and several collections in a row. Every
+  run passes; in collect-often mode the stress programs heal up to 150,000 references each, and the runner checks
+  that the slow path really ran.
+
 ### Step 1 in detail
 
 - **Objects.** Every object starts with one header word: its kind and its payload's length. Two kinds for now:
@@ -91,8 +111,8 @@ and the compiler depends on nothing but that interface.
   itself up to `proc.main`, and for each return address in the table reads and rewrites those slots. Cranelift is
   set to keep frame pointers.
 - **A collection** stops the program (it has one thread for now), marks everything reachable from the roots, then
-  compacts: it evacuates live objects out of sparse pages into fresh ones, keeping a forwarding table per evacuated
-  page, rewrites every root and every reference inside live objects, and frees the evacuated and empty pages.
+  compacts: it evacuates live objects out of sparse pages into fresh ones, and frees the evacuated and empty pages.
+  (In step 1 it then rewrote every reference; since step 2 the load barrier finds moved objects instead.)
 - **One heap behind one lock,** so worker threads (D68) can share it later without redoing this.
 - **Collect-often mode:** with `PLAINGC_STRESS=1` in the environment, PlainGC collects at every allocation and
   evacuates every page. `PLAINGC_REPORT=1` makes the runtime show how many collections ran and how many objects
