@@ -1,8 +1,0 @@
-extern.rust proc beep returns Bool:
-end proc beep
-
-proc.main:
-    if beep():
-        show_msg("beeped");
-    end if
-end proc.main

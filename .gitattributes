@@ -1,0 +1,2 @@
+# Keep benchmark programs in other languages out of GitHub's language stats.
+design/benchmarks/** linguist-documentation

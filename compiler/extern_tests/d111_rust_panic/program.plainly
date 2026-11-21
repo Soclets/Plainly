@@ -1,8 +1,0 @@
-extern.rust proc pick(index: Whole) returns Whole:
-end proc pick
-
-proc.main:
-    show_msg(be.Text(pick(1)));
-    show_msg.same_line("Picking: ");
-    show_msg(be.Text(pick(5)));
-end proc.main

@@ -1,9 +1,0 @@
-[package]
-name = "plainly"
-edition.workspace = true
-license.workspace = true
-version.workspace = true
-
-[dependencies]
-plain_gc = { path = "../plain_gc" }
-plainly_macros = { path = "../plainly_macros" }

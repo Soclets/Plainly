@@ -1,5 +1,0 @@
-internal error: the Rust code of `pick` went wrong, not your Plainly code
- 7 |     show_msg(be.Text(pick(5)));
-   |                      ^^^^^^^
- what:    index out of bounds: the len is 3 but the index is 5
- why:     this is a bug in `pick`'s Rust code, at rust/src/lib.rs line 7; fix it there, or report it to whoever wrote it.
