@@ -4802,3 +4802,24 @@ bites, in code and in output, and whether a literal is exact is known at compile
 Float isn't that", "We should print `~0.1` because Floats would require `~` when inexact", "no, it depends on the
 type", then, asked "Should binary float types require `~` on inexact literals and show it on inexact printed values,
 with exact decimal types never needing it?", the owner chose: "yea".
+
+## D156. `be.Whole`'s failure is `not_a_whole`
+
+2026-11-21.
+
+**Chosen.** When `be.Whole` fails (D95), its failure is named `not_a_whole`: for text that isn't a number, like
+`"abc"`, a number that isn't whole, like `"4.5"`, and a whole number too big or too small for a `Whole`. D152's
+message reads "`` `be.Whole` failed with `not_a_whole` ``".
+
+**Weighed.**
+- `not_a_number`. False for `4.5` and for a number too big, which are numbers.
+- Two failures, `not_a_whole` and `out_of_range`, so a game could tell a player their number was too big. Every
+  `be.Whole(...) otherwise:` would need both cases (D40), for a case that's rare.
+- `not_a_Whole`, with the type's capital, as Tankun wondered. Names are lowercase (D39, D99); in a name, "whole" is a
+  word, while `Whole` the type is spelled as the type, as in `be.Whole`.
+
+**Why this won.** One honest name covers every way the conversion fails, reads as a sentence in D152's message, and sets
+a pattern for later conversions that can fail. Ralph and the compiler session both needed it for `?? crash`.
+
+**Tankun's words.** "big case?", "No, I meant **W**hole", "Why is it `be.Text`", then, asked "Should `be.Whole`'s
+failure be called `not_a_whole`?", the owner chose: "yea".

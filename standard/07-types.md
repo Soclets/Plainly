@@ -223,6 +223,7 @@ show_msg(be.Text($guess));
 
 `be.Whole` reads a whole number from text: spaces and tabs around it are ignored (D143), and a `+` or `-` in front and
 leading zeros are fine, so ` 42`, `-7`, `+5` and `007` all work. Anything else fails, including `4.5`, `1,000` and a
-number too big or too small for a `Whole` (D95).
+number too big or too small for a `Whole` (D95), with the failure `not_a_whole` (D156).
 
-**Not decided:** what may be converted to what, and what a failed conversion's failure is called (chapter 8).
+**Not decided:** what may be converted to what, beyond D153 and D156, and what other conversions' failures are
+called (chapter 8).
