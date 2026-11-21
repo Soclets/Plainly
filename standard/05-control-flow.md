@@ -44,7 +44,10 @@ $hp at_most 100
 - **On two `Float`s, every comparison is exact,** comparing the stored values: `~0.1 + ~0.2 == ~0.3` is `false`,
   since the two are neighbouring `Float`s (D184).
 
-**Not decided:** comparing two pieces of text; what else a condition may be.
+**A condition must be a `Bool`** (D187). A number or text doesn't stand for true or false: `if $lives:` is refused,
+with `if $lives != 0:` as the fix.
+
+**Not decided:** comparing two pieces of text.
 
 ## `and`, `or` and `not`
 

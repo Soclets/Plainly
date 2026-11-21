@@ -5703,3 +5703,27 @@ while writing D168's test.
 
 **Tankun's words.** "why?", then, asked "Should a case be allowed to just end when the call it handles gives back no
 value?", the owner chose: "yea".
+
+## D187. An `if` or `while` condition must be a `Bool`
+
+2026-11-21.
+
+**Chosen.** The condition of an `if`, `else if` or `while` must be a `Bool`. A number or text doesn't stand for true
+or false:
+
+```
+if $lives:              // refused, fix: if $lives != 0:
+if $lives != 0:         // fine
+if $found:              // fine, when $found is a Bool
+```
+
+The refusal's wording comes with a later batch (D54).
+
+**Weighed.**
+- Python's truthiness, where 0, empty text and an empty list count as false. A reader has to know the rule, and
+  `if score:` being false for a real score of 0 is a classic bug.
+
+**Why this won.** The condition says what it means, it fits Unio's other conversions, which are never quiet (D28,
+D162), and Rust, Swift, Go and Java all do the same. Ralph raised it while building the oracle.
+
+**Tankun's words.** Asked "Should an `if` or `while` condition have to be a `Bool`?", the owner chose: "yea".
