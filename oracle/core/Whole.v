@@ -128,14 +128,15 @@ Definition number_of_digits (characters : list ascii) : option Z :=
 (* A whole number literal in a program, as its digits (D15). Whether it fits is the checker's question. *)
 Definition whole_of_literal (digits : string) : option Z := number_of_digits (list_ascii_of_string digits).
 
+(* trace: D95, D143. Spaces and tabs around the number are ignored. *)
 Fixpoint drop_spaces (characters : list ascii) : list ascii :=
   match characters with
-  | " "%char :: rest => drop_spaces rest
+  | " "%char :: rest | "009"%char :: rest => drop_spaces rest
   | _ => characters
   end.
 
-(* trace: D95
-   `be.Whole`: spaces around the number are ignored, a `+` or `-` in front and leading zeros are fine, and
+(* trace: D95, D143
+   `be.Whole`: spaces and tabs around the number are ignored, a `+` or `-` in front and leading zeros are fine, and
    anything else fails, as does a number that doesn't fit in a `Whole`. *)
 Definition whole_of_text (text : string) : option Z :=
   let trimmed := rev (drop_spaces (rev (drop_spaces (list_ascii_of_string text)))) in

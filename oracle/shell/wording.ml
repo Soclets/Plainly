@@ -80,9 +80,9 @@ let rec arguments_written source (given : Core.arguments) =
 (* A chain as its first value and its links, innermost first: each link a procedure and its other arguments. *)
 type link = { procedure : string; others : string list }
 
-(* trace: D128, D142. A chain flattened all the way: the innermost call's one argument starts the slide, as
-   `$points` starts `$points |> double`; an innermost call with no arguments starts it itself. With more arguments,
-   which one starts the slide isn't decided, so [None]. *)
+(* trace: D128, D142. A chain flattened all the way: the innermost call's one value starts the slide, as `$points`
+   starts `$points |> double`; an innermost call taking no value, or more than one, starts it whole, as
+   `larger(3, 9) |> be.Text |> show_msg` (D128). *)
 let rec flatten source (e : Core.expression) : (string * link list) option =
   match e with
   | Core.Call (name, Core.Argument (None, (Core.Call _ as inner), rest), _) ->
@@ -92,10 +92,9 @@ let rec flatten source (e : Core.expression) : (string * link list) option =
   | Core.Call (name, Core.Argument (None, first, Core.No_arguments), _) ->
       let* start = written source (expression_place first) in
       Some (start, [ { procedure = Core.callee_name name; others = [] } ])
-  | Core.Call (_, Core.No_arguments, p) ->
+  | Core.Call (_, _, p) ->
       let* start = written source p in
       Some (start, [])
-  | Core.Call _ -> None
   | Core.Slide (start, path, _) ->
       let* first, links = flatten source start in
       let rec steps (path : Core.steps) =
@@ -128,9 +127,8 @@ let chain_refusal source (whole : Core.expression) (fixed : string option) =
   let p = expression_place whole in
   match fixed with
   | Some text -> refused p ~fix:(M.replace_at (line_of source p) p.place_column p.place_width text) ~why:chain_why
-  | None ->
-      M.message M.Not_designed_yet (at p)
-        ~what:"which argument starts the slide, when the innermost call takes more than one, isn't decided yet"
+  (* Only when the chain runs over several lines, which is already stopped as undecided. *)
+  | None -> refused p ~why:chain_why
 
 let refusal source (r : Core.refusal) : M.message =
   match r with

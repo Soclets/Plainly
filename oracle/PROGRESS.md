@@ -103,7 +103,7 @@ Known gaps, each to be built:
 ## Questions for the design session
 
 Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 unless marked otherwise. Questions 1 to
-3 are answered by D142 and built; 4 to 8 are with Tankun.
+3 are answered by D142, 4 by D143, 10 from D128, all built; 5 to 8 are with Tankun.
 
 1. *(Answered, D142.)* **Negation overflowing:** D92's `when:` shows the values, as in `9223372036854775807 + 1`. What does it show for
    `-$x` when `$x` is -9223372036854775808? (Draft: `-(-9223372036854775808)`.)
@@ -114,7 +114,7 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
    only goes between words ``".)
 3. *(Answered, D142.)* **D128's three refusals** (a slide of one or two calls, three calls nested, a chain mixing both): their wording
    "comes with a later batch".
-4. **`be.Whole` and spaces (D95):** only the space character, or tabs too?
+4. *(Answered, D143: tabs too.)* **`be.Whole` and spaces (D95):** only the space character, or tabs too?
 5. **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
    a line.)
 6. **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
@@ -124,7 +124,8 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
 9. **Giving a parameter a new value:** D130 leaves a parameter's words undecided, so Ralph stops with
    `NotDesignedYet`.
 
-10. **Which argument starts a slide** in D142's fix for nested calls, when the innermost call takes more than one
+10. *(Answered by the design session from D128: the innermost call starts the slide whole when it takes more than
+    one value.)* **Which argument starts a slide** in D142's fix for nested calls, when the innermost call takes more than one
     argument: `show_msg(be.Text(larger(3, 9)))` could become `larger(3, 9) |> be.Text |> show_msg` or
     `3 |> larger(9) |> be.Text |> show_msg`. Ralph stops with `NotDesignedYet` there. Sent 2026-11-21.
 
