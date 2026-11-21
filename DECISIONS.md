@@ -5146,3 +5146,30 @@ Settings go in `[ ]` after the type (D165). What `.add` does on a full list isn'
 doesn't sound like more is addable. While a shopping list does", "Isn't it `len.max` on list?", then, asked "Should
 fixed-length collections be `Array<Text>[len: 7]`, and a list's limit be `List<Text>[len.max: 10]`?", the owner chose:
 "Oh hell no, I'm a guy, bro. Anyways, yea".
+
+## D168. `.add` on a list with `len.max` can fail with `full`
+
+2026-11-21.
+
+**Chosen.** On a `List` with `len.max` (D167), `.add` can fail, with the failure `full` when the list already holds
+its most, and the program deals with it like any failure (D23): `?`, `??` or `otherwise:`.
+
+```
+$bag.add("Gem") otherwise:
+    case full:
+        show_msg("Your bag is full!");
+end otherwise
+```
+
+A `List` with no limit never fails on `.add`.
+
+**Weighed.**
+- A failed check that stops the program, as a bad position does. A full bag is a normal game event, not a bug, and
+  a player picking up an eleventh item shouldn't crash the game.
+- Ignoring the extra item quietly. Nothing would tell the program, or the player, that it was lost.
+
+**Why this won.** It puts a full list with the things a program is made to deal with, and the checker makes every
+`.add` on a limited list say what happens when it's full, while unlimited lists stay as simple as before.
+
+**Tankun's words.** Asked "Should `.add` on a list with `len.max` be able to fail with `full`, handled like any
+failure?", the owner chose: "yea".
