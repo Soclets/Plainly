@@ -269,7 +269,7 @@ Definition check_format (s : setting) (given : list checked_argument) (at_ : pla
   | [a] =>
       match argument_label a, argument_value a with
       | Some (_, label_at), _ => argument_diagnostics a ++ [Refused (Format_text_label label_at)]
-      | None, Text_literal _ pieces _ => flat_map (check_piece s) pieces
+      | None, Text_literal _ pieces _ => argument_diagnostics a ++ flat_map (check_piece s) pieces
       | None, value => argument_diagnostics a ++ [Not_designed_yet Format_not_literal (expression_at value)]
       end
   | _ => values_diagnostics given ++ [Refused (Format_without_text at_)]
@@ -698,6 +698,12 @@ Definition check_definition (p : program) (d : definition) : list diagnostic :=
     | Main, Some _ => [Not_designed_yet Main_returns (definition_name_at d)]
     | _, _ => []
     end in
+  (* `proc.main` takes nothing (D4, D88): the parser has already refused any parameters. *)
+  let main_parameters :=
+    match definition_name d, definition_parameters d with
+    | Main, _ :: _ => [Already_refused (definition_name_at d)]
+    | _, _ => []
+    end in
   let last_line :=
     match last_statement rest with
     | Some (Return None at_) => [Refused (Bare_return_last at_)]
@@ -708,7 +714,7 @@ Definition check_definition (p : program) (d : definition) : list diagnostic :=
     | Some t => if always_returns_block rest then [] else [Refused (Missing_return procedure t (definition_name_at d))]
     | None => []
     end in
-  repeated_parameters [] (definition_parameters d) ++ main_returns ++ labels_problems
+  repeated_parameters [] (definition_parameters d) ++ main_returns ++ main_parameters ++ labels_problems
     ++ snd (check_block start rest) ++ last_line ++ missing_return.
 
 (* trace: D4, D64, D92. Exactly one `proc.main`, and one procedure to a name. *)
