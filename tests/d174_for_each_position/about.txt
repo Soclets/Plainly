@@ -1,0 +1,1 @@
+for each gives the position with at pos (from 1) or at offset (from 0), and it fits the matching label. D75, D171, D174; standard ch. 5 and 7.

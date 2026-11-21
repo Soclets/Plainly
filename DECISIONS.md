@@ -5294,7 +5294,7 @@ negative to count down, and is refused when it's 0 or points the wrong way?", th
 
 ```
 for each $name in $players:
-    $players.add("Bob")   // refused: $players is being gone through
+    $players.add("Bob");   // refused: $players is being gone through
 end for
 ```
 
@@ -5310,3 +5310,36 @@ so at once, where a copy would be a silent surprise. A program that means it has
 
 **Tankun's words.** Asked "Should changing the list being gone through inside its own `for each` be refused at compile
 time?", the owner chose: "yea".
+
+## D174. `for each` gets the position with `at pos` or `at offset`
+
+2026-11-21.
+
+**Chosen.**
+- **`at pos $i` or `at offset $i`, between the item and `in`,** gives the item's position as well: `pos` counts from 1
+  and `offset` from 0, as D75 has them for reaching an item.
+- **`$i` is made by the `for each` line,** a `let` like the item, new for each pass and ended with the loop (D171).
+- **It fits the matching label:** with `at offset $i`, `$students[offset: $i]` is the item; with `at pos $i`,
+  `$students[pos: $i]` is.
+
+```
+for each $name at pos $i in $students:
+    show_msg.fmt("{$i}. {$name}");
+end for
+```
+
+With `["Fern", "Plern", "Churn"]`, this prints `1. Fern`, `2. Plern` and `3. Churn`.
+
+**Weighed.**
+- A pair, as in Python's `for i, name in enumerate(students)`. Nothing on the page says it counts from 0, which is
+  what D75 set out to avoid.
+- Only one of the two counts. D75 keeps both for items, and a position from the loop is most often used to reach an
+  item, so the loop keeps both too, with the same words.
+
+**Why this won.** The line reads as a sentence, it says which way it counts, and the number it gives goes straight
+back into the label of the same name.
+
+**Tankun's words.** Tankun asked whether `offset` means the same in both places ("Actually, looking again. I think
+it's a bit weird. `$xs[offset: $x]` treats `$x` as starting from 0. Wait, idk, does that too?"). After hearing that it
+does, asked "Should `for each` allow both `at pos $i` and `at offset $i`, as D75 does for items?", the owner chose:
+"yea".

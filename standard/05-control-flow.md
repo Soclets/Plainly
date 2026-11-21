@@ -99,18 +99,30 @@ end for
 - **`$name` is a new variable for each pass,** declared by the `for each` itself as a `let`, and it ends with the loop
   (D93, D171).
 - **It closes with `end for`,** and `break` leaves it, as it leaves a `while` (D8, D32, D171).
-
 - **The list it's going through can't change inside it.** Anything in the body that changes that variable, such as
   `$players.add(…)`, setting an item or setting the whole variable, is refused at compile time (D173). To change a list
   while looping, use `while` over its positions.
 
 ```
 for each $name in $players:
-    $players.add("Bob")   // refused: $players is being gone through
+    $players.add("Bob");   // refused: $players is being gone through
 end for
 ```
 
-**Not decided:** going through text; the position as well as the item; the wording of D173's refusal.
+The position comes with the item when the line says `at pos` (counting from 1) or `at offset` (counting from 0),
+between the item and `in`, the same two words as for reaching an item (D75, D174):
+
+```
+for each $name at pos $i in $students:
+    show_msg.fmt("{$i}. {$name}");
+end for
+```
+
+- **`$i` is made by the line too,** a `let` like `$name`, new for each pass and ended with the loop (D174).
+- **It fits the matching label:** with `at offset $i`, `$students[offset: $i]` is the same item as `$name`; with
+  `at pos $i`, `$students[pos: $i]` is (D174).
+
+**Not decided:** going through text; the wording of D173's refusal.
 
 ## `break`
 
