@@ -20,7 +20,10 @@ let operator_name = function
   | Core.And -> "and"
   | Core.Or -> "or"
 
-let at (p : Core.place) = M.point p.place_line p.place_column p.place_width
+(* The file Ralph was given, where a message about the whole program points (D64). *)
+let given_file = ref 0
+
+let at (p : Core.place) = M.point ~file:p.place_file p.place_line p.place_column p.place_width
 let quoted s = "`" ^ s ^ "`"
 let variable name = quoted ("$" ^ name)
 let a_type t = quoted (type_name t)
@@ -35,8 +38,12 @@ let listed narrowings =
 
 let refused ?fix ?what ?because ?why p = M.message M.Refused (at p) ?fix ?what ?because ?why
 
-let line_of source (p : Core.place) =
-  if p.place_line >= 1 && p.place_line <= Array.length source then source.(p.place_line - 1) else ""
+(* [source] holds each file's lines (D64). *)
+let line_of (source : string array array) (p : Core.place) =
+  if p.place_file >= 0 && p.place_file < Array.length source then
+    let lines = source.(p.place_file) in
+    if p.place_line >= 1 && p.place_line <= Array.length lines then lines.(p.place_line - 1) else ""
+  else ""
 
 let same_type_why = "a value's type has to match where it's used."
 
@@ -70,7 +77,7 @@ let rec arguments_written source (given : Core.arguments) =
         match label with
         | Some (_, lp) ->
             written source
-              { Core.place_line = lp.place_line; place_column = lp.place_column;
+              { Core.place_file = lp.place_file; place_line = lp.place_line; place_column = lp.place_column;
                 place_width = vp.place_column + vp.place_width - lp.place_column }
         | None -> written source vp
       in
@@ -198,7 +205,7 @@ let refusal source (r : Core.refusal) : M.message =
         ~why:"`+` is only for numbers, and `&` joins text."
   | Core.Join_number places -> (
       match places with
-      | [] -> refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~why:""
+      | [] -> refused { Core.place_file = !given_file; place_line = 1; place_column = 1; place_width = 1 } ~why:""
       | first :: _ ->
           (* Wraps each number in `be.Text(...)`, the last first so the earlier columns still hold. *)
           let fixed =
@@ -395,7 +402,8 @@ let refusal source (r : Core.refusal) : M.message =
         ~what:(Printf.sprintf "%s joins two `Bool`s, but this is a %s" (quoted (operator_name operator)) (a_type found))
         ~why:"`not`, `and` and `or` work on `Bool`s."
   | Core.No_main ->
-      refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~what:"this program has no `proc.main`"
+      refused { Core.place_file = !given_file; place_line = 1; place_column = 1; place_width = 1 }
+        ~what:"this program has no `proc.main`"
         ~why:"a program starts with `proc.main`."
 
 let not_designed (what : Core.not_designed) =

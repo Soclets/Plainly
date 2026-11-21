@@ -160,6 +160,6 @@ let check_line (l : Lexer.line) : M.message option =
           | _, Some t when is_operator t -> Printf.sprintf "%s between two values has one space on each side." (quoted t)
           | _ -> several_why
         in
-        Some (M.message M.Refused { M.line = l.number; carets } ~fix:fixed ~why)
+        Some (M.message M.Refused { M.file = 0; line = l.number; carets } ~fix:fixed ~why)
 
 let check (lines : Lexer.line list) = List.filter_map check_line lines

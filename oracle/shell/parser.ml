@@ -70,7 +70,11 @@ let join st a b =
   if a.line = b.line then { a with stop = b.stop }
   else { a with stop = String.length (line_text st a.line) + 1 }
 
-let place_of s = { Core.place_line = s.line; place_column = s.first; place_width = s.stop - s.first }
+(* Which of the program's files is being read (D64). *)
+let current_file = ref 0
+
+let place_of s =
+  { Core.place_file = !current_file; place_line = s.line; place_column = s.first; place_width = s.stop - s.first }
 let place_of_token t = place_of (span_of t)
 
 (* The end of the last token taken, where a missing `;` or `:` goes. *)
@@ -167,7 +171,9 @@ let all_word_characters s = String.length s > 0 && String.for_all is_word_charac
 
 (* trace: D29, D30, D133. Text's pieces, as `.fmt` reads it; [column] is where the text's first character is. *)
 let pieces_of raw line column =
-  let place_at i width = { Core.place_line = line; place_column = column + i; place_width = width } in
+  let place_at i width =
+    { Core.place_file = !current_file; place_line = line; place_column = column + i; place_width = width }
+  in
   let buffer = Buffer.create (String.length raw) in
   let flush pieces =
     if Buffer.length buffer = 0 then pieces
@@ -265,7 +271,7 @@ and parse_slide st =
               let _, _, _, step_span = step in
               (match peek st with
               | Some t when Option.is_some (binary_operator t) || is_symbol "??" t ->
-                  not_built st t "an operator after a slide's step, refused with brackets as the fix (D81, D128),";
+                  not_built_is st t "refusing an operator after a slide's step, with brackets as the fix (D81, D128),";
                   Error ()
               | _ -> steps (step :: acc) step_span)
           | _ ->
@@ -408,7 +414,7 @@ and parse_postfix st =
           let whole = join st value_span fallback_span in
           Ok (Core.Fallback (value, fallback, place_of_token t, place_of whole), whole))
   | Some t when is_symbol "?" t ->
-      not_built st t "passing a failure up with `?` (D23)";
+      not_built_is st t "passing a failure up with `?` (D23)";
       Error ()
   | Some t when is_symbol "." t ->
       not_built st t "methods and facts after a value, as in `$list.len` (D77, D79),";
@@ -677,7 +683,7 @@ let parse_type st : Core.type0 parsed =
       not_built st t "lists, `List<Type>` and `[ ]` (D75),";
       Error ()
   | Some ({ kind = Word "Float"; _ } as t) ->
-      not_built st t "`Float` (D157, D162, D163)";
+      not_built_is st t "`Float` (D157, D162, D163)";
       Error ()
   | Some ({ kind = Word w; _ } as t) when String.length w > 0 && w.[0] >= 'A' && w.[0] <= 'Z' ->
       (* trace: D161 *)
@@ -784,7 +790,7 @@ let parse_condition st : Core.expression =
         | _ -> ()
       in
       skip ();
-      Core.Broken { Core.place_line = st.statement_line; place_column = 1; place_width = 1 }
+      Core.Broken { Core.place_file = !current_file; place_line = st.statement_line; place_column = 1; place_width = 1 }
 
 let rec parse_block st depth : Core.block =
   let rec statements acc =
@@ -943,7 +949,7 @@ let parse_parameters st (open_bracket : token) : Core.parameter list parsed =
            ~why:"a definition writes `[ ]` only when it has parameters.");
       Ok []
   | Some ({ kind = Word w; _ } as t) when String.length w > 0 && w.[0] >= 'A' && w.[0] <= 'Z' ->
-      not_built st t "the refusal of a type written once in front of several parameters (D126, D132)";
+      not_built_is st t "refusing a type written once in front of several parameters (D126, D132)";
       Error ()
   | _ ->
       let rec loop acc =
@@ -1012,6 +1018,33 @@ let parse_definition st (keyword : token) : Core.definition option =
       st.stopped <- true;
       None
   | Some (name, name_token, closer) -> (
+      (* trace: D166. Parameters in `( )`, as before D165: refused with the `[ ]` form as the fix, and read on as if
+         written in `[ ]`. Empty `( )` and `proc.main`'s get the messages `[ ]` would. *)
+      (match peek st with
+      | Some o when is_symbol "(" o ->
+          let rec find_close i depth =
+            if i >= Array.length st.tokens || st.tokens.(i).line <> o.line then None
+            else
+              let t = st.tokens.(i) in
+              if is_symbol "(" t then find_close (i + 1) (depth + 1)
+              else if is_symbol ")" t then if depth = 1 then Some i else find_close (i + 1) (depth - 1)
+              else find_close (i + 1) depth
+          in
+          (match find_close st.index 0 with
+          | Some j ->
+              let c = st.tokens.(j) in
+              (match name with
+              | Core.Named _ when j > st.index + 1 ->
+                  let text = line_text st o.line in
+                  report st
+                    (M.message M.Refused (M.point o.line o.column 1)
+                       ~fix:(M.replace_at (M.replace_at text c.column 1 "]") o.column 1 "[")
+                       ~why:"a definition writes its parameters in `[ ]`; `( )` calls a procedure.")
+              | _ -> ());
+              st.tokens.(st.index) <- { o with kind = Symbol "[" };
+              st.tokens.(j) <- { c with kind = Symbol "]" }
+          | None -> ())
+      | _ -> ());
       let parameters =
         match peek st with
         | Some o when is_symbol "[" o -> (
@@ -1102,7 +1135,8 @@ let check_blank_lines st =
   go 0
 
 (* Reads a whole file: gives the definitions read, the problems found, and whether checking stopped early. *)
-let parse (lines : Lexer.line list) =
+let parse ~file (lines : Lexer.line list) =
+  current_file := file;
   let lines = Array.of_list lines in
   let tokens = Array.of_list (List.concat_map (fun (l : Lexer.line) -> l.tokens) (Array.to_list lines)) in
   let st =

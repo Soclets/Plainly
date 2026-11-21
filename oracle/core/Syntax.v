@@ -7,9 +7,9 @@
 
 From Stdlib Require Import String List ZArith.
 
-(* A place in the source: its line, its first column and how many columns it covers, all counted from 1. The width
-   is how many `^` a message puts under it (D54). *)
-Record place := { place_line : nat; place_column : nat; place_width : nat }.
+(* A place in the source: which of the program's files (D64), counted from 0, its line, its first column and how many
+   columns it covers, counted from 1. The width is how many `^` a message puts under it (D54). *)
+Record place := { place_file : nat; place_line : nat; place_column : nat; place_width : nat }.
 
 (* The types of the subset (D15, D21, D33). The parser stops with `NotBuiltYet` or `NotDesignedYet` on any other. *)
 Inductive type := Whole | Bool | Text.
@@ -47,7 +47,8 @@ Record callee := {
 Definition callee_at (c : callee) : place :=
   let first := callee_word_at c in
   let last := fold_left (fun _ narrowing => snd narrowing) (callee_narrowings c) first in
-  {| place_line := place_line first;
+  {| place_file := place_file first;
+     place_line := place_line first;
      place_column := place_column first;
      place_width := place_column last + place_width last - place_column first |}.
 

@@ -101,6 +101,11 @@ Fixed after the milestone (2026-11-21): any procedure calling itself crashed Ral
 OCaml works out a function's arguments first, so the evaluator built both ways of every `if`; each way is now a
 function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine; answered by D154. Six recursion tests suggested to the design session.
 
+D166 (parameters in `( )` refused with the `[ ]` form as the fix) is built. Ralph now reads every `.unio` file in the
+given file's folder as one program (D64): places carry a file number, files go in order of their names (so the first
+`proc.main` is the one in the alphabetically first file), and a `because:` into another file names it (D161). Four
+`NotBuiltYet` messages now say "isn't" for a single thing (D103). 39 of 39 tests pass.
+
 D165 (parameters in `[ ]`), D160 (backwards `random`: refused with plain numbers, a failed check otherwise) and D161
 (value-only lines, lines outside a procedure, unknown types, `not`/`and`/`or` on non-`Bool`s) are built; 38 of 38
 tests pass. D158 fixes the call limit at 1,000,000, which Ralph already had. `Float` (D157, D162, D163) is outside the

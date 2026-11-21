@@ -28,8 +28,7 @@ let finish status =
   flush stderr;
   exit status
 
-let print_messages file source messages =
-  List.iter (fun m -> prerr_string (M.render file source m)) messages
+let print_messages files messages = List.iter (fun m -> prerr_string (M.render files m)) messages
 
 (* A whole number from [low] to [high], each equally likely (D26): random bits, tried again until they fall in
    range. The numbers stay Rocq's exact integers throughout. *)
@@ -66,7 +65,7 @@ let read_answer () =
 let arithmetic_symbol = function Core.Plus -> "+" | Core.Minus -> "-" | Core.Times -> "*"
 
 (* Walks the evaluator's tree of requests (core/Io.v), doing each one. *)
-let rec walk file source (tree : unit Core.io) =
+let rec walk files (tree : unit Core.io) =
   match tree with
   | Core.Done () -> finish 0
   | Core.Show (text, ends_line, next) ->
@@ -77,7 +76,7 @@ let rec walk file source (tree : unit Core.io) =
       end
       else if text <> "" then line_open := true;
       flush stdout;
-      walk file source (next ())
+      walk files (next ())
   | Core.Ask (question, next) ->
       print_string question;
       flush stdout;
@@ -85,8 +84,8 @@ let rec walk file source (tree : unit Core.io) =
       let answer = read_answer () in
       (* trace: D106. Typed at a terminal, the player's Enter has ended the line. *)
       if Unix.isatty Unix.stdin then line_open := false;
-      walk file source (next answer)
-  | Core.Random (low, high, next) -> walk file source (next (random_between low high))
+      walk files (next answer)
+  | Core.Random (low, high, next) -> walk files (next (random_between low high))
   | Core.Stop reason -> (
       match reason with
       (* trace: D96 *)
@@ -94,7 +93,7 @@ let rec walk file source (tree : unit Core.io) =
       (* trace: D46, D92 *)
       | Core.Overflow (p, too_big, Core.Operation_binary (a, operator, b)) ->
           end_open_line ();
-          print_messages file source
+          print_messages files
             [ M.message M.Check_failed (Wording.at p)
                 ~what:(if too_big then "the result is too big for a `Whole`" else "the result is too small for a `Whole`")
                 ~when_:
@@ -106,7 +105,7 @@ let rec walk file source (tree : unit Core.io) =
           let value = Core.text_of_whole a in
           (* trace: D142. The value is in brackets when it starts with `-`. *)
           let shown = if String.length value > 0 && value.[0] = '-' then "-(" ^ value ^ ")" else "-" ^ value in
-          print_messages file source
+          print_messages files
             [ M.message M.Check_failed (Wording.at p)
                 ~what:(if too_big then "the result is too big for a `Whole`" else "the result is too small for a `Whole`")
                 ~when_:shown
@@ -115,7 +114,7 @@ let rec walk file source (tree : unit Core.io) =
       (* trace: D154 *)
       | Core.Calls_too_deep (p, depth, inside) ->
           end_open_line ();
-          print_messages file source
+          print_messages files
             [ M.message M.Check_failed (Wording.at p) ~what:"calls went too deep"
                 ~when_:(Printf.sprintf "%d calls deep, inside `%s`" depth inside)
                 ~why:
@@ -125,7 +124,7 @@ let rec walk file source (tree : unit Core.io) =
       (* trace: D160 *)
       | Core.Random_backwards (p, low, high) ->
           end_open_line ();
-          print_messages file source
+          print_messages files
             [ M.message M.Check_failed (Wording.at p) ~what:"`random`'s `from:` is above its `to:`"
                 ~when_:(Printf.sprintf "from: %s, to: %s" (Core.text_of_whole low) (Core.text_of_whole high))
                 ~why:Wording.random_why ];
@@ -139,7 +138,7 @@ let rec walk file source (tree : unit Core.io) =
           prerr_string (M.internal_error "the evaluator met something it has no rule for");
           finish 7)
 
-let position (m : M.message) = (m.at.line, M.first_column m.at)
+let position (m : M.message) = (m.at.file, m.at.line, M.first_column m.at)
 
 (* trace: D55, D128. One chain of calls is one mistake: of the refusals for a chain and the chains inside it, only
    the outermost is kept. *)
@@ -150,7 +149,7 @@ let outermost_chains messages =
   in
   let inside a b =
     let line_a, first_a, stop_a = span a and line_b, first_b, stop_b = span b in
-    line_a = line_b && first_b <= first_a && stop_a <= stop_b && (first_a, stop_a) <> (first_b, stop_b)
+    a.at.file = b.at.file && line_a = line_b && first_b <= first_a && stop_a <= stop_b && (first_a, stop_a) <> (first_b, stop_b)
   in
   List.filter (fun m -> not (chain m && List.exists (fun other -> chain other && inside m other) messages)) messages
 
@@ -169,47 +168,62 @@ let read file =
         Error reason
     | contents -> if String.is_valid_utf_8 contents then Ok contents else Error "it isn't UTF-8 text"
 
-(* Everything said about a program before it runs: its lines, its definitions and its messages, in order. *)
-let examine contents =
-  let lines = Lexer.lines_of contents in
-  let source = Array.of_list (List.map (fun (l : Lexer.line) -> l.text) lines) in
-  let carriage_return =
-    List.find_map
-      (fun (l : Lexer.line) ->
-        Option.map
-          (fun i ->
-            M.message M.Not_designed_yet (M.point l.number (i + 1) 1)
-              ~what:"a `\\r` that isn't part of a line break isn't decided yet")
-          (String.index_opt l.text '\r'))
-      lines
+(* Everything said about a program before it runs, from its files (D64), each a name and its text: each file's name and
+   lines, the definitions of all of them, and every message, in order. *)
+let examine (files : (string * string) array) =
+  let read_one index (_, contents) =
+    let lines = Lexer.lines_of contents in
+    let carriage_return =
+      List.find_map
+        (fun (l : Lexer.line) ->
+          Option.map
+            (fun i ->
+              M.message M.Not_designed_yet (M.point l.number (i + 1) 1)
+                ~what:"a `\\r` that isn't part of a line break isn't decided yet")
+            (String.index_opt l.text '\r'))
+        lines
+    in
+    let definitions, problems, stopped, stop_line = Parser.parse ~file:index lines in
+    let messages = List.map (M.in_file index) (Option.to_list carriage_return @ problems @ Spacing.check lines) in
+    (Array.of_list (List.map (fun (l : Lexer.line) -> l.text) lines), definitions, messages, (stopped, stop_line))
   in
-  let definitions, parse_problems, stopped, stop_line = Parser.parse lines in
+  let read = Array.mapi read_one files in
+  let source = Array.map (fun (lines, _, _, _) -> lines) read in
+  let definitions = List.concat_map (fun (_, d, _, _) -> d) (Array.to_list read) in
+  let any_stopped = Array.exists (fun (_, _, _, (stopped, _)) -> stopped) read in
   let core_problems =
     List.filter_map (Wording.diagnostic source) (Core.check_program definitions)
     |> List.filter (fun (m : M.message) ->
-           (not stopped) || (m.at.line < stop_line && m.what <> Some "this program has no `proc.main`"))
+           let _, _, _, (stopped, stop_line) = read.(m.at.file) in
+           ((not stopped) || m.at.line < stop_line)
+           && not (any_stopped && m.what = Some "this program has no `proc.main`"))
   in
   let messages =
     List.stable_sort
       (fun a b -> compare (position a) (position b))
-      (outermost_chains (Option.to_list carriage_return @ parse_problems @ Spacing.check lines @ core_problems))
+      (outermost_chains (List.concat_map (fun (_, _, m, _) -> m) (Array.to_list read) @ core_problems))
   in
-  (source, definitions, messages)
+  (Array.mapi (fun i lines -> (fst files.(i), lines)) source, definitions, messages)
 
 (* trace: D55, D83, D102. Knock-on errors: the first error's one fix is applied in memory and the program checked
    again. Each later message that disappears follows from the first error, and says so in its `because:`. *)
-let knock_ons contents messages =
+let knock_ons (files : (string * string) array) messages =
   match messages with
   | ({ M.fix = Some fix; _ } as first) :: later ->
-      let lines = String.split_on_char '\n' contents in
       let fixed =
-        String.concat "\n" (List.mapi (fun i text -> if i + 1 = first.at.line then fix else text) lines)
+        Array.mapi
+          (fun index (name, contents) ->
+            if index <> first.at.file then (name, contents)
+            else
+              let lines = String.split_on_char '\n' contents in
+              (name, String.concat "\n" (List.mapi (fun i text -> if i + 1 = first.at.line then fix else text) lines)))
+          files
       in
       let _, _, again = examine fixed in
       (* A message on the fixed line may move along it, so there it's matched without its column. *)
       let same (a : M.message) (b : M.message) =
-        a.kind = b.kind && a.what = b.what && a.why = b.why && a.at.line = b.at.line
-        && (a.at.line = first.at.line || M.first_column a.at = M.first_column b.at)
+        a.kind = b.kind && a.what = b.what && a.why = b.why && a.at.file = b.at.file && a.at.line = b.at.line
+        && ((a.at.file = first.at.file && a.at.line = first.at.line) || M.first_column a.at = M.first_column b.at)
       in
       let column = M.first_column first.at in
       first
@@ -225,6 +239,39 @@ let knock_ons contents messages =
            later
   | _ -> messages
 
+(* trace: D64. The program is every `.unio` file in the given file's folder, in order of their names. Gives each one's
+   name for messages and its text, and which one was given. *)
+let program_files given =
+  let folder = Filename.dirname given in
+  let shown name = if String.contains given '/' then Filename.concat folder name else name in
+  let others =
+    match Sys.readdir folder with
+    | names ->
+        List.filter
+          (fun name ->
+            Filename.check_suffix name ".unio"
+            && (not (Sys.is_directory (Filename.concat folder name)))
+            && name <> Filename.basename given)
+          (Array.to_list names)
+    | exception Sys_error _ -> []
+  in
+  let names = List.sort compare (Filename.basename given :: others) in
+  let rec gather acc = function
+    | [] -> Ok (List.rev acc)
+    | name :: rest -> (
+        let path = if name = Filename.basename given then given else shown name in
+        match read path with
+        | Ok contents -> gather ((path, contents) :: acc) rest
+        | Error reason -> Error (path, reason))
+  in
+  match gather [] names with
+  | Ok files ->
+      let files = Array.of_list files in
+      let given_index = ref 0 in
+      Array.iteri (fun i (path, _) -> if path = given then given_index := i) files;
+      Ok (files, !given_index)
+  | Error problem -> Error problem
+
 let () =
   Random.self_init ();
   match Sys.argv with
@@ -233,24 +280,30 @@ let () =
       | Error reason ->
           prerr_string (M.cant_read file reason);
           finish 2
-      | Ok contents ->
-          let source, definitions, messages = examine contents in
-          let messages = knock_ons contents messages in
-          if messages <> [] then begin
-            print_messages file source messages;
-            (* trace: D56, D148. Any refusal gives status 1; only limits alone give 3. *)
-            let refused = List.exists (fun (m : M.message) -> m.kind = M.Refused) messages in
-            finish (if refused then 1 else 3)
-          end
-          else
-            (* trace: D82, D103. Calls nested deeper than Ralph's own stack can hold are Ralph's limit, not the
-               program's mistake. *)
-            match walk file source (Core.run fuel call_limit definitions) with
-            | () -> ()
-            | exception Stack_overflow ->
-                end_open_line ();
-                prerr_string (M.internal_error "the program's calls are nested deeper than Ralph can follow");
-                finish 7)
+      | Ok _ -> (
+          match program_files file with
+          | Error (path, reason) ->
+              prerr_string (M.cant_read path reason);
+              finish 2
+          | Ok (texts, given) ->
+              Wording.given_file := given;
+              let files, definitions, messages = examine texts in
+              let messages = knock_ons texts messages in
+              if messages <> [] then begin
+                print_messages files messages;
+                (* trace: D56, D148. Any refusal gives status 1; only limits alone give 3. *)
+                let refused = List.exists (fun (m : M.message) -> m.kind = M.Refused) messages in
+                finish (if refused then 1 else 3)
+              end
+              else
+                (* trace: D82, D103. Calls nested deeper than Ralph's own stack can hold are Ralph's limit, not the
+                   program's mistake. *)
+                match walk files (Core.run fuel call_limit definitions) with
+                | () -> ()
+                | exception Stack_overflow ->
+                    end_open_line ();
+                    prerr_string (M.internal_error "the program's calls are nested deeper than Ralph can follow");
+                    finish 7))
   | _ ->
       prerr_string "ralph: give it one Unio file, as in `ralph game.unio`\n";
       finish 6

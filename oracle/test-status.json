@@ -1,5 +1,5 @@
 {
-  "passed": 38,
+  "passed": 39,
   "failed": 0,
   "assumptions": { "status": "pass" },
   "tests": {
@@ -21,6 +21,7 @@
     "d160_random_backwards_plain": { "status": "pass" },
     "d160_random_backwards_runtime": { "status": "pass" },
     "d161_value_only_line": { "status": "pass" },
+    "d166_parameters_in_round_brackets": { "status": "pass" },
     "d16_if": { "status": "pass" },
     "d19_while": { "status": "pass" },
     "d20_ask": { "status": "pass" },
