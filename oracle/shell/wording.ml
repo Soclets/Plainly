@@ -40,6 +40,98 @@ let line_of source (p : Core.place) =
 
 let same_type_why = "a value's type has to match where it's used."
 
+(* ---------------------------------------------------------------------------------------------------------------- *)
+(* D128's fixes (D142): a chain of calls written again as calls, or as one slide. *)
+
+let expression_place (e : Core.expression) : Core.place =
+  match e with
+  | Core.Whole_literal (_, p) | Core.Text_literal (_, _, p) | Core.Bool_literal (_, p) | Core.Variable_value (_, p)
+  | Core.Bare_word (_, p) | Core.Negate (_, p) | Core.Not (_, p) | Core.Binary (_, _, _, _, p)
+  | Core.Bracketed (_, p) | Core.Call (_, _, p) | Core.Fallback (_, _, _, p) | Core.Slide (_, _, p)
+  | Core.Broken p ->
+      p
+
+(* What's written at a place, on its line. *)
+let written source (p : Core.place) =
+  let text = line_of source p in
+  if p.place_column >= 1 && p.place_column - 1 + p.place_width <= String.length text then
+    Some (String.sub text (p.place_column - 1) p.place_width)
+  else None
+
+let ( let* ) = Option.bind
+
+(* Each argument as written, its label included. *)
+let rec arguments_written source (given : Core.arguments) =
+  match given with
+  | Core.No_arguments -> Some []
+  | Core.Argument (label, value, rest) ->
+      let vp = expression_place value in
+      let* this =
+        match label with
+        | Some (_, lp) ->
+            written source
+              { Core.place_line = lp.place_line; place_column = lp.place_column;
+                place_width = vp.place_column + vp.place_width - lp.place_column }
+        | None -> written source vp
+      in
+      let* others = arguments_written source rest in
+      Some (this :: others)
+
+(* A chain as its first value and its links, innermost first: each link a procedure and its other arguments. *)
+type link = { procedure : string; others : string list }
+
+(* trace: D128, D142. A chain flattened all the way: the innermost call's one argument starts the slide, as
+   `$points` starts `$points |> double`; an innermost call with no arguments starts it itself. With more arguments,
+   which one starts the slide isn't decided, so [None]. *)
+let rec flatten source (e : Core.expression) : (string * link list) option =
+  match e with
+  | Core.Call (name, Core.Argument (None, (Core.Call _ as inner), rest), _) ->
+      let* start, links = flatten source inner in
+      let* others = arguments_written source rest in
+      Some (start, links @ [ { procedure = Core.callee_name name; others } ])
+  | Core.Call (name, Core.Argument (None, first, Core.No_arguments), _) ->
+      let* start = written source (expression_place first) in
+      Some (start, [ { procedure = Core.callee_name name; others = [] } ])
+  | Core.Call (_, Core.No_arguments, p) ->
+      let* start = written source p in
+      Some (start, [])
+  | Core.Call _ -> None
+  | Core.Slide (start, path, _) ->
+      let* first, links = flatten source start in
+      let rec steps (path : Core.steps) =
+        match path with
+        | Core.No_steps -> Some []
+        | Core.Step (name, _, given, _, rest) ->
+            let* others = arguments_written source given in
+            let* later = steps rest in
+            Some ({ procedure = Core.callee_name name; others } :: later)
+      in
+      let* later = steps path in
+      Some (first, links @ later)
+  | other ->
+      let* start = written source (expression_place other) in
+      Some (start, [])
+
+let as_slide (start, links) =
+  String.concat " |> "
+    (start
+    :: List.map
+         (fun l -> if l.others = [] then l.procedure else l.procedure ^ "(" ^ String.concat ", " l.others ^ ")")
+         links)
+
+let as_calls (start, links) =
+  List.fold_left (fun inner l -> l.procedure ^ "(" ^ String.concat ", " (inner :: l.others) ^ ")") start links
+
+let chain_why = "one or two calls are written as calls; a chain of three or more is a slide."
+
+let chain_refusal source (whole : Core.expression) (fixed : string option) =
+  let p = expression_place whole in
+  match fixed with
+  | Some text -> refused p ~fix:(M.replace_at (line_of source p) p.place_column p.place_width text) ~why:chain_why
+  | None ->
+      M.message M.Not_designed_yet (at p)
+        ~what:"which argument starts the slide, when the innermost call takes more than one, isn't decided yet"
+
 let refusal source (r : Core.refusal) : M.message =
   match r with
   | Core.Unknown_variable (name, p, ended) ->
@@ -256,6 +348,18 @@ let refusal source (r : Core.refusal) : M.message =
         ~what:(Printf.sprintf "there's already a procedure named %s" (quoted name))
         ~because:("the first is here", Some (at first))
         ~why:"every procedure in a program needs its own name, since a call has to know which one it means."
+  | Core.Slide_as_calls whole ->
+      (* The start of a short slide stays as written, as in `show_msg(larger(3, 9))`. *)
+      let fixed =
+        match whole with
+        | Core.Slide (start, path, _) ->
+            let* first = written source (expression_place start) in
+            let* _, links = flatten source (Core.Slide (Core.Broken (expression_place start), path, expression_place whole)) in
+            Some (as_calls (first, links))
+        | _ -> None
+      in
+      chain_refusal source whole fixed
+  | Core.Calls_as_slide whole -> chain_refusal source whole (Option.map as_slide (flatten source whole))
   | Core.No_main ->
       refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~what:"this program has no `proc.main`"
         ~why:"a program starts with `proc.main`."
@@ -270,9 +374,6 @@ let not_designed (what : Core.not_designed) =
   | Core.Format_bool -> "how a `Bool` fills in `.fmt` braces"
   | Core.Format_unclosed -> "a `{` that's never closed in `.fmt` text"
   | Core.Format_not_literal -> "`.fmt` given anything but text written in quotes"
-  | Core.Short_slide_wording -> "the message for a slide of fewer than three calls"
-  | Core.Long_chain_wording -> "the message for three or more calls nested in one another"
-  | Core.Mixed_chain_wording -> "the message for a chain written partly as calls and partly as a slide"
   | Core.Bare_word_not_procedure -> "a word with no `( )` that isn't a procedure"
   | Core.Statement_not_call -> "a value standing alone as a statement"
   | Core.Library_name_taken -> "a procedure with the name of one of the library's"

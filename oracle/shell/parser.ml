@@ -125,18 +125,23 @@ let check_name st (t : token) written name =
       (M.message M.Refused (M.point t.line t.column t.width)
          ~what:(Printf.sprintf "`%s` has a capital letter, but names have none" written)
          ~why:"a name is lowercase letters and digits, starting with a letter, with `_` only between words.")
-  else if
-    is_digit name.[0] || name.[0] = '_' || name.[length - 1] = '_'
-    || (let rec doubled i = i + 1 < length && ((name.[i] = '_' && name.[i + 1] = '_') || doubled (i + 1)) in
-        doubled 0)
-  then
-    report st
-      (M.message M.Not_designed_yet (M.point t.line t.column t.width)
-         ~what:
-           (Printf.sprintf
-              "the wording of the refusal for `%s`, a name with a digit or `_` in the wrong place (D99, D102), \
-               isn't decided yet"
-              written))
+  else
+    (* trace: D142 *)
+    let problem =
+      if is_digit name.[0] then Some "starts with a digit, but names start with a letter"
+      else if name.[0] = '_' then Some "starts with `_`, but names start with a letter"
+      else if name.[length - 1] = '_' then Some "ends with `_`, but `_` only goes between words"
+      else
+        let rec doubled i = i + 1 < length && ((name.[i] = '_' && name.[i + 1] = '_') || doubled (i + 1)) in
+        if doubled 0 then Some "has two `_` in a row, but `_` only goes between words" else None
+    in
+    match problem with
+    | Some problem ->
+        report st
+          (M.message M.Refused (M.point t.line t.column t.width)
+             ~what:(Printf.sprintf "`%s` %s" written problem)
+             ~why:"a name is lowercase letters and digits, starting with a letter, with `_` only between words.")
+    | None -> ()
 
 (* ---------------------------------------------------------------------------------------------------------------- *)
 (* Text *)

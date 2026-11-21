@@ -80,12 +80,17 @@ let rec walk file source (tree : unit Core.io) =
                   (Printf.sprintf "%s %s %s" (Core.text_of_whole a) (arithmetic_symbol operator) (Core.text_of_whole b))
                 ~why:"a `Whole` holds whole numbers from -9223372036854775808 to 9223372036854775807." ];
           finish 4
-      | Core.Overflow (p, _, Core.Operation_negate _) ->
+      | Core.Overflow (p, too_big, Core.Operation_negate a) ->
           end_open_line ();
+          let value = Core.text_of_whole a in
+          (* trace: D142. The value is in brackets when it starts with `-`. *)
+          let shown = if String.length value > 0 && value.[0] = '-' then "-(" ^ value ^ ")" else "-" ^ value in
           print_messages file source
-            [ M.message M.Not_designed_yet (Wording.at p)
-                ~what:"how a failed overflow check shows a negation in its `when:` line isn't decided yet" ];
-          finish 3
+            [ M.message M.Check_failed (Wording.at p)
+                ~what:(if too_big then "the result is too big for a `Whole`" else "the result is too small for a `Whole`")
+                ~when_:shown
+                ~why:"a `Whole` holds whole numbers from -9223372036854775808 to 9223372036854775807." ];
+          finish 4
       | Core.Random_range_not_designed (p, _, _) ->
           end_open_line ();
           print_messages file source
@@ -101,6 +106,19 @@ let rec walk file source (tree : unit Core.io) =
           finish 7)
 
 let position (m : M.message) = (m.at.line, M.first_column m.at)
+
+(* trace: D55, D128. One chain of calls is one mistake: of the refusals for a chain and the chains inside it, only
+   the outermost is kept. *)
+let outermost_chains messages =
+  let chain (m : M.message) = m.why = Some Wording.chain_why in
+  let span (m : M.message) =
+    match m.at.carets with (column, width) :: _ -> (m.at.line, column, column + width) | [] -> (m.at.line, 0, 0)
+  in
+  let inside a b =
+    let line_a, first_a, stop_a = span a and line_b, first_b, stop_b = span b in
+    line_a = line_b && first_b <= first_a && stop_a <= stop_b && (first_a, stop_a) <> (first_b, stop_b)
+  in
+  List.filter (fun m -> not (chain m && List.exists (fun other -> chain other && inside m other) messages)) messages
 
 (* trace: D56, D92, D103 *)
 let read file =
@@ -147,7 +165,7 @@ let () =
           let messages =
             List.stable_sort
               (fun a b -> compare (position a) (position b))
-              (Option.to_list carriage_return @ parse_problems @ core_problems)
+              (outermost_chains (Option.to_list carriage_return @ parse_problems @ core_problems))
           in
           if messages <> [] then begin
             print_messages file source messages;

@@ -171,8 +171,8 @@ Fixpoint count_steps (path : steps) : nat :=
 (* trace: D128. A slide is for a chain of three calls or more, written as a slide all the way. *)
 Definition slide_shape (start : expression) (path : steps) (at_ : place) : list diagnostic :=
   let depth := chain_depth start in
-  if (2 <=? depth)%nat then [Not_designed_yet Mixed_chain_wording at_]
-  else if (depth + count_steps path <? 3)%nat then [Not_designed_yet Short_slide_wording at_]
+  if (2 <=? depth)%nat then [Refused (Calls_as_slide (Slide start path at_))]
+  else if (depth + count_steps path <? 3)%nat then [Refused (Slide_as_calls (Slide start path at_))]
   else [].
 
 (* Checks one piece of `.fmt` text (D29, D133). *)
@@ -310,21 +310,17 @@ Definition check_target (s : setting) (procedure : string) (target : target) (gi
       make_call (gives_of d) false (check_against procedure (user_parameters d) given at_ (Some (definition_name_at d)))
   end.
 
-Definition first_chain_depth (given : list checked_argument) : nat :=
-  match given with
-  | a :: _ => S (chain_depth (argument_value a))
-  | [] => 1
-  end.
-
 (* trace: D4, D24, D38, D128 *)
 Definition check_call (s : setting) (name : callee) (given : list checked_argument) (at_ : place) : call_check :=
-  let chain := if Nat.eqb (first_chain_depth given) 3 then [Not_designed_yet Long_chain_wording at_] else [] in
-  let c :=
-    match resolve (setting_program s) name with
-    | Unresolved problems => unknown_call (problems ++ values_diagnostics given)
-    | Resolved target => check_target s (callee_name name) target given at_
-    end in
-  make_call (call_gives c) (call_can_fail c) (call_diagnostics c ++ chain).
+  match resolve (setting_program s) name with
+  | Unresolved problems => unknown_call (problems ++ values_diagnostics given)
+  | Resolved target => check_target s (callee_name name) target given at_
+  end.
+
+(* trace: D128, D142. Three or more calls nested, each the first argument of the next, are written as a slide. The
+   shell keeps only the outermost of a chain's refusals (D55). *)
+Definition chain_problem (e : expression) : list diagnostic :=
+  if (3 <=? chain_depth e)%nat then [Refused (Calls_as_slide e)] else [].
 
 (* A slide's step: [target] called with the slid value first, then the step's own arguments (D5). *)
 Definition check_step_target (s : setting) (procedure : string) (target : target) (slid : option type)
@@ -415,18 +411,21 @@ Fixpoint check_expression (s : setting) (e : expression) {struct e} : option typ
           end
       end
   | Bracketed inner _ => check_expression s inner
-  | Call name given at_ => as_value (check_call s name (check_arguments s given) at_) at_
+  | Call name given at_ =>
+      let (t, d) := as_value (check_call s name (check_arguments s given) at_) at_ in
+      (t, d ++ chain_problem (Call name given at_))
   | Fallback attempt fallback operator_at _ =>
       let (f, df) := check_expression s fallback in
       match attempt with
       | Call name given call_at =>
           let c := check_call s name (check_arguments s given) call_at in
+          let chain := chain_problem (Call name given call_at) in
           match call_gives c, call_can_fail c with
           | Gives_value t, true =>
-              (Some t, call_diagnostics c ++ df
+              (Some t, call_diagnostics c ++ chain ++ df
                          ++ expect f t (fun found => Refused (Fallback_type t found (expression_at fallback))))
-          | Gives_unknown, _ => (None, call_diagnostics c ++ df)
-          | _, _ => (None, call_diagnostics c ++ df ++ [Refused (Fallback_without_failing_call operator_at)])
+          | Gives_unknown, _ => (None, call_diagnostics c ++ chain ++ df)
+          | _, _ => (None, call_diagnostics c ++ chain ++ df ++ [Refused (Fallback_without_failing_call operator_at)])
           end
       | _ =>
           let (_, da) := check_expression s attempt in
@@ -481,7 +480,9 @@ Fixpoint last_step_name (path : steps) : string :=
 
 Definition check_run (s : setting) (action : expression) : list diagnostic :=
   match action with
-  | Call name given at_ => check_run_call (check_call s name (check_arguments s given) at_) (callee_name name) at_
+  | Call name given at_ =>
+      check_run_call (check_call s name (check_arguments s given) at_) (callee_name name) at_
+        ++ chain_problem action
   | Slide start path at_ =>
       let (t, ds) := check_expression s start in
       ds ++ slide_shape start path at_ ++ check_run_call (check_steps s t path) (last_step_name path) at_

@@ -135,7 +135,7 @@ Proof.
     all: try (match goal with H : check_single _ _ _ = (None, _) |- _ =>
                 eapply single_reported; [|exact H]; assumption end).
     all: try (apply app_not_nil_r; discriminate).
-  - intros _. apply app_not_nil_l. apply app_not_nil_l. eapply resolve_reported; eauto.
+  - intros _. apply app_not_nil_l. eapply resolve_reported; eauto.
 Qed.
 
 Lemma step_reported : forall s name slid args at_, Forall reported args ->
@@ -200,7 +200,10 @@ Proof.
     destruct (binary_type _ _ _ _ _ _) as [[]] eqn:E; simpl; [discriminate|].
     intros _. apply app_not_nil_r, app_not_nil_r. eapply binary_type_reported; eauto.
   - (* Bracketed *) intros inner IH at_ s; simpl; auto.
-  - (* Call *) intros name given IH at_ s; simpl. apply as_value_reported. apply call_reported. apply IH.
+  - (* Call *) intros name given IH at_ s; cbn [check_expression].
+    pose proof (as_value_reported (check_call s name (check_arguments s given) at_) at_) as A.
+    destruct (as_value _ at_) as [t d]; simpl in *. intros T. apply app_not_nil_l. apply A; auto.
+    apply call_reported. apply IH.
   - (* Fallback *) intros attempt IHa fallback IHf operator_at at_ s. cbn [check_expression].
     destruct (check_expression s fallback) as [f df] eqn:F.
     destruct attempt as [ | | | | | | | | | name given call_at | | | ]; cbn beta iota zeta;
@@ -208,7 +211,8 @@ Proof.
            simpl; intros; auto with reported; fail).
     specialize (IHa s); cbn [check_expression] in IHa.
     destruct (check_call s name (check_arguments s given) call_at) as [g fails diagnostics] eqn:C; simpl in *.
-    destruct g, fails; simpl; try discriminate; intros _; auto with reported.
+    destruct g, fails; simpl in *; try discriminate; intros _; auto with reported;
+      rewrite app_assoc; apply app_not_nil_l; apply IHa; reflexivity.
   - (* Slide *) intros start IHs path IHp at_ s; simpl.
     destruct (check_expression s start) as [t ds]; simpl.
     destruct (as_value (check_steps s t path) at_) as [result dc] eqn:A; simpl.
