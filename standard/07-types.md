@@ -175,6 +175,11 @@ Empty text is `""` (D76).
 let $speed: Float = ~0.1;
 ```
 
+A number written with a point is a `Float`, and one without is a `Whole`, wherever it's written: `let $speed: Float =
+7` is refused with `7.0` as the fix, and `let $lives: Whole = 7.0` with `7` (D180). So `7 / 2` is always `Whole`
+maths, and `7.0 / 2.0` is 3.5.
+
+
 Unio doesn't promise a `Float` gives the same bits on every machine (D163). `+`, `-`, `*`, `/` and the square root
 do anyway, since `final` never fuses or reorders float maths (D46, D124); maths functions, when Unio has them, may
 differ in the last digit between machines.

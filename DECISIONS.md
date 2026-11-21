@@ -5503,3 +5503,36 @@ nearest; `/` is no different. Cyborg's D164 chose the same for its floats.
 
 **Tankun's words.** Asked "Should `/` on two `Float`s divide and round to the nearest `Float`, like `+`, `-` and `*`?",
 the owner chose: "yea".
+
+## D180. A number literal's type comes from its point alone
+
+2026-11-21.
+
+**Chosen.** A number written with a point is a `Float`, and one without is a `Whole`, wherever it's written. A
+literal never takes its type from where it goes:
+
+```
+let $speed: Float = 7.0;          // 7 is refused, fix: 7.0
+let $fast: Float = $speed * 2.0;  // 2 is refused, fix: 2.0
+let $half: Float = 7.0 / 2.0;     // 3.5
+let $each: Whole = 7 / 2;         // Whole maths: stops on the remainder (D70)
+let $lives: Whole = 3;            // 3.0 is refused, fix: 3
+```
+
+**Weighed.**
+- A lone literal taking its type from where it goes, as `[]` does (D76), with the point deciding inside calculations.
+  Tankun: "It says Float, though", and `let $speed: Float = 7` can't be misread. But then `$speed * 2` would be
+  refused while `= 7` wasn't, and the rule would have two halves.
+- Every literal without a point taking the type its place needs, `Whole` by default, as Swift has it. `$speed * 2`
+  has only one reading under D162, but `7 / 2` would be 3.5 in `let $half: Float = 7 / 2` and `Whole` maths in
+  `be.Text(7 / 2)`, so its meaning would depend on what's around it. Tankun: "Ah, so the problem is defaulting to
+  Whole when there's no type".
+
+**Why this won.** A reader can tell a number's type by looking at it, `7 / 2` means the same everywhere, and D162's
+"no quiet mixing" has no exception. The cost is typing `.0` on float literals, and each refusal gives the fix. Rust
+does the same.
+
+**Tankun's words.** "When did that mean Float?", "Why?", "It says Float, though", "Wait, why bullet 2?", "Ah, so the
+problem is defaulting to Whole when there's no type. So, `.0` does look okay after all", then, asked "Should every
+number literal's type come from the point alone, with a point a `Float` and without one a `Whole`, everywhere?", the
+owner chose: "yea".
