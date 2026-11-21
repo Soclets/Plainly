@@ -97,7 +97,8 @@ Still `NotBuiltYet` in Ralph (decided, not built), each saying so when a program
 - lists, dividing and remainders, `?`, `?? ignore`, `?? crash`, `otherwise:`, families, handlers, `extern.cpp`,
   block and doc comments, packages, methods (outside the milestone's subset).
 
-Still with Tankun: reading 8 below, `while` and D57.
+Reading 8 (`while` and D57) became D149, which Ralph already follows. Its example breaks D9; sent to the design
+session on 2026-11-21.
 
 ## Theorem statements sent to the design session
 
