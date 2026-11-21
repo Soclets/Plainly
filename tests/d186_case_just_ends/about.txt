@@ -1,0 +1,1 @@
+After a call that gives back no value, a case may just end, and the program carries on after end otherwise. D40, D168, D186; standard ch. 8.

@@ -1191,6 +1191,7 @@ end otherwise
   procedure gaining a failure makes every incomplete block a build error.
 - Each case ends in one of four ways: `instead` a value, carrying on with it; `return`; `break`; or failing on purpose.
   A case that could fall off its end is refused.
+  (Changed by D186: when the call gives back no value, a case may also just end.)
 - `case` is indented one level in, and its body one level further (D10).
 
 (How a procedure fails on purpose, and `return` itself, aren't decided yet.)
@@ -5165,6 +5166,8 @@ end otherwise
 
 A `List` with no limit never fails on `.add`.
 
+(This example's case just ends, which D40 refused; D186 allows it, since `.add` gives back no value.)
+
 **Weighed.**
 - A failed check that stops the program, as a bad position does. A full bag is a normal game event, not a bug, and
   a player picking up an eleventh item shouldn't crash the game.
@@ -5670,3 +5673,33 @@ Cyborg's D405 and D406 chose the same: correctly rounded, and stopping on a nega
 
 **Tankun's words.** Asked "Should Unio have `sqrt` for a `Float`, giving the nearest `Float` and stopping with a failed
 check on a negative number?", the owner chose: "yea. Should stdlib not be a lib".
+
+## D186. A case may just end when the call it handles gives back no value
+
+2026-11-21.
+
+**Chosen.** In an `otherwise:` block after a call that gives back no value, as `.add` does, a case may end without
+`instead`, `return`, `break` or failing on purpose, and the program carries on after `end otherwise`, as if the call
+had worked. Calls that give back a value keep D40's rule.
+
+```
+$bag.add("Gem") otherwise:
+    case full:
+        show_msg("Your bag is full!");
+end otherwise
+show_msg("Onward!");
+```
+
+**Weighed.**
+- D40 as it stood, with no way to carry on. D168's own example broke it, and a program telling the player "your bag is
+  full" and going on is the common case.
+- A closing word for such a case, like `carry_on;`. Every case would still end deliberately, but the word could only
+  ever mean one thing, so it would be noise each time, and a second do-nothing ending next to `?? ignore`.
+
+**Why this won.** D40's rule protects a value: a case after `let $best = load() otherwise:` that just ended would leave
+`$best` holding nothing. After a call that gives back nothing, no value can be missing, and carrying on is the only
+meaning an ending could have. The case is still written out, so the failure is never ignored silently (D23). Found
+while writing D168's test.
+
+**Tankun's words.** "why?", then, asked "Should a case be allowed to just end when the call it handles gives back no
+value?", the owner chose: "yea".

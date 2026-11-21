@@ -81,6 +81,16 @@ end otherwise
 - **The cases must cover every failure still possible at that call** (D40).
 - **Each case ends in one of four ways:** `instead` a value, carrying on with it; `return`; `break`; or failing on
   purpose. A case that could fall off its end is refused (D40).
+- **When the call gives back no value,** as `.add` does, a case may also just end, and the program carries on after
+  `end otherwise` (D186):
+
+```
+$bag.add("Gem") otherwise:
+    case full:
+        show_msg("Your bag is full!");
+end otherwise
+show_msg("Onward!");
+```
 - **`case` is indented one level in, and its body one level further** (D10, D40).
 
 ## Handler families
