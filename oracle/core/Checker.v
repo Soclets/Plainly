@@ -680,8 +680,6 @@ Definition parameter_info (p : parameter) : variable_info :=
   {| variable_name := parameter_name p; variable_type := parameter_type p; variable_kind := Parameter_variable;
      variable_name_at := parameter_at p; variable_keyword_at := parameter_at p |}.
 
-Definition procedure_label (d : definition) : string :=
-  match definition_name d with Main => "proc.main" | Named n => n end.
 
 (* A body's `labels` line, if it starts with one (D25), and the statements after it. *)
 Definition labels_and_rest (b : block) : option (list label_pair) * block :=

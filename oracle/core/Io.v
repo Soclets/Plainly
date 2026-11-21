@@ -16,6 +16,8 @@ Inductive arithmetic_operation :=
 Inductive stop :=
 (* D46's overflow check failed, at a place, with the values that broke it (D92). *)
 | Overflow (at_ : place) (too_big : bool) (operation : arithmetic_operation)
+(* trace: D154. Calls nested too deep: how deep, and the procedure the call that went too deep is in. *)
+| Calls_too_deep (at_ : place) (depth : nat) (inside : string)
 (* `ask` found no more input: the program ends quietly with status 0 (D96). *)
 | Input_ended
 (* `random` with `from:` above `to:`, which isn't decided (D26). *)

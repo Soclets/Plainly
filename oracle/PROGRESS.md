@@ -99,8 +99,12 @@ Still `NotBuiltYet` in Ralph (decided, not built), each saying so when a program
 
 Fixed after the milestone (2026-11-21): any procedure calling itself crashed Ralph, found by the compiler session.
 OCaml works out a function's arguments first, so the evaluator built both ways of every `if`; each way is now a
-function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine (Ralph gives
-status 7 for now). Six recursion tests suggested to the design session.
+function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine; answered by D154. Six recursion tests suggested to the design session.
+
+D154 is built: calls nesting deeper than 1,000,000 stop with `check failed:`, status 4; the evaluator now carries how
+deep it is and which procedure it's in (`frame` in core/Evaluator.v). Ralph's own stack running out is still an
+internal error, status 7, as a last guard. D156 names `be.Whole`'s failure `not_a_whole`, for `?? crash` (D152), which
+isn't built yet.
 
 D153 (`be.Text` of a `Bool`) is built; the six recursion tests and d153's test pass, 34 of 34. D152 (`?? crash`) is
 outside the milestone's subset and stays `NotBuiltYet`; for `be.Whole` its `what:` also needs the failure's name,

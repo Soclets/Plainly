@@ -197,7 +197,13 @@ Definition need_bool {A : Type} (v : value) (then_ else_ : unit -> io A) : io A 
   | _ => Stop Stuck
   end.
 
-Fixpoint evaluate (fuel : nat) (p : program) (env : environment) (e : expression) {struct fuel} : io value :=
+(* Where a call is: how many calls are waiting for one another, the most there may be, and the procedure it's in. *)
+Record frame := { frame_depth : nat; frame_limit : nat; frame_procedure : string }.
+
+Definition enter (where_ : frame) (procedure : string) : frame :=
+  {| frame_depth := S (frame_depth where_); frame_limit := frame_limit where_; frame_procedure := procedure |}.
+
+Fixpoint evaluate (fuel : nat) (where_ : frame) (p : program) (env : environment) (e : expression) {struct fuel} : io value :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
@@ -215,50 +221,50 @@ Fixpoint evaluate (fuel : nat) (p : program) (env : environment) (e : expression
           | None => Stop Stuck
           end
       | Negate operand at_ =>
-          bind (evaluate fuel' p env operand) (fun v =>
+          bind (evaluate fuel' where_ p env operand) (fun v =>
             match v with
             | Whole_value n => checked_whole at_ (whole_negate n) (Operation_negate n) Whole_value
             | _ => Stop Stuck
             end)
       | Not operand _ =>
-          bind (evaluate fuel' p env operand) (fun v =>
+          bind (evaluate fuel' where_ p env operand) (fun v =>
             need_bool v (fun _ => Done (Bool_value false)) (fun _ => Done (Bool_value true)))
       (* trace: D34. `and` and `or` stop early: the right side runs only if it can still change the answer. *)
       | Binary And left_operand right_operand _ _ =>
-          bind (evaluate fuel' p env left_operand) (fun a =>
+          bind (evaluate fuel' where_ p env left_operand) (fun a =>
             need_bool a
-              (fun _ => bind (evaluate fuel' p env right_operand) (fun b =>
+              (fun _ => bind (evaluate fuel' where_ p env right_operand) (fun b =>
                  need_bool b (fun _ => Done (Bool_value true)) (fun _ => Done (Bool_value false))))
               (fun _ => Done (Bool_value false)))
       | Binary Or left_operand right_operand _ _ =>
-          bind (evaluate fuel' p env left_operand) (fun a =>
+          bind (evaluate fuel' where_ p env left_operand) (fun a =>
             need_bool a
               (fun _ => Done (Bool_value true))
-              (fun _ => bind (evaluate fuel' p env right_operand) (fun b =>
+              (fun _ => bind (evaluate fuel' where_ p env right_operand) (fun b =>
                  need_bool b (fun _ => Done (Bool_value true)) (fun _ => Done (Bool_value false)))))
       | Binary operator left_operand right_operand _ at_ =>
-          bind (evaluate fuel' p env left_operand) (fun a =>
-            bind (evaluate fuel' p env right_operand) (fun b => apply_binary operator a b at_))
-      | Bracketed inner _ => evaluate fuel' p env inner
-      | Call name given at_ => bind (call fuel' p env name given at_) need_value
+          bind (evaluate fuel' where_ p env left_operand) (fun a =>
+            bind (evaluate fuel' where_ p env right_operand) (fun b => apply_binary operator a b at_))
+      | Bracketed inner _ => evaluate fuel' where_ p env inner
+      | Call name given at_ => bind (call fuel' where_ p env name given at_) need_value
       (* trace: D23. `??` carries on with the value after it when the call fails. *)
       | Fallback (Call name given call_at) fallback _ _ =>
-          bind (call fuel' p env name given call_at) (fun o =>
+          bind (call fuel' where_ p env name given call_at) (fun o =>
             match o with
             | Gave v => Done v
-            | Failed => evaluate fuel' p env fallback
+            | Failed => evaluate fuel' where_ p env fallback
             | Gave_nothing => Stop Stuck
             end)
       | Fallback _ _ _ _ => Stop Stuck
       (* trace: D5 *)
       | Slide start path _ =>
-          bind (evaluate fuel' p env start) (fun v => bind (slide fuel' p env v path) need_value)
+          bind (evaluate fuel' where_ p env start) (fun v => bind (slide fuel' where_ p env v path) need_value)
       | Bare_word _ _ | Broken _ => Stop Stuck
       end
   end
 
 (* Works out each argument, left to right. *)
-with evaluate_arguments (fuel : nat) (p : program) (env : environment) (given : arguments) {struct fuel}
+with evaluate_arguments (fuel : nat) (where_ : frame) (p : program) (env : environment) (given : arguments) {struct fuel}
   : io (list value) :=
   match fuel with
   | O => Stop Out_of_fuel
@@ -266,13 +272,13 @@ with evaluate_arguments (fuel : nat) (p : program) (env : environment) (given : 
       match given with
       | No_arguments => Done []
       | Argument _ value rest =>
-          bind (evaluate fuel' p env value) (fun v =>
-            bind (evaluate_arguments fuel' p env rest) (fun vs => Done (v :: vs)))
+          bind (evaluate fuel' where_ p env value) (fun v =>
+            bind (evaluate_arguments fuel' where_ p env rest) (fun vs => Done (v :: vs)))
       end
   end
 
 (* Runs the procedure [name] with [values] as its arguments, in order (D24: labels only say which is which). *)
-with apply (fuel : nat) (p : program) (env : environment) (name : callee) (values : list value) (given : arguments)
+with apply (fuel : nat) (where_ : frame) (p : program) (env : environment) (name : callee) (values : list value) (given : arguments)
     (at_ : place) {struct fuel} : io outcome :=
   match fuel with
   | O => Stop Out_of_fuel
@@ -282,66 +288,72 @@ with apply (fuel : nat) (p : program) (env : environment) (name : callee) (value
       | Resolved (Library which) => apply_library env which values given at_
       | Resolved (User d) =>
           match bind_parameters (definition_parameters d) values with
-          | Some locals => bind (execute_block fuel' p locals (definition_body d)) (procedure_result d)
+          | Some locals =>
+              (* trace: D154 *)
+              let depth := S (frame_depth where_) in
+              if Nat.leb (frame_limit where_) depth then Stop (Calls_too_deep at_ depth (frame_procedure where_))
+              else
+                bind (execute_block fuel' (enter where_ (procedure_label d)) p locals (definition_body d))
+                  (procedure_result d)
           | None => Stop Stuck
           end
       end
   end
 
-with call (fuel : nat) (p : program) (env : environment) (name : callee) (given : arguments) (at_ : place)
+with call (fuel : nat) (where_ : frame) (p : program) (env : environment) (name : callee) (given : arguments) (at_ : place)
     {struct fuel} : io outcome :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
-      bind (evaluate_arguments fuel' p env given) (fun values => apply fuel' p env name values given at_)
+      bind (evaluate_arguments fuel' where_ p env given) (fun values => apply fuel' where_ p env name values given at_)
   end
 
 (* Passes [v] into each step as its first argument (D5). *)
-with slide (fuel : nat) (p : program) (env : environment) (v : value) (path : steps) {struct fuel} : io outcome :=
+with slide (fuel : nat) (where_ : frame) (p : program) (env : environment) (v : value) (path : steps) {struct fuel} : io outcome :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
       match path with
       | No_steps => Stop Stuck
       | Step name _ given at_ rest =>
-          bind (evaluate_arguments fuel' p env given) (fun values =>
-            bind (apply fuel' p env name (v :: values) given at_) (fun o =>
+          bind (evaluate_arguments fuel' where_ p env given) (fun values =>
+            bind (apply fuel' where_ p env name (v :: values) given at_) (fun o =>
               match rest with
               | No_steps => Done o
               | Step _ _ _ _ _ =>
                   match o with
-                  | Gave w => slide fuel' p env w rest
+                  | Gave w => slide fuel' where_ p env w rest
                   | _ => Stop Stuck
                   end
               end))
       end
   end
 
-with execute (fuel : nat) (p : program) (env : environment) (st : statement) {struct fuel} : io flow :=
+with execute (fuel : nat) (where_ : frame) (p : program) (env : environment) (st : statement) {struct fuel} : io flow :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
       match st with
       (* trace: D13 *)
       | Declare _ name _ _ _ value _ =>
-          bind (evaluate fuel' p env value) (fun v => Done (Continue ((name, v) :: env)))
+          bind (evaluate fuel' where_ p env value) (fun v => Done (Continue ((name, v) :: env)))
       (* trace: D14 *)
       | Assign name _ value _ _ =>
-          bind (evaluate fuel' p env value) (fun v =>
+          bind (evaluate fuel' where_ p env value) (fun v =>
             match assign name v env with
             | Some env' => Done (Continue env')
             | None => Stop Stuck
             end)
       (* trace: D120. A call standing alone gives nothing. *)
       | Run (Call name given at_) _ =>
-          bind (call fuel' p env name given at_) (fun o =>
+          bind (call fuel' where_ p env name given at_) (fun o =>
             match o with
             | Gave_nothing => Done (Continue env)
             | _ => Stop Stuck
             end)
       | Run (Slide start path _) _ =>
-          bind (evaluate fuel' p env start) (fun v =>
-            bind (slide fuel' p env v path) (fun o =>
+          bind (evaluate fuel' where_ p env start) (fun v =>
+            bind (slide fuel' where_ p env v path) (fun o =>
               match o with
               | Gave_nothing => Done (Continue env)
               | _ => Stop Stuck
@@ -349,15 +361,15 @@ with execute (fuel : nat) (p : program) (env : environment) (st : statement) {st
       | Run _ _ => Stop Stuck
       (* trace: D16 *)
       | If condition then_part rest _ =>
-          bind (evaluate fuel' p env condition) (fun c =>
-            need_bool c (fun _ => execute_block fuel' p env then_part) (fun _ => execute_else fuel' p env rest))
+          bind (evaluate fuel' where_ p env condition) (fun c =>
+            need_bool c (fun _ => execute_block fuel' where_ p env then_part) (fun _ => execute_else fuel' where_ p env rest))
       (* trace: D19, D32 *)
       | While condition body at_ =>
-          bind (evaluate fuel' p env condition) (fun c =>
+          bind (evaluate fuel' where_ p env condition) (fun c =>
             need_bool c
-              (fun _ => bind (execute_block fuel' p env body) (fun f =>
+              (fun _ => bind (execute_block fuel' where_ p env body) (fun f =>
                  match f with
-                 | Continue env' => execute fuel' p env' (While condition body at_)
+                 | Continue env' => execute fuel' where_ p env' (While condition body at_)
                  | Leave_loop env' => Done (Continue env')
                  | Leave_procedure result => Done (Leave_procedure result)
                  end))
@@ -365,53 +377,55 @@ with execute (fuel : nat) (p : program) (env : environment) (st : statement) {st
       | Break _ => Done (Leave_loop env)
       (* trace: D57 *)
       | Return None _ => Done (Leave_procedure None)
-      | Return (Some value) _ => bind (evaluate fuel' p env value) (fun v => Done (Leave_procedure (Some v)))
+      | Return (Some value) _ => bind (evaluate fuel' where_ p env value) (fun v => Done (Leave_procedure (Some v)))
       (* trace: D25. A `labels` line runs nothing. *)
       | Labels _ _ => Done (Continue env)
       end
   end
 
 (* Runs a block's statements in turn, until one leaves. *)
-with execute_statements (fuel : nat) (p : program) (env : environment) (b : block) {struct fuel} : io flow :=
+with execute_statements (fuel : nat) (where_ : frame) (p : program) (env : environment) (b : block) {struct fuel} : io flow :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
       match b with
       | Empty => Done (Continue env)
       | Then st rest =>
-          bind (execute fuel' p env st) (fun f =>
+          bind (execute fuel' where_ p env st) (fun f =>
             match f with
-            | Continue env' => execute_statements fuel' p env' rest
+            | Continue env' => execute_statements fuel' where_ p env' rest
             | other => Done other
             end)
       end
   end
 
 (* A block: its statements, then its own variables end (D93). *)
-with execute_block (fuel : nat) (p : program) (env : environment) (b : block) {struct fuel} : io flow :=
+with execute_block (fuel : nat) (where_ : frame) (p : program) (env : environment) (b : block) {struct fuel} : io flow :=
   match fuel with
   | O => Stop Out_of_fuel
-  | S fuel' => bind (execute_statements fuel' p env b) (fun f => Done (restore_flow env f))
+  | S fuel' => bind (execute_statements fuel' where_ p env b) (fun f => Done (restore_flow env f))
   end
 
-with execute_else (fuel : nat) (p : program) (env : environment) (e : else_part) {struct fuel} : io flow :=
+with execute_else (fuel : nat) (where_ : frame) (p : program) (env : environment) (e : else_part) {struct fuel} : io flow :=
   match fuel with
   | O => Stop Out_of_fuel
   | S fuel' =>
       match e with
       | No_else => Done (Continue env)
-      | Else body _ => execute_block fuel' p env body
+      | Else body _ => execute_block fuel' where_ p env body
       | Else_if condition body rest _ =>
-          bind (evaluate fuel' p env condition) (fun c =>
-            need_bool c (fun _ => execute_block fuel' p env body) (fun _ => execute_else fuel' p env rest))
+          bind (evaluate fuel' where_ p env condition) (fun c =>
+            need_bool c (fun _ => execute_block fuel' where_ p env body) (fun _ => execute_else fuel' where_ p env rest))
       end
   end.
 
-(* THE EVALUATOR: runs a program from `proc.main` (D4), with [fuel] steps at most. *)
-Definition run (fuel : nat) (p : program) : io unit :=
+(* THE EVALUATOR: runs a program from `proc.main` (D4), with [fuel] steps at most, and at most [limit] calls waiting
+   for one another (D154). *)
+Definition run (fuel limit : nat) (p : program) : io unit :=
   match find_main p with
   | Some d =>
-      bind (execute_block fuel p [] (definition_body d)) (fun f =>
+      let start := {| frame_depth := 0; frame_limit := limit; frame_procedure := "proc.main"%string |} in
+      bind (execute_block fuel start p [] (definition_body d)) (fun f =>
         match f with
         | Continue _ | Leave_procedure None => Done tt
         | _ => Stop Stuck

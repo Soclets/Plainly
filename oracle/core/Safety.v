@@ -623,48 +623,48 @@ Section Safety_proof.
 Variable p : program.
 Hypothesis accepted : check_program p = [].
 
-Definition expression_safe (fuel : nat) := forall s e t env,
+Definition expression_safe (fuel : nat) := forall s e t env where_,
   setting_program s = p -> matches (setting_scope s) env -> check_expression s e = (Some t, []) ->
-  safe (has_type t) (evaluate fuel p env e).
+  safe (has_type t) (evaluate fuel where_ p env e).
 
-Definition arguments_safe (fuel : nat) := forall s given env,
+Definition arguments_safe (fuel : nat) := forall s given env where_,
   setting_program s = p -> matches (setting_scope s) env -> Forall clean (check_arguments s given) ->
-  safe (typed (check_arguments s given)) (evaluate_arguments fuel p env given).
+  safe (typed (check_arguments s given)) (evaluate_arguments fuel where_ p env given).
 
-Definition apply_safe (fuel : nat) := forall s name values given at_ env target,
+Definition apply_safe (fuel : nat) := forall s name values given at_ env target where_,
   setting_program s = p -> matches (setting_scope s) env -> resolve p name = Resolved target ->
   target_ready s target values given ->
-  safe (outcome_ok (target_gives target) (target_can_fail target)) (apply fuel p env name values given at_).
+  safe (outcome_ok (target_gives target) (target_can_fail target)) (apply fuel where_ p env name values given at_).
 
-Definition call_safe (fuel : nat) := forall s name given at_ env,
+Definition call_safe (fuel : nat) := forall s name given at_ env where_,
   setting_program s = p -> matches (setting_scope s) env ->
   call_diagnostics (check_call s name (check_arguments s given) at_) = [] ->
   safe (outcome_ok (call_gives (check_call s name (check_arguments s given) at_))
                    (call_can_fail (check_call s name (check_arguments s given) at_)))
-       (call fuel p env name given at_).
+       (call fuel where_ p env name given at_).
 
-Definition slide_safe (fuel : nat) := forall s v path env,
+Definition slide_safe (fuel : nat) := forall s v path env where_,
   setting_program s = p -> matches (setting_scope s) env -> path <> No_steps ->
   call_diagnostics (check_steps s (Some (type_of_value v)) path) = [] ->
   safe (outcome_ok (call_gives (check_steps s (Some (type_of_value v)) path))
                    (call_can_fail (check_steps s (Some (type_of_value v)) path)))
-       (slide fuel p env v path).
+       (slide fuel where_ p env v path).
 
-Definition statement_safe (fuel : nat) := forall s st s' env,
+Definition statement_safe (fuel : nat) := forall s st s' env where_,
   setting_program s = p -> matches (setting_scope s) env -> check_statement s st = (s', []) ->
-  safe (flow_ok s s' (always_returns st)) (execute fuel p env st).
+  safe (flow_ok s s' (always_returns st)) (execute fuel where_ p env st).
 
-Definition statements_safe (fuel : nat) := forall s b env names,
+Definition statements_safe (fuel : nat) := forall s b env names where_,
   setting_program s = p -> matches (setting_scope s) env -> check_block s b = (names, []) ->
-  safe (block_ok s (always_returns_block b)) (execute_statements fuel p env b).
+  safe (block_ok s (always_returns_block b)) (execute_statements fuel where_ p env b).
 
-Definition block_safe (fuel : nat) := forall s b env names,
+Definition block_safe (fuel : nat) := forall s b env names where_,
   setting_program s = p -> matches (setting_scope s) env -> check_block s b = (names, []) ->
-  safe (flow_ok s s (always_returns_block b)) (execute_block fuel p env b).
+  safe (flow_ok s s (always_returns_block b)) (execute_block fuel where_ p env b).
 
-Definition else_safe (fuel : nat) := forall s e env names,
+Definition else_safe (fuel : nat) := forall s e env names where_,
   setting_program s = p -> matches (setting_scope s) env -> check_else s e = (names, []) ->
-  safe (flow_ok s s (always_returns_else e)) (execute_else fuel p env e).
+  safe (flow_ok s s (always_returns_else e)) (execute_else fuel where_ p env e).
 
 Definition all_safe (fuel : nat) :=
   expression_safe fuel /\ arguments_safe fuel /\ apply_safe fuel /\ call_safe fuel /\ slide_safe fuel /\
@@ -682,7 +682,7 @@ Qed.
 
 Lemma expression_step : forall f, all_safe f -> expression_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e t env Ps M H.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e t env where_ Ps M H.
   destruct e as [digits at_ | value pieces at_ | b at_ | name at_ | word at_ | o at_ | o at_
                 | operator l r operator_at at_ | inner at_ | name given at_ | attempt fallback operator_at at_
                 | start path at_ | at_]; cbn [check_expression] in H; cbn [evaluate].
@@ -743,7 +743,7 @@ Qed.
 
 Lemma arguments_step : forall f, all_safe f -> arguments_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s given env Ps M K.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s given env where_ Ps M K.
   destruct given as [| label value rest]; cbn [evaluate_arguments check_arguments] in *.
   - constructor. constructor.
   - destruct (check_expression s value) as [t d] eqn:Ev. inversion K as [| ? ? Kd Kr]; subst.
@@ -756,7 +756,7 @@ Qed.
 
 Lemma call_step : forall f, all_safe f -> call_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s name given at_ env Ps M D.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s name given at_ env where_ Ps M D.
   cbn [call].
   assert (Forall clean (check_arguments s given)) as K.
   { eapply call_clean; eauto. apply (proj1 (proj2 unknown_reported)). }
@@ -767,15 +767,15 @@ Qed.
 
 Lemma slide_step : forall f, all_safe f -> slide_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s v path env Ps M N D.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s v path env where_ Ps M N D.
   destruct path as [| name bracketed given at_ rest]; [contradiction N; reflexivity|].
   cbn [slide check_steps] in *.
   set (this := check_step s name (Some (type_of_value v)) (check_arguments s given) at_) in *.
   assert (call_diagnostics this = [] ->
-            safe (typed (check_arguments s given)) (evaluate_arguments f p env given)) as Av.
+            safe (typed (check_arguments s given)) (evaluate_arguments f where_ p env given)) as Av.
   { intros Dc. eapply A; eauto. eapply step_clean; eauto. }
   assert (call_diagnostics this = [] -> forall values, typed (check_arguments s given) values ->
-            safe (outcome_ok (call_gives this) (call_can_fail this)) (apply f p env name (v :: values) given at_)) as Rv.
+            safe (outcome_ok (call_gives this) (call_can_fail this)) (apply f where_ p env name (v :: values) given at_)) as Rv.
   { intros Dc values T. destruct (step_ready _ _ _ _ _ _ Dc T) as (target & R & Rd & G & F).
     unfold this. rewrite G, F. rewrite Ps in R. eapply Ap; eauto. }
   destruct rest as [| name2 bracketed2 given2 at2 rest2].
@@ -854,11 +854,11 @@ Qed.
 
 Definition safe_below (f : nat) := forall m, m <= f -> all_safe m.
 
-Lemma body_safe : forall f d locals, safe_below f -> In d p ->
+Lemma body_safe : forall f d locals where_, safe_below f -> In d p ->
   matches (setting_scope (start_setting d)) locals ->
-  safe (body_ok d) (execute_block f p locals (definition_body d)).
+  safe (body_ok d) (execute_block f where_ p locals (definition_body d)).
 Proof.
-  intros f d locals Below D M.
+  intros f d locals where_ Below D M.
   destruct (definition_parts d (definition_accepted d D)) as (rest & names & Body & Cb & Always & _).
   destruct Body as [Body | (pairs & at_ & Body)]; rewrite Body.
   - destruct (Below f (le_n f)) as (_ & _ & _ & _ & _ & _ & _ & B & _).
@@ -876,7 +876,7 @@ Qed.
 
 Lemma apply_step : forall f, safe_below f -> apply_safe (S f).
 Proof.
-  intros f Below s name values given at_ env target Ps M R Ready.
+  intros f Below s name values given at_ env target where_ Ps M R Ready.
   cbn [apply]. rewrite R.
   destruct target as [which | d].
   - apply (apply_library_safe s); [exact M | exact Ready].
@@ -886,7 +886,8 @@ Proof.
         intros [|v vs] Ready; simpl in Ready; try discriminate; constructor.
       - inversion Ready; auto.
       - apply IH. inversion Ready; auto. }
-    destruct (parameters_match _ _ F2) as [locals [Bp Ml]]. rewrite Bp.
+    destruct (parameters_match _ _ F2) as [locals [Bp Ml]]. rewrite Bp. cbn zeta.
+    destruct (Nat.leb _ _); [constructor; discriminate|].
     eapply safe_bind; [eapply body_safe; eauto; eapply resolve_user_in; eauto|].
     intros fl Fl. simpl. apply procedure_result_safe. exact Fl.
 Qed.
@@ -907,7 +908,7 @@ Proof. reflexivity. Qed.
 
 Lemma statement_step : forall f, all_safe f -> statement_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s st s' env Ps M H.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s st s' env where_ Ps M H.
   destruct st as [changeable name name_at keyword_at written value at_ | name name_at value operator_at at_
                  | action at_ | condition then_part rest at_ | condition body at_ | at_ | [value|] at_ | pairs at_];
     cbn [check_statement] in H; cbn [execute always_returns].
@@ -972,7 +973,7 @@ Proof.
     subst dc.
     eapply safe_bind; [eapply E; eauto|]. intros c Tc. apply safe_need_bool; [exact Tc| |].
     + eapply safe_bind; [eapply (B (in_loop s)); eauto|]. intros [e|e|r] Fl; simpl in Fl.
-      * destruct Fl as [_ Fm]. apply (St s (While condition body at_) _ e Ps Fm). cbn [check_statement].
+      * destruct Fl as [_ Fm]. apply (St s (While condition body at_) _ e where_ Ps Fm). cbn [check_statement].
         rewrite Bb. unfold check_condition. rewrite Ec. reflexivity.
       * constructor. simpl. destruct Fl as [_ Fm]. auto.
       * constructor. exact Fl.
@@ -994,7 +995,7 @@ Qed.
 
 Lemma statements_step : forall f, all_safe f -> statements_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names Ps M H.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names where_ Ps M H.
   destruct b as [| st rest]; cbn [check_block] in H; cbn [execute_statements].
   - inversion H; subst. constructor. simpl. split; [reflexivity|]. exists []; exact M.
   - destruct (check_statement s st) as [s' ds] eqn:Cs.
@@ -1018,7 +1019,7 @@ Qed.
 
 Lemma block_step : forall f, all_safe f -> block_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names Ps M H.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names where_ Ps M H.
   cbn [execute_block]. eapply safe_bind; [eapply Ss; eauto|]. intros [e|e|r] Bk; constructor; simpl in *.
   - destruct Bk as [Ba [extra Bm]]. split; [exact Ba|]. eapply restore_matches; eauto.
   - destruct Bk as [Ba [extra Bm]]. split; [exact Ba|]. eapply restore_matches; eauto.
@@ -1027,7 +1028,7 @@ Qed.
 
 Lemma else_step : forall f, all_safe f -> else_safe (S f).
 Proof.
-  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e env names Ps M H.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e env names where_ Ps M H.
   destruct e as [| body at_ | condition body rest at_]; cbn [check_else] in H; cbn [execute_else always_returns_else].
   - constructor. simpl. auto.
   - eapply B; eauto.
@@ -1074,9 +1075,9 @@ Proof.
       right. exists d'. unfold is_main at 1. rewrite N. exact F.
 Qed.
 
-Theorem run_safe : forall fuel, safe (fun _ => True) (run fuel p).
+Theorem run_safe : forall fuel limit, safe (fun _ => True) (run fuel limit p).
 Proof.
-  intros fuel. unfold run.
+  intros fuel limit. unfold run.
   destruct (main_exists [] [] p) as [Ne | [d F]].
   { pose proof accepted as Acc. unfold check_program in Acc. apply app_nil in Acc as [Cn _]. exact Cn. }
   { contradiction Ne; reflexivity. }
@@ -1105,5 +1106,5 @@ End Safety_proof.
    What it doesn't say: that the evaluator's rules are the standard's. It promises the evaluator never reaches its own
    [Stuck] cases; the tests, and later the comparison with `Unlo\n`, check that what it does is what the standard
    says. *)
-Theorem type_safety : forall p fuel, check_program p = [] -> safe (fun _ => True) (run fuel p).
-Proof. intros p fuel Accepted. apply run_safe. exact Accepted. Qed.
+Theorem type_safety : forall p fuel limit, check_program p = [] -> safe (fun _ => True) (run fuel limit p).
+Proof. intros p fuel limit Accepted. apply run_safe. exact Accepted. Qed.

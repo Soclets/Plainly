@@ -127,6 +127,10 @@ Definition resolve (p : program) (c : callee) : resolution :=
     | None => Unresolved [Refused (Unknown_procedure word (callee_word_at c))]
     end.
 
+(* A procedure's name for messages: `proc.main`, or its own name. *)
+Definition procedure_label (d : definition) : string :=
+  match definition_name d with Main => "proc.main" | Named n => n end.
+
 (* A callee's name as written, as in `show_msg.fmt`, for messages. *)
 Definition callee_name (c : callee) : string :=
   fold_left (fun so_far narrowing => so_far ++ "." ++ fst narrowing) (callee_narrowings c) (callee_word c).

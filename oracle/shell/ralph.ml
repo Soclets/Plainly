@@ -9,6 +9,10 @@ module M = Messages
 (* Far more steps than any program will take; a program still running after them stops as an internal error. *)
 let fuel = max_int
 
+(* How many calls may wait for one another (D154). How deep is too deep depends on the machine; Ralph's own stack holds
+   a few million, using under a kilobyte each, so a million stays well inside it. *)
+let call_limit = 1_000_000
+
 let line_open = ref false
 
 (* trace: D104. A message never starts mid-line: an open output line is ended on standard output first. *)
@@ -107,6 +111,16 @@ let rec walk file source (tree : unit Core.io) =
                 ~what:(if too_big then "the result is too big for a `Whole`" else "the result is too small for a `Whole`")
                 ~when_:shown
                 ~why:"a `Whole` holds whole numbers from -9223372036854775808 to 9223372036854775807." ];
+          finish 4
+      (* trace: D154 *)
+      | Core.Calls_too_deep (p, depth, inside) ->
+          end_open_line ();
+          print_messages file source
+            [ M.message M.Check_failed (Wording.at p) ~what:"calls went too deep"
+                ~when_:(Printf.sprintf "%d calls deep, inside `%s`" depth inside)
+                ~why:
+                  "every call still waiting for another needs a little memory, and the room for them is limited; a \
+                   procedure that keeps calling itself without stopping fills it." ];
           finish 4
       | Core.Random_range_not_designed (p, _, _) ->
           end_open_line ();
@@ -228,7 +242,7 @@ let () =
           else
             (* trace: D82, D103. Calls nested deeper than Ralph's own stack can hold are Ralph's limit, not the
                program's mistake. *)
-            match walk file source (Core.run fuel definitions) with
+            match walk file source (Core.run fuel call_limit definitions) with
             | () -> ()
             | exception Stack_overflow ->
                 end_open_line ();
