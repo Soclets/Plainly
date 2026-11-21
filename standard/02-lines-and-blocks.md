@@ -8,7 +8,8 @@ end proc.main
 
 ## Statements
 
-Every statement ends with `;` (D7). A statement can run over several lines, and ends only at its `;`:
+Every statement ends with `;` (D7), and each statement goes on a line of its own: two on one line are refused (D146).
+A statement can run over several lines, and ends only at its `;`:
 
 ```
 $score

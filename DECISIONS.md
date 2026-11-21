@@ -4549,3 +4549,24 @@ read it this way and asked.
 
 **Tankun's words.** Asked "Should a comment on its own line be indented like the line after it, or one level in before
 a closer or `else:`?", the owner chose: "yea".
+
+## D146. Each statement goes on a line of its own
+
+2026-11-21.
+
+**Chosen.** Two statements on one line, as in `show_msg("Hi"); show_msg("Bye");`, are refused. The fix is two lines, so
+by D101 the message has a `what:`:
+
+```
+ what:    this line has two statements
+ why:     each statement goes on a line of its own.
+```
+
+**Weighed.**
+- Allowing it. A second statement at the end of a line is easy to miss, and the same code would have a one-line and a
+  two-line form.
+
+**Why this won.** Unio is built for reading, and one statement per line keeps each one in plain sight, with one spelling
+for the code (D2's aim). Ralph, building the oracle, asked.
+
+**Tankun's words.** Asked "Should two statements on one line be refused, with that wording?", the owner chose: "yea".
