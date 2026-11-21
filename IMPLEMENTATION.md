@@ -21,6 +21,7 @@ counts as decided for v2 until Tankun confirms it here and it's logged.
 
 - Design choices are Tankun's. Propose with one clear recommendation and the
   reason for it, never a menu with no opinion.
+- The design session asks Tankun before messaging another session (owner, 2026-11-21).
 - Ask one question at a time, in plain chat text. No question popups, buttons
   or pre-made answers, including in any end-of-turn summary box.
 - Explain plainly, but keep the real technical words and explain them, as in

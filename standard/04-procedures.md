@@ -34,7 +34,8 @@ Using what such a procedure gives as a value is refused (D38).
 ### `return`
 
 - **`return value;`** gives back a value of the header's type, and every way through a procedure with `returns` must
-  end in one (D57).
+  end in one (D57). Every `while` counts as able to end, whatever its condition, so a procedure that loops with
+  `while true:` still needs a `return` after the loop (D149).
 - **A bare `return;`** leaves early, in a procedure with no `returns` (D57).
 - **Nothing may follow `return` in the same block** (D57).
 - **A bare `return;` as a procedure's last line is refused** (D57).

@@ -4615,3 +4615,35 @@ building the oracle, asked; the first build's compiler had asked it too, as its 
 
 **Tankun's words.** Asked "Should a program with both refusals and `NotBuiltYet` or `NotDesignedYet` exit with status
 1?", the owner chose: "yea".
+
+## D149. Every `while` counts as able to end, whatever its condition
+
+2026-11-21.
+
+**Chosen.** For D57's rule that every way through a procedure with `returns` ends in `return`, every `while` counts
+as able to end, whatever its condition. The checker never judges whether a condition is always true, so a procedure
+that loops with `while true:` and returns from inside the loop still needs a `return` after it:
+
+```
+proc first_big($start: Whole) returns Whole:
+    var $n: Whole = $start;
+    while true:
+        if $n > 100:
+            return $n;
+        end if
+        $n = $n + 1;
+    end while
+    return $n;
+end proc first_big
+```
+
+**Weighed.**
+- Java's special case: `while true:` with no `break` counts as never ending. Smarter, but then a line after such a
+  loop can never run and needs a refusal of its own, one more rule to learn.
+
+**Why this won.** One simple rule, with nothing for a learner to guess about how clever the checker is. The cost, a
+closing `return` that never runs, rarely comes up, since game loops usually live in `proc.main`, which has no
+`returns`. Ralph, building the oracle, read it this way and asked.
+
+**Tankun's words.** Asked "Should every `while` count as able to end, whatever its condition?", the owner chose: "yea.
+New rule: design claude asks before msging"
