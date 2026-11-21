@@ -1,4 +1,4 @@
-refused: program.plainly:3:5, line 3 column 5
+refused: program.cplus:3:5, line 3 column 5
  3 |     break;
    |     ^^^^^
  what:    this `break` isn't inside a loop

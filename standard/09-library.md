@@ -1,6 +1,6 @@
 # 9. Library
 
-Procedures that come with Plainly. The library targets the terminal: showing text, asking, single key presses,
+Procedures that come with C+. The library targets the terminal: showing text, asking, single key presses,
 colours, drawing at a position and clearing the screen, on Windows, macOS and Linux. A GUI, if ever, is a
 separate package (D63). What the terminal part is built on isn't decided since D131 moved the runtime to C++.
 

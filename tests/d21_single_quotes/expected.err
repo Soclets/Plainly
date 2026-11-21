@@ -1,4 +1,4 @@
-refused: program.plainly:2:14, line 2 column 14
+refused: program.cplus:2:14, line 2 column 14
  2 |     show_msg('hi');
    |              ^^^^
  fix:     `    show_msg("hi");`

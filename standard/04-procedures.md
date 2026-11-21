@@ -54,7 +54,7 @@ Failures in a header: chapter 8.
 
 ## Procedures written in C++
 
-`extern.cpp` in front of `proc` says the procedure's body is written in C++, outside the Plainly file. Its body is
+`extern.cpp` in front of `proc` says the procedure's body is written in C++, outside the C+ file. Its body is
 empty, or holds only a `labels` line, and its closer doesn't repeat `extern.cpp` (D36, D131):
 
 ```

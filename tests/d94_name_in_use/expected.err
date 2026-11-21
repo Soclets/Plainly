@@ -1,4 +1,4 @@
-refused: program.plainly:3:9, line 3 column 9
+refused: program.cplus:3:9, line 3 column 9
  3 |     let $guess: Whole = 2;
    |         ^^^^^^
  what:    `$guess` is already in use here

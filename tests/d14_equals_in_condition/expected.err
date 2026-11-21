@@ -1,4 +1,4 @@
-refused: program.plainly:3:15, line 3 column 15
+refused: program.cplus:3:15, line 3 column 15
  3 |     if $tries = 3:
    |               ^
  fix:     `    if $tries == 3:`

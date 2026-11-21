@@ -1,4 +1,4 @@
-refused: program.plainly:4:1, line 4 column 1
+refused: program.cplus:4:1, line 4 column 1
  4 | 
    | ^
  what:    2 extra blank lines, after the one on line 3

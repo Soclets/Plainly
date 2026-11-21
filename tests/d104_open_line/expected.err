@@ -1,4 +1,4 @@
-check failed: program.plainly:4:24, line 4 column 24
+check failed: program.cplus:4:24, line 4 column 24
  4 |     let $more: Whole = $big + 1;
    |                        ^^^^^^^^
  what:    the result is too big for a `Whole`

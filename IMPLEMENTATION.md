@@ -1,4 +1,4 @@
-# Plainly: rules
+# C+: rules
 
 The rules for every session in this repository. A hook prints this file into every session at startup, after a
 compaction and after a clear, but not on a resume, when it's already there; there's no CLAUDE.md, so nothing is
@@ -6,9 +6,9 @@ repeated. A subagent doesn't get it from the hook, so its prompt carries these r
 changed here, with Tankun's OK.
 
 These rules are for every Claude session in this repository. The **design
-session** (the design claude) designs Plainly with Tankun: it proposes,
+session** (the design claude) designs C+ with Tankun: it proposes,
 explains, and keeps the record in DECISIONS.md and `standard/`. **Building
-sessions**, such as PlainCompiler's, build from the standard; they follow their
+sessions**, such as `Clang\n`'s, build from the standard; they follow their
 prompt in `design/` as well as these rules, and they never decide anything
 about the language. Tankun designs languages but isn't a programmer, so every
 session explains in plain words. The design choices are Tankun's.
@@ -40,10 +40,10 @@ counts as decided for v2 until Tankun confirms it here and it's logged.
 - When you got something wrong, say so plainly and fix it.
 - Refer to Tankun as they/them. Swearing is fine.
 - Never use the visualize widget. If a picture helps, draw it as a real file.
-- Building started on 2026-11-20, when Tankun asked for PlainCompiler's prompt
+- Building started on 2026-11-20, when Tankun asked for `Clang\n`'s prompt
   (`design/compiler-prompt.md`). Nothing else gets built until Tankun says so.
-- On the evening of 2026-11-20, Tankun chose to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21
-  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to Plainly. The first build
+- On the evening of 2026-11-20, Tankun chose to rewrite `Clang\n` and PlainGC from a clean start on 2026-11-21
+  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to C+. The first build
   (about 10,000 lines of Rust) stays in git history for reference; the decisions, the standard and the tests carry over
   unchanged.
 - Sketches from other chats (e.g. multifinity's) are leanings, not decisions,
@@ -89,14 +89,14 @@ python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has c
 
 ## Code
 
-Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
+Rules for the code of `Clang\n` and PlainOracle (owner, 2026-11-20):
 
 1. **Code uses the standard's terms,** as its Terms chapter defines them (procedure, narrowing, label, failure,
    handler, family, slide, step), so the code, the standard and the messages say the same thing. One name per
    concept: never `func` in one place and `procedure` in another.
-2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in Plainly;
+2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in C+;
    compiler code is read like the docs, which teach the full word. A keyword like `proc` appears in code only as the
-   text Plainly reads.
+   text C+ reads.
 3. **Each language's own casing:** C++ uses the standard library's style, `snake_case` for functions and variables
    and `CamelCase` for types; OCaml uses its own `snake_case`.
 4. **Tests are named after their decision,** like `d17_comparisons`, so a failing test points at its rule.
@@ -105,12 +105,12 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 
 ## Building
 
-Rules for building PlainCompiler and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
-2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Plainly is a
+Rules for building `Clang\n` and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
+2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: C+ is a
 learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
 It can come later for one small, critical piece if a bug there ever gets through.
 
-1. **Optimizations from the start.** PlainCompiler is built with its optimizations as it goes, never as a plain version
+1. **Optimizations from the start.** `Clang\n` is built with its optimizations as it goes, never as a plain version
    sped up later. Each part of the language arrives with `final` mode's optimizations for it (D124), and compiling is
    fast from the start: parallel, cached and in the background (D65). `working` mode stays the light build (D46).
    PlainOracle stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
@@ -127,8 +127,8 @@ It can come later for one small, critical piece if a bug there ever gets through
    always owned by something, through RAII: no raw `new`, `delete` or `malloc`, and no owning raw pointers. No
    exceptions, matching LLVM's own build: failures are `std::expected`, and its value is never taken without checking.
    No C-style casts, and `reinterpret_cast` or `const_cast` only in LLVM glue, each with a comment saying why it's safe.
-   A bad program never crashes PlainCompiler: nothing a program can reach ends in `abort` or `llvm_unreachable`, and if
-   PlainCompiler itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle follows rule
+   A bad program never crashes `Clang\n`: nothing a program can reach ends in `abort` or `llvm_unreachable`, and if
+   `Clang\n` itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle follows rule
    14. (From Cyborg's rules 6 and 7, carried over to C++ by D131.)
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
@@ -150,7 +150,7 @@ It can come later for one small, critical piece if a bug there ever gets through
 8. **Downloads are free.** A dependency or tool is chosen on maturity, safety, maintenance and speed. A less mature or
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
-9. **Language.** PlainCompiler, its runtime and every tool are C++, built with CMake, LLVM's own build system, against
+9. **Language.** `Clang\n`, its runtime and every tool are C++, built with CMake, LLVM's own build system, against
    one pinned LLVM version, upgraded once a year (D131). The exceptions: PlainOracle and `check/`, which are OCaml and
    Rocq (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
    the VS Code extension, which is TypeScript; and scratch work that's never committed. (From Cyborg's rule 1, carried
@@ -164,15 +164,15 @@ It can come later for one small, critical piece if a bug there ever gets through
     a building session never edits an expected file: a test that looks wrong goes to the design session (D12). (From
     Cyborg's rule 5.)
 12. **The oracle stays apart.** The compiler session reads the tests, never PlainOracle's source, and the oracle session
-    never reads PlainCompiler's. If one copied the other, their bugs would agree, and comparing them would prove
+    never reads `Clang\n`'s. If one copied the other, their bugs would agree, and comparing them would prove
     nothing.
     A random program generator, in `check/`, is written from `standard/`, never from either implementation's source,
     so what counts as a valid program comes from the standard, not from one implementation's reading of it. It builds
     programs from a syntax tree with one printer, and tracks what it doesn't generate, since all passing doesn't mean
-    covered. A live comparison runs PlainOracle and PlainCompiler as black boxes on every generated program and every
+    covered. A live comparison runs PlainOracle and `Clang\n` as black boxes on every generated program and every
     test, in every build mode, and shrinks any difference to the smallest program that still
     shows it. A difference is a bug in one of them, and the standard decides which, or DECISIONS.md where the standard
-    is silent; if both are silent, it's a question for Tankun. Findings about PlainCompiler go to the compiler session
+    is silent; if both are silent, it's a question for Tankun. Findings about `Clang\n` go to the compiler session
     without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
     source, can write a second, independent generator. (From Cyborg's rule 3.)
 13. **Where.** Only the design session edits DECISIONS.md, `standard/`, `tests/`, `design/` and
@@ -183,7 +183,7 @@ It can come later for one small, critical piece if a bug there ever gets through
     switch, built with `dune`, formatted with `ocamlformat`. Every warning on, as errors, non-exhaustive `match`es
     included. No functions that crash on a reachable path: no `List.hd`, `List.nth`, `Option.get`, `failwith`, `assert
     false` or exceptions used for failures; failures are `result` or `option`, checked. No `Obj`, no `-unsafe`, no
-    `Array.unsafe_get`. Plainly's `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
+    `Array.unsafe_get`. C+'s `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
     plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for PlainOracle's core: one pinned Rocq version.
     No `Admitted` and no `Axiom`, except a short list in one file, each with a comment saying why it's believed, such as
     how Rocq's integers become OCaml's `Int64` on extraction. `Print Assumptions` runs on every main theorem in each

@@ -1,4 +1,4 @@
-refused: program.plainly:2:9, line 2 column 9
+refused: program.cplus:2:9, line 2 column 9
  2 |     let $Score: Whole = 0;
    |         ^^^^^^
  what:    `$Score` has a capital letter, but names have none

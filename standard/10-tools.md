@@ -2,19 +2,19 @@
 
 ## The compiler
 
-Plainly's compiler, PlainCompiler (D51), is written in C++. It compiles a whole program ahead of time to one native
+C+'s compiler, `Clang\n` (D51, D135), is written in C++. It compiles a whole program ahead of time to one native
 executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it to a temporary file
 and starts it (D45, D131).
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
-PlainCompiler works in stages (D62):
+`Clang\n` works in stages (D62):
 
 ```
-source → syntax tree → typed tree → Plainly IR → LLVM IR → native code
+source → syntax tree → typed tree → C+ IR → LLVM IR → native code
 ```
 
-Refusals happen at the typed tree, so `plainly check` stops there. Plainly IR is the one intermediate form of Plainly's
+Refusals happen at the typed tree, so `cplus check` stops there. C+ IR is the one intermediate form of C+'s
 own, where every check, allocation, label, default and handler case is written out, and where `final` mode's own
 optimizations run. Both modes take the same path (D62).
 
@@ -26,23 +26,23 @@ Rocq, then extracted to OCaml, as CompCert is built (D129).
 ## The command
 
 ```
-plainly run game.plainly --working
-plainly compile game.plainly --final
-plainly check game.plainly
-plainly oracle game.plainly
+cplus run game.cplus --working
+cplus compile game.cplus --final
+cplus check game.cplus
+cplus oracle game.cplus
 ```
 
 - **`run`** compiles to a temporary file and runs it; **`compile`** makes the file to ship. Both need a mode (D46, D50,
-  D91).
+  D91, D135).
 - **`check`** reports what's refused without building, and needs no mode (D50).
 - **`oracle`** runs the file on PlainOracle (D51), the separate reference implementation, printing exactly what the
-  compiled program would. `plainly` forwards to the oracle's own program (D50).
+  compiled program would. `cplus` forwards to the oracle's own program (D50).
 
 ## Compiling
 
-- **While you edit,** PlainCompiler compiles after every save on one background thread, inside the editor support,
+- **While you edit,** `Clang\n` compiles after every save on one background thread, inside the editor support,
   filling the cache (D65).
-- **`plainly run` and `plainly compile`** compile whatever isn't cached on every CPU core (D65).
+- **`cplus run` and `cplus compile`** compile whatever isn't cached on every CPU core (D65).
 - **The cache** keeps each compiled piece under a fingerprint of everything that affects it, in the system's cache
   folder, shared by every project, so only what changed is recompiled, and a build never differs because of it (D65).
 
@@ -60,7 +60,7 @@ Every build names one of two modes, `--working` or `--final`. There's no default
 | Mode | Optimizations | Checks |
 |---|---|---|
 | working | none, so the fastest compile | every check kept, each stopping at the exact line |
-| final | full, from Plainly's front end and LLVM | none dropped; expensive ones made cheaper |
+| final | full, from C+'s front end and LLVM | none dropped; expensive ones made cheaper |
 
 In final mode, checks the optimizer proves can never fail are removed, and the NaN check after every float operation
 becomes the CPU's own flags, read where a value leaves a procedure, so its message names the procedure (D46).

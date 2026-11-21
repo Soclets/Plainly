@@ -1051,6 +1051,8 @@ Plainly v1's D78.
 
 **Tankun's words.** Asked "`game.plainly`?", the owner chose: "yea. Where's families? And making a extern proc"
 
+(Changed by D135: files end in `.cplus`.)
+
 ## D36. `extern.rust proc` declares a procedure whose body is written in Rust
 
 2026-11-20.
@@ -2880,6 +2882,8 @@ wrong?", the owner chose: "no".
 
 (Changed by D132: the missing-mode line has backticks.)
 
+(Changed by D135: the command is `cplus`, so its mistakes start `cplus:`, and the internal error names `Clang\n`.)
+
 ## D93. A variable declared inside a block ends with the block
 
 2026-11-20.
@@ -3255,6 +3259,8 @@ can't be narrowed further"?", the owner chose: "yea". Then, asked "Do they all r
 part two, the owner chose: "yea".
 
 (Changed by D130: there's no PlainGC, so the internal error naming PlainGC goes.)
+
+(Changed by D135: `cplus:` in place of `plainly:`, and `Clang\n` in place of PlainCompiler.)
 
 ## D104. A program that stops with its line open finishes the line on standard output before the message
 
@@ -4241,3 +4247,48 @@ at the line that did it, before the machine slows down; a terminal game uses a f
 **Tankun's words.** "How much?", "Wait, did you just say my MacBook can't handle a browser and editor opened?", "Why
 not lower?", "What about 30%?", "What if 4GB machine?", then, asked "Should the runtime cap a program at 30% of the
 machine's memory?", the owner chose: "yea".
+
+## D135. The language is C+, with `.cplus` files, and its compiler is `Clang\n`, typed `cplus`
+
+2026-11-21.
+
+**Chosen.**
+- **The language is C+.** Its files end in `.cplus`, as in `game.cplus`, replacing D35's `.plainly`.
+- **The compiler is `Clang\n`,** with a backslash and an `n` in its name, not a real new line, in the family of
+  CyborgPL's `KAYO\n` and Cyborg's `OKAY\n` (Cyborg's D222). It replaces the working name PlainCompiler (D51).
+- **It's typed `cplus`,** as in `cplus run game.cplus --working`, `cplus compile game.cplus --final`, `cplus check
+  game.cplus` and `cplus oracle game.cplus`, replacing D50's and D91's `plainly`. Cyborg types its compiler's name, as
+  `okay`, but `clang` is already LLVM's C compiler on every Mac with Xcode's tools, and the one `Clang\n` is built with
+  (Building rule 3); and the command named after the language is the one a learner can guess.
+- Plainly IR is now C+ IR. PlainOracle keeps its name for now. The repository, `Soclets/Plainly`, isn't renamed by this.
+
+**Weighed.**
+- Keeping Plainly, as the design claude recommended twice: unique, searchable, and it says what it's for. "C+" is
+  crowded as a search term, a school grade first and C++ shorthand second, and reads as "a bit more than C", while the
+  language is "static Python, built for reading". Tankun weighed it and preferred C+.
+- Sabai (Thai for "at ease"), suggested by the design claude, free as a language name.
+- AroundBash for the compiler, so that "C+'s performance is AroundBash"; HNGC (Has No GC) for the memory model.
+- `Plain\n`, typed `plain`, with Plainly kept.
+- A name borrowing Hylo's, which would copy Hylo; and a "C Bust Bust" set, a joke on C++'s name that Cyborg can make
+  and C+ couldn't.
+- Typing `clang`, as Cyborg types `okay`. It clashes with LLVM's `clang`.
+
+**Why this won.** It's the set Tankun liked most. The name is a joke, in the same spirit as the README's "around Bash"
+note and the `\n` compilers of Tankun's other languages, and the typed command stays plain for learners.
+
+**Tankun's words.** "Kinda want to rename lang to C+ (`.cplus`), compiler to AroundBash (So I could say `C+'s
+performance is AroundBash`), and its memory model to HNGC (Has No GC)", a screenshot of a Google search for "C+" with
+"Huh?", "Where did you get that?", "Here's the thing, `1 + 1` is wrong. It's actually 11", "No, it's a joke. The search
+engine is supposed to give 11, by that rule", "Okay, okay. Now, new name suggestions in fr", "My set is still `C+`
+(`.cplus`) lang, `Clang\n` compiler (yes, with newline char, not a real newline), lol", "Or another set (forget the GC
+name): `Plainly` (`.plainly`), `Plain\n` (same joke as `OKAY\n`and `KAYO\n`)", then:
+
+> Yumminess from most to low in sets:
+>
+> 1. C+ set
+> 2. Hylo's name (which is copying Hylo, which I can't do)
+> 3. Plainly set
+> 4. Cbb set (C Bust Bust, Cyborg can do those jokes. Plainly would get me sued)
+
+then "`cplus` is a lot easier, they don't have to know cmpiler", and, asked "should I log the full set as decided, C+
+with `.cplus` files, compiler `Clang\n`, typed `cplus`?", the owner chose: "yea".

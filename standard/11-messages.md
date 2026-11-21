@@ -1,7 +1,7 @@
 # 11. Messages
 
 ```
-refused: game.plainly:5:5, line 5 column 5
+refused: game.cplus:5:5, line 5 column 5
  5 |     $lives = $lives - 1;
    |     ^^^^^^
  what:    `$lives` can't be given a new value
@@ -62,11 +62,11 @@ beyond plain English letters.
 | 0 | the program ran to its end, or `ask` found no more input (D96) |
 | 1 | it was refused at compile time |
 | 2 | the file couldn't be read |
-| 3 | `NotBuiltYet` or `NotDesignedYet`: PlainCompiler or PlainOracle can't handle something yet |
+| 3 | `NotBuiltYet` or `NotDesignedYet`: `Clang\n` or PlainOracle can't handle something yet |
 | 4 | a check failed at runtime, or the program ran out of memory (D115) |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
 | 6 | the command itself was written wrong, like a missing mode or an unknown command, with every mistake shown, one line each (D82, D116) |
-| 7 | code below the program's Plainly went wrong: PlainCompiler, its runtime or PlainOracle itself, with a message naming it and saying how to report it, or an `extern.cpp` procedure's C++ code (D82, D103, D131) |
+| 7 | code below the program's C+ went wrong: `Clang\n`, its runtime or PlainOracle itself, with a message naming it and saying how to report it, or an `extern.cpp` procedure's C++ code (D82, D103, D131) |
 
 `NotBuiltYet` is for something decided but not built, and `NotDesignedYet` for something no decision covers. They use
 the same layout, with their name as the kind (D56). A `NotBuiltYet`'s `what:` names the decisions that decided what

@@ -14,7 +14,7 @@ The words this standard uses, each defined before a chapter relies on it.
 
 ## Words
 
-- **Keyword:** a word that's part of Plainly itself, like `proc`, `end` or `if`. A program can't choose its own
+- **Keyword:** a word that's part of C+ itself, like `proc`, `end` or `if`. A program can't choose its own
   keywords.
 - **Name:** a word a program chooses, for a variable or a procedure.
 - **Variable:** a named place holding a value, as in `$score`; its name starts with `$` (D125).
@@ -44,7 +44,7 @@ The words this standard uses, each defined before a chapter relies on it.
 
 - **Garbage collector:** the part of a running program that frees memory nothing uses any more (chapter 10).
 
-- **Compile time:** when PlainCompiler checks a program and turns it into something that can run, before it runs
+- **Compile time:** when `Clang\n` checks a program and turns it into something that can run, before it runs
   (D90).
 - **Runtime:** when the compiled program runs (D90).
 - **Failure:** something a procedure can give back instead of its result, which every call must deal with (chapter
