@@ -5113,3 +5113,36 @@ the corrected line and the reason in one sentence. The compiler session drafted 
 
 **Tankun's words.** "": should be here, not (" Motherfucker, isn't that a bug?", then, asked "Should old-style headers
 be refused with that `fix:` and `why:`, in both implementations?", the owner chose: "yea".
+
+## D167. `Array<Type>[len: n]` holds exactly `n`; a list's limit is `List<Type>[len.max: n]`
+
+2026-11-21.
+
+**Chosen.**
+- **`Array<Type>[len: n]`** is its own type, holding exactly `n` items: its length is part of its type. `.add` and
+  `.remove` are refused on it; its items can still change, as `$board[pos: 5] = 1`; it shares `pos:`, `offset:` and
+  `.len` with lists.
+- **`List<Type>[len.max: n]`** is a list that may hold at most `n` items. A `List` with no setting has no limit.
+
+```
+let $week: Array<Text>[len: 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+var $bag: List<Text>[len.max: 10] = [];
+```
+
+Settings go in `[ ]` after the type (D165). What `.add` does on a full list isn't decided yet.
+
+**Weighed.**
+- One type, `List`, with `len:` as a setting for a fixed length, as the design claude first recommended, calling
+  "array" jargon. Tankun: "An array of solar panels, it doesn't sound like more is addable. While a shopping list
+  does". The everyday words already carry the difference, as D15's rule asks of a name.
+- `max:` alone for a list's limit. On a `List<Whole>` it could read as a limit on the items' values, the way Cyborg's
+  `min:` and `max:` bound values; `len.max` says it's the length.
+- A type's settings in `< >` or `( )`, before D165 put them in `[ ]`.
+
+**Why this won.** Each name teaches itself: an array is set out and fixed, a list grows. It matches Cyborg's split
+(its list and array) and its `len.max`, and the checker can refuse `.add` on an array from the type alone.
+
+**Tankun's words.** "No, let's design lists and arrays more. Like how to limit a list", "An array of solar panels, it
+doesn't sound like more is addable. While a shopping list does", "Isn't it `len.max` on list?", then, asked "Should
+fixed-length collections be `Array<Text>[len: 7]`, and a list's limit be `List<Text>[len.max: 10]`?", the owner chose:
+"Oh hell no, I'm a guy, bro. Anyways, yea".

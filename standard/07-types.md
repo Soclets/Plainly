@@ -187,6 +187,28 @@ let $also_first: Text = $students[offset: 0];
 
 `pos` is short for position (D2).
 
+A list can be given a most it may hold, in `[ ]` after its type, as a setting (D165, D167):
+
+```
+var $bag: List<Text>[len.max: 10] = [];
+```
+
+`len.max` is the max kind of length (D41), so it can't be mistaken for a limit on the items' values.
+
+## Arrays
+
+`Array<Type>[len: n]` holds exactly `n` items, always: its length is part of its type, given by `len:` (D167). Like an
+array of solar panels, nothing is added or taken away, so `.add` and `.remove` are refused on it, but its items can
+still change, as `$board[pos: 5] = 1`. Items are reached by `pos:` or `offset:`, and `.len` reads its length, as for a
+list.
+
+```
+let $week: Array<Text>[len: 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+```
+
+**Not decided:** what happens when `.add` meets a full list; an array's first value when it isn't written out item by
+item.
+
 An empty list is `[]`, taking its type from where it goes (D76).
 
 A value's methods are called with a plain `.` after it, and a method that changes its value can only be called on a
