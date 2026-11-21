@@ -1,8 +1,8 @@
 # Prompt for `final` mode
 
 > **Stale:** this prompt was for the first build, which ended on 2026-11-20. PlainCompiler and PlainGC are rewritten
-> from a clean start on 2026-11-21 under CLAUDE.md's Building rules, with a new prompt (CLAUDE.md, "Working with
-> Tankun"; Building rule 1 builds optimizations in from the start). Kept for reference.
+> from a clean start on 2026-11-21 under IMPLEMENTATION.md's Building rules, with a new prompt (Building rule 1 builds
+> optimizations in from the start). Kept for reference.
 
 Copy the block below and paste it into the compiler session (Plainly Compiler Claude).
 
