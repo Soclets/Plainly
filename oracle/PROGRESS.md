@@ -97,6 +97,11 @@ Still `NotBuiltYet` in Ralph (decided, not built), each saying so when a program
 - lists, dividing and remainders, `?`, `?? ignore`, `?? crash`, `otherwise:`, families, handlers, `extern.cpp`,
   block and doc comments, packages, methods (outside the milestone's subset).
 
+Fixed after the milestone (2026-11-21): any procedure calling itself crashed Ralph, found by the compiler session.
+OCaml works out a function's arguments first, so the evaluator built both ways of every `if`; each way is now a
+function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine (Ralph gives
+status 7 for now). Six recursion tests suggested to the design session.
+
 Reading 8 (`while` and D57) became D149, which Ralph already follows. Its example breaks D9; sent to the design
 session on 2026-11-21.
 
