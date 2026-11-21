@@ -1,0 +1,5 @@
+proc.main:
+    var $score: Whole = 0;
+    $score + 1;
+    show_msg(be.Text($score));
+end proc.main

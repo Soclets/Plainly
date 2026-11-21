@@ -1,0 +1,1 @@
+A line that only works out a value, with nowhere for it to go, is refused, as D120 refuses an unused call. D120, D161; standard ch. 4 and 11.
