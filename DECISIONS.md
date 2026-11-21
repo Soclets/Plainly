@@ -4597,3 +4597,21 @@ read, change the caller's value, or take it over) are still undecided; this is w
 
 **Tankun's words.** Asked "Should a plain parameter be read-only, refused like a `let`, with that wording?", the owner
 chose: "yea".
+
+## D148. A program with refusals exits with status 1, even with `NotBuiltYet` or `NotDesignedYet` too
+
+2026-11-21.
+
+**Chosen.** When a program has both refusals and `NotBuiltYet` or `NotDesignedYet` messages, every message is shown
+(D54) and the exit status is 1, refused. Status 3 then means only that the program is fine as far as the tool can tell,
+but the tool can't handle part of it yet.
+
+**Weighed.**
+- Status 3, as Ralph had it meanwhile. It would hide that the program itself has mistakes to fix.
+
+**Why this won.** A refusal is the program's own mistake, which the writer has to fix whatever else happens; "not built
+yet" is a limit of the tool. Keeping 3 for the tool alone gives scripts and editors one clear meaning for it. Ralph,
+building the oracle, asked; the first build's compiler had asked it too, as its Q5.
+
+**Tankun's words.** Asked "Should a program with both refusals and `NotBuiltYet` or `NotDesignedYet` exit with status
+1?", the owner chose: "yea".

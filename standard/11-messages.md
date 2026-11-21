@@ -60,9 +60,9 @@ beyond plain English letters.
 | Status | When |
 |---|---|
 | 0 | the program ran to its end, or `ask` found no more input (D96) |
-| 1 | it was refused at compile time |
+| 1 | it was refused at compile time, even if `NotBuiltYet` or `NotDesignedYet` messages came too (D148) |
 | 2 | the file couldn't be read |
-| 3 | `NotBuiltYet` or `NotDesignedYet`: `Unlo\n` or Ralph can't handle something yet |
+| 3 | `NotBuiltYet` or `NotDesignedYet` with no refusals: the program is fine as far as the tool can tell, but `Unlo\n` or Ralph can't handle part of it yet |
 | 4 | a check failed at runtime, or the program ran out of memory (D115) |
 | 5 | a failure left `proc.main`, or `?? crash` stopped the program on purpose |
 | 6 | the command itself was written wrong, like a missing mode or an unknown command, with every mistake shown, one line each (D82, D116) |
