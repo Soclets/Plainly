@@ -5557,7 +5557,28 @@ show_msg.fmt("{$whole_speed, places: 0}");   // 7, for a player
 **Why this won.** The text is how that `Float` is written in a program, so it tells a programmer what kind of number
 they're looking at, as the `~` does. Python and Rust print `7.0` too. A player sees `places:` (D175).
 
-How a `Float` too big or too small to write out in full shows, like 10³⁰⁰, isn't decided yet.
+How a `Float` too big or too small to write out in full shows, like 10³⁰⁰, isn't decided yet. (Decided by D182: in full.)
 
 **Tankun's words.** Asked "Should `be.Text` show a `Float` with no fraction as `7.0`, so it reads back as a `Float`?",
 the owner chose: "yea".
+
+## D182. `be.Text` writes a `Float` out in full, with no `e` notation
+
+2026-11-21.
+
+**Chosen.** However big or small a `Float` is, `be.Text` writes it out in full: the shortest digits that read back as
+the same `Float` (D155), with zeros filling out to the point, never in `e` notation. 10²² shows as
+`10000000000000000000000.0`, and 0.00001 as `~0.00001`. Where the zeros after the shortest digits aren't exactly what's
+stored, the `~` says so: 2⁷⁰ shows as `~1180591620717411300000.0`. Unio has no `e` notation in literals either.
+
+**Weighed.**
+- `e` notation past a point, as Python's `1e+16` and `1e-05`, which would need `1.0e16` as a literal too, so the text
+  reads back. A new form for beginners, mainly for science-sized numbers, and it can be added on its own later, say for
+  a space game.
+
+**Why this won.** Terminal games almost never meet numbers past a few million. A long run of zeros is honest and needs
+nothing new to read, where `1e+16` puzzles anyone who hasn't met it. The largest `Float` is 309 digits long, a rare
+cost.
+
+**Tankun's words.** Asked "Should `be.Text` always write a `Float` out in full, with no `e` notation?", the owner chose:
+"yea".

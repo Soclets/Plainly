@@ -1,0 +1,1 @@
+be.Text writes a Float out in full with no e notation, with ~ where the filled-in digits are not exactly what is stored. D155, D181, D182; standard ch. 7.
