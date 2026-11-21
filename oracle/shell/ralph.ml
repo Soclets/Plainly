@@ -182,7 +182,8 @@ let () =
           let messages =
             List.stable_sort
               (fun a b -> compare (position a) (position b))
-              (outermost_chains (Option.to_list carriage_return @ parse_problems @ core_problems))
+              (outermost_chains
+                 (Option.to_list carriage_return @ parse_problems @ Spacing.check lines @ core_problems))
           in
           if messages <> [] then begin
             print_messages file source messages;
