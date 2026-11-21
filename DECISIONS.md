@@ -4876,3 +4876,21 @@ A real program rarely goes ten thousand calls deep, and a runaway recursion reac
 and the compiler session each chose 1,000,000 on their own.
 
 **Tankun's words.** Asked "Should it be a fixed 1,000,000 calls?", the owner chose: "yea".
+
+## D159. `unio run` keeps the program it builds in the compile cache
+
+2026-11-21.
+
+**Chosen.** `unio run` keeps the program it links in the compile cache (D65, D151), keyed by its compiled pieces and
+the runtime, instead of a temporary file, replacing that detail of D45 and D50. An unchanged program then starts in
+about 0.1 s instead of 0.4 s, skipping linking and macOS's first-launch check.
+
+**Weighed.**
+- A temporary file each run, as D45 and D50 said. Every run links again and pays macOS's first-launch check.
+
+**Why this won.** Nothing changes for the user, the same output and nothing beside their files, and the cache already
+holds the compiled pieces, so keeping the last step there makes every rerun faster. The cache lives in the system's
+cache folder, which is safe to empty. The compiler session built it this way and asked.
+
+**Tankun's words.** Asked "Should `unio run` keep the program it builds in the compile cache, instead of a temporary
+file?", the owner chose: "yea".

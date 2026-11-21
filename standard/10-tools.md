@@ -32,9 +32,9 @@ unio check game.unio
 unio oracle game.unio
 ```
 
-- **`run`** compiles to a temporary file and runs it; **`compile`** makes the file to ship, beside the source file and
-  named after it without `.unio`, so `unio compile games/guess.unio --final` makes `games/guess` (D150). Both need a
-  mode (D46, D50, D91, D135, D136).
+- **`run`** compiles and runs the program, keeping it in the compile cache so an unchanged program starts at once
+  (D159); **`compile`** makes the file to ship, beside the source file and named after it without `.unio`, so `unio
+  compile games/guess.unio --final` makes `games/guess` (D150). Both need a mode (D46, D50, D91, D135, D136).
 - **`check`** reports what's refused without building, and needs no mode (D50).
 - **`oracle`** runs the file on Ralph, the oracle (D51, D141), the separate reference implementation, printing exactly
   what the compiled program would. `unio` forwards to the oracle's own program (D50).
