@@ -4400,6 +4400,8 @@ as `unio oracle game.unio` (D50, D136), as before.
 
 **Tankun's words.** "It's actually just `oracle`".
 
+(Changed by D141: the oracle's name is Ralph; `oracle` stays its role and its command.)
+
 ## D140. `oracle` is built first, to a finish line, then `Unlo\n`
 
 2026-11-21.
@@ -4428,3 +4430,27 @@ programs can already run through `unio oracle`. The finish line keeps it from sw
 "What does the subset have?", then, asked "should `oracle` be built first, until it passes every test, runs the
 guessing game, and has type safety and exact `Whole` arithmetic proven for that subset, with `Unlo\n` starting right
 after?", the owner chose: "yea, oracle first. Give me the prompt link, make sure the prompt is aligned with Anthropic's"
+
+## D141. The oracle is named Ralph
+
+2026-11-21.
+
+**Chosen.** The oracle is named **Ralph**, for Rocq Alpha: alpha as in the first one, since it's built first (D140).
+`oracle` stays its role, and you still run it as `unio oracle game.unio`, so learners never need the name, as with
+`Unlo\n`. Prompts and docs call it "Ralph, the oracle". This changes D139's name.
+
+**Weighed.**
+- `oracle` alone (D139). Plain and already in the command, but, in Tankun's words, the effort deserves a name.
+- Gallus, Latin for rooster, Rocq's mascot, suggested by the design claude to match Unio's Latin. Free as a name.
+- Verum, Latin for truth. Already a verified systems language.
+- Pythia, the priestess of the oracle at Delphi. Already a well-known family of AI language models.
+- The design claude's concerns about Ralph: "alpha" can read as an unfinished early release, the opposite of a
+  reference; and "Ralph" is a known name in Claude Code for running an agent in an endless loop (the "Ralph Wiggum"
+  technique), which "Ralph, the oracle" keeps apart in prompts and docs.
+
+**Why this won.** Tankun liked it best, and the reasoning holds on its own terms: alpha is the first letter, and Ralph is
+the first part of Unio built.
+
+**Tankun's words.** "Should the oracle be `Ralph` instead? Rocq Alpha (Alpha because it's first)", "The effort deserves
+a name, though.", "I like Ralph, though.", then, asked "Should the oracle be named Ralph, still run as `unio oracle`?",
+the owner chose: "yea".

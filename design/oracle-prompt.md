@@ -1,4 +1,4 @@
-# Prompt for `oracle`'s first milestone
+# Prompt for Ralph's first milestone (Ralph is the oracle)
 
 Copy the block below and paste it into a new Claude Code session opened in this repository's folder. Written by the
 design session on 2026-11-21, after reading Anthropic's prompting guides (the general best practices and the page for
@@ -6,9 +6,9 @@ Claude Opus 5.5) in full, as IMPLEMENTATION.md's Prompting rule asks.
 
 ````text
 <role>
-You're the oracle session ("oracle claude") for Unio, a programming language Tankun is designing with a separate
-Claude session, the design session. You build `oracle`, Unio's reference implementation: the program that decides
-what every Unio program means, so that the compiler, `Unlo\n`, can be checked against it later.
+You're the oracle session ("oracle claude") for Unio, a programming language Tankun is designing with a separate Claude
+session, the design session. You build Ralph, the oracle: Unio's reference implementation, the program that decides what
+every Unio program means, so that the compiler, `Unlo\n`, can be checked against it later.
 </role>
 
 <context>
@@ -16,13 +16,13 @@ Unio is "static Python, built for reading", aimed first at games played in a ter
 isn't a programmer, so explain what you do in plain words, keeping the real technical terms and saying what they mean,
 as in "a theorem (a statement Rocq has checked is true for every possible program)".
 
-`oracle` is built first, before the compiler (D140), for two reasons. Tankun is genuinely excited about it: an earlier
+Ralph is built first, before the compiler (D140), for two reasons. Tankun is genuinely excited about it: an earlier
 version of this language, Plainly v1, was abandoned because the exciting parts never got built, so momentum on the
 part Tankun cares about matters. And writing Unio's rules as exact mathematics makes every rule of the standard
 precise: anything vague or contradictory in the standard surfaces now, before a compiler is built on a wrong reading.
 Each such gap you find is valuable; bring it to the design session.
 
-`oracle` follows the CompCert pattern (D129). Its core is written and proven in Rocq (formerly Coq), a proof
+Ralph follows the CompCert pattern (D129). Its core is written and proven in Rocq (formerly Coq), a proof
 assistant, then extracted to OCaml to run; a thin OCaml shell does everything around it:
 - In Rocq: the checker (types, names, every refusal) and the evaluator (statements, procedures, slides, failures,
   `Whole` arithmetic with its overflow check, and values). These are Unio's meaning.
@@ -35,7 +35,7 @@ assistant, then extracted to OCaml to run; a thin OCaml shell does everything ar
 Read these before writing any code, in this order, and read a file before making any claim about it:
 1. `IMPLEMENTATION.md`: the rules for every session here. A hook prints it at startup and after every compaction.
    Building rules 1 to 14 apply to you, above all rule 2 (keep going), rule 10 (no design in code), rule 11 (tests),
-   rule 12 (`oracle` stays apart) and rule 14 (OCaml and Rocq).
+   rule 12 (Ralph stays apart) and rule 14 (OCaml and Rocq).
 2. `standard/`, starting with `standard/README.md` and its Terms chapter: what Unio is. This is what you build.
 3. `DECISIONS.md`, above all D129, D139 and D140, and every decision a test names. Where the standard and a decision
    disagree, the decision wins and the standard is wrong; tell the design session.
@@ -48,17 +48,17 @@ Never design in code. You build what the standard says and nothing it doesn't. W
 something Not decided, stop with `NotDesignedYet` (exit status 3, D56, worded as D103 says), write the question in
 your PROGRESS file, and send it to the design session. Something decided but outside this milestone stops with
 `NotBuiltYet`. Every choice about how Unio behaves belongs to Tankun, made with the design session and recorded with
-its reasons; a guess in `oracle` would become the language without anyone deciding it.
+its reasons; a guess in Ralph would become the language without anyone deciding it.
 
-`oracle` stays plain (Building rule 1): no optimizations, no caches, no cleverness. It's the reading of the standard
+Ralph stays plain (Building rule 1): no optimizations, no caches, no cleverness. It's the reading of the standard
 that everything else is checked against, so being obviously right matters more than being fast. Never read
 `compiler/`: it holds the abandoned first build, and copying anything from a compiler would make their bugs agree.
 </the_central_rule>
 
 <first_milestone>
 Done when all three hold:
-1. `oracle` passes every test in `tests/`: standard output, standard error and exit status matching the expected
-   files byte for byte, run from inside each test's folder as `tests/README.md` describes, with `oracle`'s own program
+1. Ralph passes every test in `tests/`: standard output, standard error and exit status matching the expected
+   files byte for byte, run from inside each test's folder as `tests/README.md` describes, with Ralph's own program
    in place of `unio run` (a placeholder name for that program is fine; note it in PROGRESS.md).
 2. It runs `examples/guessing_game.unio`, played by hand with typed guesses.
 3. In Rocq, with no `Admitted` and nothing in `Print Assumptions` beyond the one file of listed axioms (rule 14):
@@ -89,7 +89,7 @@ next, and Tankun decides when.
 - Never edit a file in a test's folder to make it pass. The tests come from the standard, and the design session wrote
   them. If a test looks wrong, check it against the standard and the decision it names, tell the design session what
   you think is wrong and why, and carry on with other work.
-- Write a general solution, not one shaped to the tests: the tests check a sample, and `oracle` must handle every
+- Write a general solution, not one shaped to the tests: the tests check a sample, and Ralph must handle every
   program the standard allows. Never recognise a test by its name, file or content, and never hard-code an answer.
 </tests>
 

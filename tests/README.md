@@ -1,6 +1,6 @@
 # Unio's tests
 
-The contract `Unlo\n` and `oracle` are built to pass (D12). Each test is written by hand from the standard,
+The contract `Unlo\n` and Ralph are built to pass (D12). Each test is written by hand from the standard,
 and names the decisions it checks.
 
 ## A test
@@ -26,7 +26,7 @@ unio run program.unio --working < input.txt
 
 from inside the test's own folder, so a message names the file as `program.unio` (with no input when there's no
 `input.txt`), its standard output, standard error and exit status match the expected
-files exactly. `Unlo\n`'s own messages go to standard error. Once `oracle` exists, every test runs on
+files exactly. `Unlo\n`'s own messages go to standard error. Once Ralph exists, every test runs on
 `unio oracle` too, with the same expected files (D50).
 
 A `check.py` runs with `python3 -I check.py` from the test's folder, and exits with status 0 when `expected.out`

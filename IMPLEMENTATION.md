@@ -89,7 +89,7 @@ python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has c
 
 ## Code
 
-Rules for the code of `Unlo\n` and `oracle` (owner, 2026-11-20):
+Rules for the code of `Unlo\n` and Ralph (owner, 2026-11-20):
 
 1. **Code uses the standard's terms,** as its Terms chapter defines them (procedure, narrowing, label, failure,
    handler, family, slide, step), so the code, the standard and the messages say the same thing. One name per
@@ -105,7 +105,7 @@ Rules for the code of `Unlo\n` and `oracle` (owner, 2026-11-20):
 
 ## Building
 
-Rules for building `Unlo\n` and `oracle`, brought over from Cyborg's IMPLEMENTATION.md (owner,
+Rules for building `Unlo\n` and Ralph, brought over from Cyborg's IMPLEMENTATION.md (owner,
 2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Unio is a
 learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
 It can come later for one small, critical piece if a bug there ever gets through.
@@ -113,7 +113,7 @@ It can come later for one small, critical piece if a bug there ever gets through
 1. **Optimizations from the start.** `Unlo\n` is built with its optimizations as it goes, never as a plain version
    sped up later. Each part of the language arrives with `final` mode's optimizations for it (D124), and compiling is
    fast from the start: parallel, cached and in the background (D65). `working` mode stays the light build (D46).
-   `oracle` stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
+   Ralph stays plain. (From Cyborg's rule 10, which Tankun learnt reimplementing Lua in SPARK.)
 2. **Keep going.** In long work, a finished step, a report or a wrap-up isn't a reason to stop: send the report in the
    same message as the next action, and go straight on. Stop only when blocked on a design question with nothing else
    to work on, when a test's expected output looks wrong and nothing else can go ahead, when a new decision redesigns
@@ -128,7 +128,7 @@ It can come later for one small, critical piece if a bug there ever gets through
    exceptions, matching LLVM's own build: failures are `std::expected`, and its value is never taken without checking.
    No C-style casts, and `reinterpret_cast` or `const_cast` only in LLVM glue, each with a comment saying why it's safe.
    A bad program never crashes `Unlo\n`: nothing a program can reach ends in `abort` or `llvm_unreachable`, and if
-   `Unlo\n` itself goes wrong, it's an internal error saying how to report it (D82, D103). `oracle` follows rule
+   `Unlo\n` itself goes wrong, it's an internal error saying how to report it (D82, D103). Ralph follows rule
    14. (From Cyborg's rules 6 and 7, carried over to C++ by D131.)
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
@@ -151,7 +151,7 @@ It can come later for one small, critical piece if a bug there ever gets through
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
 9. **Language.** `Unlo\n`, its runtime and every tool are C++, built with CMake, LLVM's own build system, against
-   one pinned LLVM version, upgraded once a year (D131). The exceptions: `oracle` and `check/`, which are OCaml and
+   one pinned LLVM version, upgraded once a year (D131). The exceptions: Ralph and `check/`, which are OCaml and
    Rocq (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
    the VS Code extension, which is TypeScript; and scratch work that's never committed. (From Cyborg's rule 1, carried
    over to C++ by D131.)
@@ -163,13 +163,13 @@ It can come later for one small, critical piece if a bug there ever gets through
     from the design session may fail until what it tests is built. Output matches the expected files byte for byte, and
     a building session never edits an expected file: a test that looks wrong goes to the design session (D12). (From
     Cyborg's rule 5.)
-12. **The oracle stays apart.** The compiler session reads the tests, never `oracle`'s source, and the oracle session
+12. **The oracle stays apart.** The compiler session reads the tests, never Ralph's source, and the oracle session
     never reads `Unlo\n`'s. If one copied the other, their bugs would agree, and comparing them would prove
     nothing.
     A random program generator, in `check/`, is written from `standard/`, never from either implementation's source,
     so what counts as a valid program comes from the standard, not from one implementation's reading of it. It builds
     programs from a syntax tree with one printer, and tracks what it doesn't generate, since all passing doesn't mean
-    covered. A live comparison runs `oracle` and `Unlo\n` as black boxes on every generated program and every
+    covered. A live comparison runs Ralph and `Unlo\n` as black boxes on every generated program and every
     test, in every build mode, and shrinks any difference to the smallest program that still
     shows it. A difference is a bug in one of them, and the standard decides which, or DECISIONS.md where the standard
     is silent; if both are silent, it's a question for Tankun. Findings about `Unlo\n` go to the compiler session
@@ -179,12 +179,12 @@ It can come later for one small, critical piece if a bug there ever gets through
     IMPLEMENTATION.md, the last only with Tankun's OK. Each building session edits only its own folders: the
     compiler session `compiler/` and `tools/`, the oracle session `oracle/` and `check/`. With several sessions in one
     folder, each commits only its own files by name, never `git add -A` or `git add .`. (From Cyborg's rule 2.)
-14. **OCaml and Rocq.** OCaml, for `oracle`'s shell and the extracted core: one pinned OCaml version, in its own opam
+14. **OCaml and Rocq.** OCaml, for Ralph's shell and the extracted core: one pinned OCaml version, in its own opam
     switch, built with `dune`, formatted with `ocamlformat`. Every warning on, as errors, non-exhaustive `match`es
     included. No functions that crash on a reachable path: no `List.hd`, `List.nth`, `Option.get`, `failwith`, `assert
     false` or exceptions used for failures; failures are `result` or `option`, checked. No `Obj`, no `-unsafe`, no
     `Array.unsafe_get`. Unio's `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
-    plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for `oracle`'s core: one pinned Rocq version.
+    plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for Ralph's core: one pinned Rocq version.
     No `Admitted` and no `Axiom`, except a short list in one file, each with a comment saying why it's believed, such as
     how Rocq's integers become OCaml's `Int64` on extraction. `Print Assumptions` runs on every main theorem in each
     test run and shows nothing beyond that list. Every theorem's statement has a comment saying in plain words what it
