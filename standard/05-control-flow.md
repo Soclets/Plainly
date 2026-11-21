@@ -41,6 +41,8 @@ $hp at_most 100
   none (D3, D17).
 - **`at_least` and `at_most`:** instead of `>=` and `<=` (D17).
 - **A lone `=` in a condition is refused** (D14).
+- **On two `Float`s, every comparison is exact,** comparing the stored values: `~0.1 + ~0.2 == ~0.3` is `false`,
+  since the two are neighbouring `Float`s (D184).
 
 **Not decided:** comparing two pieces of text; what else a condition may be.
 
@@ -78,6 +80,17 @@ var $tries: Whole = 0;
 while $tries < 5:
     show_msg("Guess!");
     $tries = $tries + 1;
+end while
+```
+
+**`==` and `!=` between two `Float`s are refused in a `while` condition** (D184). A `Float` that changes each pass
+rarely lands exactly on a value, so the loop could skip past it and never stop; `<`, `>`, `at_least` or `at_most` say
+"until it reaches", and the refusal's fix gives one:
+
+```
+var $timer: Float = 0.0;
+while $timer < 1.0:          // `while $timer != 1.0:` is refused
+    $timer = $timer + ~0.1;
 end while
 ```
 

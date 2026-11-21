@@ -1,0 +1,1 @@
+Comparisons on Floats are exact: neighbours differ, exact sums match, the two zeros are equal, and a < loop stops. D183, D184; standard ch. 5.

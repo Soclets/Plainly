@@ -5600,3 +5600,45 @@ no minus on a zero (D176), so the two ways of showing a `Float` agree.
 
 **Tankun's words.** Asked "Should `be.Text` show IEEE 754's negative zero as `0.0`, with no minus?", the owner chose:
 "yea".
+
+## D184. Comparisons on `Float`s are exact, and `==` and `!=` on them are refused in a `while` condition
+
+2026-11-21.
+
+**Chosen.**
+- **`==`, `!=`, `<`, `>`, `at_least` and `at_most` work on two `Float`s,** comparing the stored values exactly, as
+  IEEE 754 does. `~0.1 + ~0.2 == ~0.3` is `false`: the sum is stored as ~0.30000000000000004 and `~0.3` as the
+  `Float` just below it, two neighbours. IEEE 754's two zeros are equal (D183).
+- **`==` and `!=` between two `Float`s are refused in a `while` condition,** with `<`, `>`, `at_least` or `at_most`
+  as the fix. `if` keeps them.
+- The refusal's wording comes with a later batch (D54), and its test with it.
+
+```
+var $timer: Float = 0.0;
+while $timer != 1.0:          // refused, fix: while $timer < 1.0:
+    $timer = $timer + ~0.1;
+end while
+```
+
+Ten steps of `~0.1` make ~0.9999999999999999, not 1.0, and the eleventh skips past it, so with `!=` the loop never
+stops.
+
+**Weighed.**
+- `==` refused on `Float`s everywhere. It also blocks exact checks that are right, like `$speed == 0.0` after setting
+  the speed to `0.0`.
+- An approximate `==`, true when close enough. "Close" has no one size, since neighbouring `Float`s are further apart
+  the bigger they are, and it breaks equality's chain: a near b and b near c, but not a near c.
+- `equal.exact`, a word with narrowings, as Tankun proposed, with bare `==` refused on `Float`s. It behaves exactly as
+  `==` does, and unlike D70's `div.floor` and `div.trunc` there's nothing yet to choose between: "near enough" needs a
+  tolerance, so it waits for float maths, and could be `equal.near` then.
+- `==` exact everywhere with no refusal, as the design claude first recommended. The freezing loop is the worst form of
+  the trap, with no message and nothing to point at, and its shape is easy to spot.
+
+**Why this won.** `==` means "the same value" for every type, and tells the truth about what's stored, while the one
+shape where float equality is nearly always a bug, a loop waiting to land on a value, is caught with its fix. Elsewhere
+Unio's `~` on inexact literals and in printing shows why a comparison came out `false`.
+
+**Tankun's words.** "Why?", "Why not a word? Like `equal` with narrowings", "What does `equal.exact` do?", "Why not
+`==`?", "is `~0.3` and `~0.30000004` or whatever it is the same?", "why?", "I meant ==\", "What is the trap?", "So, do
+we refuse tha?", then, asked "Should `==` and `!=` between two `Float`s be refused in a `while` condition, with `<`,
+`>`, `at_least` or `at_most` as the fix, while working exactly everywhere else?", the owner chose: "ye".
