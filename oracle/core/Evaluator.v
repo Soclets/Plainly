@@ -168,7 +168,7 @@ Definition apply_library (env : environment) (which : library) (values : list va
         end)
   | Random_number, [Whole_value low; Whole_value high] =>
       if (low <=? high)%Z then Random low high (fun n => Done (Gave (Whole_value n)))
-      else Stop (Random_range_not_designed at_ low high)
+      else Stop (Random_backwards at_ low high)
   | _, _ => Stop Stuck
   end.
 

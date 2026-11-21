@@ -121,6 +121,9 @@ let as_slide (start, links) =
 let as_calls (start, links) =
   List.fold_left (fun inner l -> l.procedure ^ "(" ^ String.concat ", " (inner :: l.others) ^ ")") start links
 
+(* trace: D160 *)
+let random_why = "`random` gives a whole number from `from:` up to `to:`, so `from:` can't be above `to:`."
+
 let chain_why = "one or two calls are written as calls; a chain of three or more is a slide."
 
 let chain_refusal source (whole : Core.expression) (fixed : string option) =
@@ -363,6 +366,34 @@ let refusal source (r : Core.refusal) : M.message =
       in
       chain_refusal source whole fixed
   | Core.Calls_as_slide whole -> chain_refusal source whole (Option.map as_slide (flatten source whole))
+  | Core.Random_backwards_plain (p, low, high) ->
+      (* The two values swapped, the later first so the earlier column still holds. *)
+      let text = line_of source p in
+      let fixed =
+        match (written source low, written source high) with
+        | Some l, Some h ->
+            M.replace_at
+              (M.replace_at text high.place_column high.place_width l)
+              low.place_column low.place_width h
+        | _ -> text
+      in
+      refused p ~fix:fixed ~why:random_why
+  | Core.Value_only_line (p, given) ->
+      refused p
+        ~what:
+          (Printf.sprintf "`%s` works out a %s, but nothing uses it"
+             (Option.value (written source p) ~default:"this") (a_type given))
+        ~why:
+          "a line that only works out a value does nothing; keep the value with `let` or `var`, or give it to a \
+           variable with `=`."
+  | Core.Not_on_non_bool (found, p) ->
+      refused p
+        ~what:(Printf.sprintf "`not` works on a `Bool`, but this is a %s" (a_type found))
+        ~why:"`not`, `and` and `or` work on `Bool`s."
+  | Core.Logic_on_non_bool (operator, found, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s joins two `Bool`s, but this is a %s" (quoted (operator_name operator)) (a_type found))
+        ~why:"`not`, `and` and `or` work on `Bool`s."
   | Core.No_main ->
       refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~what:"this program has no `proc.main`"
         ~why:"a program starts with `proc.main`."
@@ -378,7 +409,6 @@ let not_designed (what : Core.not_designed) =
   | Core.Format_unclosed -> "a `{` that's never closed in `.fmt` text"
   | Core.Format_not_literal -> "`.fmt` given anything but text written in quotes"
   | Core.Bare_word_not_procedure -> "a word with no `( )` that isn't a procedure"
-  | Core.Statement_not_call -> "a value standing alone as a statement"
   | Core.Library_name_taken -> "a procedure with the name of one of the library's"
   | Core.Label_order -> "writing labels in a different order from the parameters"
   | Core.Return_type_wording -> "the message for `return` with a value of the wrong type"

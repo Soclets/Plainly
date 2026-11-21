@@ -423,7 +423,8 @@ Proof.
   - single_case.
   - single_case.
   - repeat split. eapply (check_against_typed _ [(Text, None)]); eauto.
-  - repeat split. eapply (check_against_typed _ [(Whole, Some "from"%string); (Whole, Some "to"%string)]); eauto.
+  - apply app_nil in C as [C _].
+    repeat split. eapply (check_against_typed _ [(Whole, Some "from"%string); (Whole, Some "to"%string)]); eauto.
   - repeat split. erewrite check_against_typed; eauto. unfold user_parameters. rewrite map_map. reflexivity.
 Qed.
 
@@ -490,7 +491,7 @@ Proof.
 Qed.
 
 Lemma not_stuck_input : Input_ended <> Stuck. Proof. discriminate. Qed.
-Lemma not_stuck_random : forall a b c, Random_range_not_designed a b c <> Stuck. Proof. discriminate. Qed.
+Lemma not_stuck_random : forall a b c, Random_backwards a b c <> Stuck. Proof. discriminate. Qed.
 
 Lemma apply_library_safe : forall s env which values given at_,
   matches (setting_scope s) env -> target_ready s (Library which) values given ->
@@ -581,6 +582,7 @@ Proof.
   2:{ intros C. apply app_nil in C as [C _]. exfalso; eapply resolve_reported; eauto. }
   intros C R; revert C.
   destruct target as [which | d]; [destruct which as [[] ? | [] | | |] |]; simpl;
+    try (intros C; apply app_nil in C as [C _]; revert C; apply check_against_clean);
     try apply check_format_clean; try apply check_against_clean; single_clean; assumption.
 Qed.
 
@@ -930,13 +932,17 @@ Proof.
   - (* a call or slide standing alone *)
     inversion H; subst s'. unfold check_run in H2.
     destruct action as [ | | | | | | | | | name given call_at | attempt fallback operator_at fat | start path sat | ];
+      try (match type of H2 with (let (_, _) := ?x in _) = _ =>
+             destruct x; apply app_nil in H2 as [_ H2]; discriminate H2 end);
       try (apply app_nil in H2 as [_ H2]; discriminate H2); try discriminate H2.
     + apply app_nil in H2 as [Rc _].
       apply run_call_nothing in Rc as (G & F & D).
       2:{ apply call_reported. apply (proj1 (proj2 unknown_reported)). }
       eapply safe_bind; [eapply C; eauto|]. rewrite G, F. intros [v| |] O; simpl in O; try contradiction.
       constructor. simpl. auto.
-    + destruct attempt; try (apply app_nil in H2 as [_ H2]; discriminate H2).
+    + destruct attempt;
+        try (match type of H2 with (let (_, _) := ?x in _) = _ =>
+               destruct x; apply app_nil in H2 as [_ H2]; discriminate H2 end).
       destruct (check_expression _ _) as [[t|] ds] eqn:Ef; [apply app_nil in H2 as [_ H2]; discriminate H2|].
       exfalso. match type of Ef with check_expression _ ?e = _ =>
         apply (proj1 unknown_reported e s); rewrite Ef; simpl; auto end.

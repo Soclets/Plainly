@@ -20,8 +20,8 @@ Inductive stop :=
 | Calls_too_deep (at_ : place) (depth : nat) (inside : string)
 (* `ask` found no more input: the program ends quietly with status 0 (D96). *)
 | Input_ended
-(* `random` with `from:` above `to:`, which isn't decided (D26). *)
-| Random_range_not_designed (at_ : place) (low high : Z)
+(* trace: D160. `random` with `from:` above `to:`: a failed check, with both values. *)
+| Random_backwards (at_ : place) (low high : Z)
 (* The evaluator ran out of fuel, its step counter (see Evaluator.v). *)
 | Out_of_fuel
 (* The evaluator met something it has no rule for. The type-safety theorem says a program the checker accepts

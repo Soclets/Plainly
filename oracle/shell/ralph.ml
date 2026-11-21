@@ -122,11 +122,14 @@ let rec walk file source (tree : unit Core.io) =
                   "every call still waiting for another needs a little memory, and the room for them is limited; a \
                    procedure that keeps calling itself without stopping fills it." ];
           finish 4
-      | Core.Random_range_not_designed (p, _, _) ->
+      (* trace: D160 *)
+      | Core.Random_backwards (p, low, high) ->
           end_open_line ();
           print_messages file source
-            [ M.message M.Not_designed_yet (Wording.at p) ~what:"`random` with `from:` above `to:` isn't decided yet" ];
-          finish 3
+            [ M.message M.Check_failed (Wording.at p) ~what:"`random`'s `from:` is above its `to:`"
+                ~when_:(Printf.sprintf "from: %s, to: %s" (Core.text_of_whole low) (Core.text_of_whole high))
+                ~why:Wording.random_why ];
+          finish 4
       | Core.Out_of_fuel ->
           end_open_line ();
           prerr_string (M.internal_error "the program ran more steps than Ralph can count");

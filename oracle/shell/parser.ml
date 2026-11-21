@@ -676,8 +676,15 @@ let parse_type st : Core.type0 parsed =
   | Some ({ kind = Word "List"; _ } as t) ->
       not_built st t "lists, `List<Type>` and `[ ]` (D75),";
       Error ()
+  | Some ({ kind = Word "Float"; _ } as t) ->
+      not_built st t "`Float` (D157, D162, D163)";
+      Error ()
   | Some ({ kind = Word w; _ } as t) when String.length w > 0 && w.[0] >= 'A' && w.[0] <= 'Z' ->
-      not_designed st t (Printf.sprintf "a type named `%s`" w);
+      (* trace: D161 *)
+      report st
+        (M.message M.Refused (M.point t.line t.column t.width)
+           ~what:(Printf.sprintf "there's no type named `%s`" w)
+           ~why:"a type is one Unio has, like `Whole`, `Float`, `Bool` or `Text`.");
       Error ()
   | _ ->
       expected st "a type";
@@ -923,17 +930,17 @@ and parse_labels st (t : token) =
   expect_semicolon st;
   Ok (Core.Labels (found, at))
 
-(* trace: D4, D88, D126. A definition's parameters, each its name, `:` and its type. *)
+(* trace: D4, D88, D126, D165. A definition's parameters in `[ ]`, each its name, `:` and its type. *)
 let parse_parameters st (open_bracket : token) : Core.parameter list parsed =
   advance st;
   match peek st with
-  | Some close when is_symbol ")" close ->
+  | Some close when is_symbol "]" close ->
       advance st;
       report st
         (M.message M.Refused
            (M.point open_bracket.line open_bracket.column 2)
            ~fix:(M.replace_at (line_text st open_bracket.line) open_bracket.column 2 "")
-           ~why:"a definition writes `( )` only when it has parameters.");
+           ~why:"a definition writes `[ ]` only when it has parameters.");
       Ok []
   | Some ({ kind = Word w; _ } as t) when String.length w > 0 && w.[0] >= 'A' && w.[0] <= 'Z' ->
       not_built st t "the refusal of a type written once in front of several parameters (D126, D132)";
@@ -960,11 +967,11 @@ let parse_parameters st (open_bracket : token) : Core.parameter list parsed =
             | Some c when is_symbol "," c ->
                 advance st;
                 loop (parameter :: acc)
-            | Some c when is_symbol ")" c ->
+            | Some c when is_symbol "]" c ->
                 advance st;
                 Ok (List.rev (parameter :: acc))
             | _ ->
-                expected st "`)`";
+                expected st "`]`";
                 Error ())
         | _ ->
             expected st "a parameter, as in `$score: Whole`";
@@ -972,7 +979,7 @@ let parse_parameters st (open_bracket : token) : Core.parameter list parsed =
       in
       loop []
 
-(* trace: D4, D8, D37, D38, D58, D132. `proc name(parameters) returns Type:`, its body, and `end proc name`. *)
+(* trace: D4, D8, D37, D38, D58, D132, D165. `proc name(parameters) returns Type:`, its body, and `end proc name`. *)
 let parse_definition st (keyword : token) : Core.definition option =
   begin_line st keyword 0;
   advance st;
@@ -1007,12 +1014,12 @@ let parse_definition st (keyword : token) : Core.definition option =
   | Some (name, name_token, closer) -> (
       let parameters =
         match peek st with
-        | Some o when is_symbol "(" o -> (
+        | Some o when is_symbol "[" o -> (
             match name with
             | Core.Main ->
                 let rec close () =
                   match peek st with
-                  | Some c when is_symbol ")" c ->
+                  | Some c when is_symbol "]" c ->
                       advance st;
                       Some c
                   | Some c when c.line = o.line ->
@@ -1025,14 +1032,14 @@ let parse_definition st (keyword : token) : Core.definition option =
                     report st
                       (M.message M.Refused (M.point o.line o.column 2)
                          ~fix:(M.replace_at (line_text st o.line) o.column 2 "")
-                         ~why:"a definition writes `( )` only when it has parameters.")
+                         ~why:"a definition writes `[ ]` only when it has parameters.")
                 | Some c ->
                     report st
                       (M.message M.Refused
                          (M.point o.line o.column (c.column + 1 - o.column))
                          ~what:"`proc.main` takes nothing"
                          ~why:"only the program's start runs `proc.main`, so it's never given anything.")
-                | None -> expected st "`)`");
+                | None -> expected st "`]`");
                 Ok []
             | Core.Named _ -> parse_parameters st o)
         | _ -> Ok []
@@ -1134,10 +1141,15 @@ let parse (lines : Lexer.line list) =
           st.stopped <- true;
           List.rev acc
       | Some t ->
+          (* trace: D161. Each statement outside a procedure is refused, and reading carries on. *)
           begin_line st t 0;
-          not_designed st t "code outside a procedure";
-          st.stopped <- true;
-          List.rev acc
+          report st
+            (M.message M.Refused
+               (M.point t.line t.column (String.length (line_text st t.line) - t.column + 1))
+               ~what:"this line isn't inside a procedure"
+               ~why:"a program is made of procedures, and every statement goes inside one.");
+          skip_statement st;
+          definitions acc
   in
   let found = definitions [] in
   (* Comment lines after the last closer. *)

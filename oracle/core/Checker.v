@@ -137,10 +137,12 @@ Definition binary_type (operator : binary_operator) (a b : type) (left_operand r
       | Bool, Bool => (None, [Not_designed_yet Ordering_bools operator_at])
       | _, _ => (None, [Refused (Compare_types operator a b operator_at)])
       end
+  (* trace: D161 *)
   | And | Or =>
       match a, b with
       | Bool, Bool => (Some Bool, [])
-      | _, _ => (None, [Not_designed_yet Condition_not_bool operator_at])
+      | Bool, other => (None, [Refused (Logic_on_non_bool operator other (expression_at right_operand))])
+      | other, _ => (None, [Refused (Logic_on_non_bool operator other (expression_at left_operand))])
       end
   end.
 
@@ -275,6 +277,26 @@ Definition check_format (s : setting) (given : list checked_argument) (at_ : pla
   | _ => values_diagnostics given ++ [Refused (Format_without_text at_)]
   end.
 
+(* A whole number written plainly in the code, as `6` or `-1`. *)
+Definition plain_number (e : expression) : option Z :=
+  match e with
+  | Whole_literal digits _ => whole_of_literal digits
+  | Negate (Whole_literal digits _) _ => option_map Z.opp (whole_of_literal digits)
+  | _ => None
+  end.
+
+(* trace: D160. `random` given two plain numbers with `from:` above `to:` is refused, with them swapped as the fix. *)
+Definition random_backwards (given : list checked_argument) (at_ : place) : list diagnostic :=
+  match given with
+  | [low; high] =>
+      match plain_number (argument_value low), plain_number (argument_value high) with
+      | Some l, Some h =>
+          if (h <? l)%Z then [Refused (Random_backwards_plain at_ (argument_at low) (argument_at high))] else []
+      | _, _ => []
+      end
+  | _ => []
+  end.
+
 Definition gives_of (d : definition) : gives :=
   match definition_returns d with Some t => Gives_value t | None => Gives_nothing end.
 
@@ -305,7 +327,8 @@ Definition check_target (s : setting) (procedure : string) (target : target) (gi
   | Library Ask_for_line => make_call (Gives_value Text) false (check_against procedure [(Text, None)] given at_ None)
   | Library Random_number =>
       make_call (Gives_value Whole) false
-        (check_against procedure [(Whole, Some "from"); (Whole, Some "to")] given at_ None)
+        (check_against procedure [(Whole, Some "from"); (Whole, Some "to")] given at_ None
+           ++ random_backwards given at_)
   | User d =>
       make_call (gives_of d) false (check_against procedure (user_parameters d) given at_ (Some (definition_name_at d)))
   end.
@@ -395,7 +418,8 @@ Fixpoint check_expression (s : setting) (e : expression) {struct e} : option typ
       let (t, ds) := check_expression s operand in
       match t with
       | Some Bool => (Some Bool, ds)
-      | Some _ => (None, ds ++ [Not_designed_yet Condition_not_bool at_])
+      (* trace: D161 *)
+      | Some other => (None, ds ++ [Refused (Not_on_non_bool other (expression_at operand))])
       | None => (None, ds)
       end
   | Binary operator left_operand right_operand operator_at _ =>
@@ -493,7 +517,13 @@ Definition check_run (s : setting) (action : expression) : list diagnostic :=
       | None => ds
       end
   | Broken at_ => [Already_refused at_]
-  | _ => snd (check_expression s action) ++ [Not_designed_yet Statement_not_call (expression_at action)]
+  (* trace: D161. A line that only works out a value; a refused one has had its say already (D55). *)
+  | _ =>
+      let (t, ds) := check_expression s action in
+      ds ++ [match t with
+             | Some t' => Refused (Value_only_line (expression_at action) t')
+             | None => Already_refused (expression_at action)
+             end]
   end.
 
 (* A condition, for `if` and `while` (D33). *)

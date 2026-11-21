@@ -101,6 +101,11 @@ Fixed after the milestone (2026-11-21): any procedure calling itself crashed Ral
 OCaml works out a function's arguments first, so the evaluator built both ways of every `if`; each way is now a
 function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine; answered by D154. Six recursion tests suggested to the design session.
 
+D165 (parameters in `[ ]`), D160 (backwards `random`: refused with plain numbers, a failed check otherwise) and D161
+(value-only lines, lines outside a procedure, unknown types, `not`/`and`/`or` on non-`Bool`s) are built; 38 of 38
+tests pass. D158 fixes the call limit at 1,000,000, which Ralph already had. `Float` (D157, D162, D163) is outside the
+subset and stops with `NotBuiltYet`. Whether an `if` or `while` condition must be a `Bool` is still not decided.
+
 D154 is built: calls nesting deeper than 1,000,000 stop with `check failed:`, status 4; the evaluator now carries how
 deep it is and which procedure it's in (`frame` in core/Evaluator.v). Ralph's own stack running out is still an
 internal error, status 7, as a last guard. D156 names `be.Whole`'s failure `not_a_whole`, for `?? crash` (D152), which

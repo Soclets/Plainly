@@ -4,7 +4,8 @@
    - none before `;`, `,`, `)`, `]` and `:`, none after `(` and `[`, and none on either side of a narrowing's `.`;
    - none after a negating `-`, which is a `-` with nothing before it but an operator, a bracket or a keyword (D27,
      D60);
-   - none before a call's `(`, which is a `(` right after a procedure's name;
+   - none before a call's `(`, which is a `(` right after a procedure's name, nor before the `[` after a name or a
+     type (D165);
    - one everywhere else: around operators, after `,` and `:`, and between words.
    A line never ends with spaces, and a blank line has none. All of a line's mistakes give one message, with a `^`
    under each gap and the whole line fixed (D100). *)
@@ -50,6 +51,9 @@ let right_gap tokens index =
   else if symbol_is "-" a && negates tokens index then 0
   else if symbol_is "(" b then
     match a.kind with Word w when (not (Parser.is_keyword w)) || w = "be" -> 0 | _ -> 1
+  (* trace: D165. No space before the `[` after a name or a type. *)
+  else if symbol_is "[" b then
+    match a.kind with Word w when not (Parser.is_keyword w) -> 0 | Dollar _ -> 0 | _ -> 1
   else 1
 
 let quoted t = "`" ^ describe t.kind ^ "`"
