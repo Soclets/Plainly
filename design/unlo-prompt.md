@@ -26,8 +26,8 @@ it's kept: it's an older design, and everything it learnt is already in the deci
 Unio's reference implementation, Ralph, the oracle, already exists in `oracle/` (D129, D141): an OCaml shell around a
 core proven in Rocq. It passes every test and runs the guessing game. It's your referee: where `Unlo\n` and Ralph
 disagree, one of them has a bug, and the standard decides which (Building rule 12). You may run Ralph as a black box,
-`oracle/_build/default/shell/ralph.exe PROGRAM.unio`, after `opam exec --switch=ralph -- dune build --root oracle`, but never
-read anything in `oracle/`: if the compiler copied the oracle, their bugs would agree.
+`oracle/_build/default/shell/ralph.exe PROGRAM.unio`, after `opam exec --switch=ralph -- dune build --root oracle`, but
+never read anything in `oracle/`: if the compiler copied the oracle, their bugs would agree.
 
 Three decisions shape the whole compiler:
 - Memory is Hylo-style values (D130): every variable owns its own value, there's no garbage collector, the compiler
