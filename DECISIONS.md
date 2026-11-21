@@ -5415,7 +5415,7 @@ isn't decided yet.
   status 4, as D46 already does for NaN and for a `Whole` that overflows.
 - **Dividing a `Float` by zero** is D46's division-by-zero check, so it never gives infinity or NaN either.
 - **So a `Float` only ever holds a real number:** no infinities, no NaN. IEEE 754's negative zero is the one special
-  value left, and how `be.Text` shows it isn't decided yet.
+  value left, and how `be.Text` shows it isn't decided yet. (Decided by D183: `0.0`.)
 - The check's wording comes with a later batch (D54), and its test with it.
 
 ```
@@ -5581,4 +5581,22 @@ nothing new to read, where `1e+16` puzzles anyone who hasn't met it. The largest
 cost.
 
 **Tankun's words.** Asked "Should `be.Text` always write a `Float` out in full, with no `e` notation?", the owner chose:
+"yea".
+
+## D183. `be.Text` shows IEEE 754's negative zero as `0.0`
+
+2026-11-21.
+
+**Chosen.** `be.Text` shows IEEE 754's negative zero, as from `0.0 * -1.0`, as `0.0`, with no minus. Only the printing
+hides the sign: if Unio adds maths functions where the sign of zero changes the answer, such as `atan2`, they follow
+IEEE 754 on the bits.
+
+**Weighed.**
+- `-0.0`, as Python and Rust show it. True to the bits, but −0.0 and 0.0 are equal in every comparison, and the one
+  operation IEEE 754 treats differently, dividing by them, already stops in Unio (D177).
+
+**Why this won.** In Unio a negative zero behaves as zero in every way, maths has one zero, and `places:` already shows
+no minus on a zero (D176), so the two ways of showing a `Float` agree.
+
+**Tankun's words.** Asked "Should `be.Text` show IEEE 754's negative zero as `0.0`, with no minus?", the owner chose:
 "yea".

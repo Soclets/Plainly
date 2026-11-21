@@ -173,6 +173,7 @@ Empty text is `""` (D76).
 - **A `Float` with no fraction shows `.0`,** as `7.0`, so the text reads back as a `Float` (D180, D181).
 - **It's always written out in full,** with no `e` notation: 10²² shows as `10000000000000000000000.0`, and 2⁷⁰,
   whose shortest digits are followed by zeros that aren't exactly what's stored, as `~1180591620717411300000.0` (D182).
+- **IEEE 754's negative zero shows as `0.0`,** since in Unio it behaves as zero in every way (D177, D183).
 
 ```
 let $speed: Float = ~0.1;
@@ -212,8 +213,8 @@ so (D162).
 
 A `Float` is shown to a player rounded, with `places:` in `.fmt` braces (D175).
 
-**Not decided:** `Float`'s maths and its other conversions; the wording of D177's check; how `be.Text` shows
-IEEE 754's negative zero.
+**Not decided:** `Float`'s maths and its other conversions; the wording of D177's check; maths functions such as
+square roots.
 
 ## Lists
 

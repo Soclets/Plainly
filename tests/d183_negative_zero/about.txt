@@ -1,0 +1,1 @@
+be.Text shows IEEE 754's negative zero as 0.0, and places: as 0.00. D176, D183; standard ch. 7.
