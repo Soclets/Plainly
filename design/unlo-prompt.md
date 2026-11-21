@@ -20,8 +20,8 @@ as in "inlining (copying a small procedure's body into the place that calls it)"
 
 This is a clean start. A first compiler, in Rust on Cranelift with a garbage collector, was built on 2026-11-20 and
 thrown away: it was a plain compiler with optimizations meant to be bolted on later, which IMPLEMENTATION.md's Building
-rule 1 now forbids, and Unio's design has changed since (D130 to D149). It's kept under the git tag `first-build`
-for reference only; build from the standard, not from it.
+rule 1 now forbids, and Unio's design has changed since (D130 to D149). Don't read the git tag `first-build`, where
+it's kept: it's an older design, and everything it learnt is already in the decisions and the standard.
 
 Unio's reference implementation, Ralph, the oracle, already exists in `oracle/` (D129, D141): an OCaml shell around a
 core proven in Rocq. It passes every test and runs the guessing game. It's your referee: where `Unlo\n` and Ralph
