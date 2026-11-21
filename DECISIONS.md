@@ -5367,7 +5367,7 @@ let $line: Text = be.Text.fmt("{$speed, places: 2}");
 - **Braces stay names-only** (D29): `places: 2` says how the name is shown, and holds no calculation or call.
 - **`places:` on anything but a `Float` is refused** at compile time, as the rest of `.fmt` text is checked.
 
-How a negative value that rounds to zero shows, as `-0.001` with `places: 2`, isn't decided yet.
+How a negative value that rounds to zero shows, as `-0.001` with `places: 2`, isn't decided yet. (Decided by D176: `0.00`.)
 
 **Weighed.**
 - `be.Text($speed, places: 2)`, as the design claude first proposed. Tankun: `be` converts a value to another type,
@@ -5385,3 +5385,22 @@ number is a place.
 than formatting", "Why is it called places?", "Why is it called places? Further down", then, asked "Should `.fmt`
 braces take a `places:` setting, as in `{$speed, places: 2}`, which rounds a `Float` and shows it without `~`?", the
 owner chose: "yea".
+
+## D176. With `places:`, a value that rounds to zero shows no minus
+
+2026-11-21.
+
+**Chosen.** When `places:` (D175) rounds a negative `Float` to all zeros, the text has no minus: `-0.001` with
+`places: 2` shows `0.00`. A value that doesn't round to zero keeps its minus, so `-0.006` shows `-0.01`.
+
+**Weighed.**
+- `-0.00`, as C's `printf` and Python's format show it. They write the sign of the value before rounding; some science
+  tables keep it on purpose, to mean "a tiny bit below zero". A player reads it as a bug.
+
+**Why this won.** In maths there's one zero, with no sign, so `0.00` is the correct rounding; `-0.00` comes from
+IEEE 754's two zeros and from `printf` keeping the sign. Python added a `z` option in 3.11 (PEP 682) to get `0.00`,
+because people kept wanting it; Unio makes it the only behaviour. How `be.Text` shows IEEE 754's negative zero itself
+isn't decided yet.
+
+**Tankun's words.** "What's correct", then, asked "Should `places:` drop the minus when a value rounds to zero, showing
+`0.00` and not `-0.00`?", the owner chose: "yea".

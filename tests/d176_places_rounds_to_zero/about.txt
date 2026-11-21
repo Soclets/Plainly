@@ -1,0 +1,1 @@
+With places:, a negative Float that rounds to zero shows no minus, and one that does not keeps it. D175, D176; standard ch. 7.

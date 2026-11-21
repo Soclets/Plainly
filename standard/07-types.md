@@ -139,6 +139,8 @@ show_msg.fmt("Speed: {$speed, places: 2}");   // Speed: 0.30
 - **It always shows that many places,** so `{$half, places: 3}` with `0.5` shows `0.500`, and `places: 0` shows no
   point (D175).
 - **It rounds to the nearest,** and an exact tie goes to the even digit: `0.125` with `places: 2` shows `0.12` (D175).
+- **A value that rounds to zero shows no minus:** `-0.001` with `places: 2` shows `0.00`, while `-0.006` shows `-0.01`
+  (D176).
 - **`places:` on anything but a `Float` is refused** at compile time (D175).
 
 `fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first
@@ -183,8 +185,8 @@ so (D162).
 
 A `Float` is shown to a player rounded, with `places:` in `.fmt` braces (D175).
 
-**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; how a negative
-`Float` that rounds to zero shows, as `-0.001` with `places: 2`.
+**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; how `be.Text` shows
+IEEE 754's negative zero.
 
 ## Lists
 
