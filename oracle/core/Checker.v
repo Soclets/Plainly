@@ -682,17 +682,24 @@ Definition parameter_info (p : parameter) : variable_info :=
 Definition procedure_label (d : definition) : string :=
   match definition_name d with Main => "proc.main" | Named n => n end.
 
+(* A body's `labels` line, if it starts with one (D25), and the statements after it. *)
+Definition labels_and_rest (b : block) : option (list label_pair) * block :=
+  match b with
+  | Then (Labels pairs _) rest => (Some pairs, rest)
+  | _ => (None, b)
+  end.
+
 (* trace: D4, D25, D37, D57, D88 *)
 Definition check_definition (p : program) (d : definition) : list diagnostic :=
   let procedure := procedure_label d in
   let start := {| setting_program := p; setting_scope := rev (map parameter_info (definition_parameters d));
                   setting_ended := []; setting_in_loop := false; setting_procedure := procedure;
                   setting_returns := definition_returns d |} in
-  let (labels_problems, rest) :=
-    match definition_body d with
-    | Then (Labels pairs _) rest =>
-        (check_label_pairs procedure (definition_parameters d) [] [] pairs, rest)
-    | body => ([], body)
+  let (labels_line, rest) := labels_and_rest (definition_body d) in
+  let labels_problems :=
+    match labels_line with
+    | Some pairs => check_label_pairs procedure (definition_parameters d) [] [] pairs
+    | None => []
     end in
   let main_returns :=
     match definition_name d, definition_returns d with

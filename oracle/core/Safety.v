@@ -594,3 +594,510 @@ Proof.
     try (apply app_nil in C; destruct C as [_ C]; discriminate C);
     try (apply app_nil in C; destruct C as [_ C]); eapply check_against_clean; eauto.
 Qed.
+
+(* ---------------------------------------------------------------------------------------------------------------- *)
+(* The proof: by induction on the fuel, every part of an accepted program is safe *)
+
+Lemma as_value_some : forall c at_ t d, as_value c at_ = (Some t, d) ->
+  call_gives c = Gives_value t /\ call_can_fail c = false /\ call_diagnostics c = d.
+Proof.
+  intros c at_ t d; unfold as_value. destruct (call_gives c), (call_can_fail c); intros H; inversion H; auto.
+Qed.
+
+Lemma typed_some : forall s e t d, check_expression s e = (t, d) -> d = [] -> exists t', t = Some t'.
+Proof.
+  intros s e t d E D. destruct t as [t'|]; [eauto|].
+  exfalso. apply (proj1 unknown_reported e s); rewrite E; simpl; auto.
+Qed.
+
+Lemma expect_nil : forall found expected f, expect (Some found) expected f = [] -> found = expected.
+Proof. intros found expected f; unfold expect. destruct (type_eqb _ _) eqn:Q; [|discriminate]. intros _; apply type_eqb_true; auto. Qed.
+
+Section Safety_proof.
+
+(* The program, which the checker accepts. *)
+
+Variable p : program.
+Hypothesis accepted : check_program p = [].
+
+Definition expression_safe (fuel : nat) := forall s e t env,
+  setting_program s = p -> matches (setting_scope s) env -> check_expression s e = (Some t, []) ->
+  safe (has_type t) (evaluate fuel p env e).
+
+Definition arguments_safe (fuel : nat) := forall s given env,
+  setting_program s = p -> matches (setting_scope s) env -> Forall clean (check_arguments s given) ->
+  safe (typed (check_arguments s given)) (evaluate_arguments fuel p env given).
+
+Definition apply_safe (fuel : nat) := forall s name values given at_ env target,
+  setting_program s = p -> matches (setting_scope s) env -> resolve p name = Resolved target ->
+  target_ready s target values given ->
+  safe (outcome_ok (target_gives target) (target_can_fail target)) (apply fuel p env name values given at_).
+
+Definition call_safe (fuel : nat) := forall s name given at_ env,
+  setting_program s = p -> matches (setting_scope s) env ->
+  call_diagnostics (check_call s name (check_arguments s given) at_) = [] ->
+  safe (outcome_ok (call_gives (check_call s name (check_arguments s given) at_))
+                   (call_can_fail (check_call s name (check_arguments s given) at_)))
+       (call fuel p env name given at_).
+
+Definition slide_safe (fuel : nat) := forall s v path env,
+  setting_program s = p -> matches (setting_scope s) env -> path <> No_steps ->
+  call_diagnostics (check_steps s (Some (type_of_value v)) path) = [] ->
+  safe (outcome_ok (call_gives (check_steps s (Some (type_of_value v)) path))
+                   (call_can_fail (check_steps s (Some (type_of_value v)) path)))
+       (slide fuel p env v path).
+
+Definition statement_safe (fuel : nat) := forall s st s' env,
+  setting_program s = p -> matches (setting_scope s) env -> check_statement s st = (s', []) ->
+  safe (flow_ok s s' (always_returns st)) (execute fuel p env st).
+
+Definition statements_safe (fuel : nat) := forall s b env names,
+  setting_program s = p -> matches (setting_scope s) env -> check_block s b = (names, []) ->
+  safe (block_ok s (always_returns_block b)) (execute_statements fuel p env b).
+
+Definition block_safe (fuel : nat) := forall s b env names,
+  setting_program s = p -> matches (setting_scope s) env -> check_block s b = (names, []) ->
+  safe (flow_ok s s (always_returns_block b)) (execute_block fuel p env b).
+
+Definition else_safe (fuel : nat) := forall s e env names,
+  setting_program s = p -> matches (setting_scope s) env -> check_else s e = (names, []) ->
+  safe (flow_ok s s (always_returns_else e)) (execute_else fuel p env e).
+
+Definition all_safe (fuel : nat) :=
+  expression_safe fuel /\ arguments_safe fuel /\ apply_safe fuel /\ call_safe fuel /\ slide_safe fuel /\
+  statement_safe fuel /\ statements_safe fuel /\ block_safe fuel /\ else_safe fuel.
+
+Lemma out_of_fuel_safe : forall (A : Type) (P : A -> Prop), safe P (Stop Out_of_fuel).
+Proof. intros. constructor. discriminate. Qed.
+
+Lemma no_fuel_safe : all_safe 0.
+Proof.
+  unfold all_safe, expression_safe, arguments_safe, apply_safe, call_safe, slide_safe, statement_safe,
+    statements_safe, block_safe, else_safe.
+  repeat split; intros; apply out_of_fuel_safe.
+Qed.
+
+Lemma expression_step : forall f, all_safe f -> expression_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e t env Ps M H.
+  destruct e as [digits at_ | value pieces at_ | b at_ | name at_ | word at_ | o at_ | o at_
+                | operator l r operator_at at_ | inner at_ | name given at_ | attempt fallback operator_at at_
+                | start path at_ | at_]; cbn [check_expression] in H; cbn [evaluate].
+  - destruct (whole_of_literal digits) as [n|]; [destruct (_ && _)|]; inversion H; subst. constructor; reflexivity.
+  - inversion H; subst. constructor; reflexivity.
+  - inversion H; subst. constructor; reflexivity.
+  - destruct (find_variable name (setting_scope s)) as [info|] eqn:F; inversion H; subst.
+    destruct (lookup_matches _ _ _ _ M F) as [v [L T]]. rewrite L. constructor. exact T.
+  - destruct (is_library_word word); [inversion H|]. destruct (find_definition _ _); inversion H.
+  - destruct (check_expression s o) as [[[]|] ds] eqn:Eo; inversion H; subst.
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv. destruct v; simpl in Tv; try discriminate.
+    apply safe_checked_whole.
+  - destruct (check_expression s o) as [[[]|] ds] eqn:Eo; inversion H; subst.
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv. apply safe_need_bool; [exact Tv | |]; constructor; reflexivity.
+  - destruct (check_expression s l) as [a dl] eqn:El, (check_expression s r) as [b dr] eqn:Er.
+    destruct (beside_maths operator l r operator_at); [inversion H|].
+    destruct a as [a|], b as [b|]; try (inversion H; fail).
+    destruct (binary_type operator a b l r operator_at) as [t' d] eqn:Bt. inversion H; subst.
+    apply app_nil in H2 as [? H2]; apply app_nil in H2 as [? ?]; subst.
+    destruct operator; cbn [evaluate];
+      try (simpl in Bt; destruct a, b; inversion Bt; subst;
+           eapply safe_bind; [eapply E; eauto|]; intros x Tx;
+           apply safe_need_bool; [exact Tx| |]; try (constructor; reflexivity);
+           eapply safe_bind; [eapply E; eauto|]; intros y Ty;
+           apply safe_need_bool; [exact Ty| |]; constructor; reflexivity).
+    all: eapply safe_bind; [eapply E; eauto|]; intros x Tx;
+         eapply safe_bind; [eapply E; eauto|]; intros y Ty;
+         eapply safe_apply_binary; eauto; discriminate.
+  - eapply E; eauto.
+  - destruct (as_value _ at_) as [t' d] eqn:Av. inversion H; subst.
+    apply app_nil in H2 as [? _]; subst. apply as_value_some in Av as (G & F & D).
+    eapply safe_bind; [eapply C; eauto|]. rewrite G, F. intros [v| |] O; simpl in O; try contradiction; try discriminate.
+    constructor; exact O.
+  - destruct (check_expression s fallback) as [ft df] eqn:Ef.
+    destruct attempt as [ | | | | | | | | | name given call_at | | | ];
+      try (match goal with H : (let (_, _) := ?x in _) = _ |- _ => destruct x end; inversion H; fail).
+    cbn [evaluate].
+    destruct (check_call s name (check_arguments s given) call_at) as [g fails diagnostics] eqn:Cc.
+    destruct g, fails; simpl in H; inversion H; subst.
+    apply app_nil in H2 as [D H2]; apply app_nil in H2 as [_ H2]; apply app_nil in H2 as [Df Ex].
+    subst. destruct (typed_some _ _ _ _ Ef eq_refl) as [ft' Ft]. subst ft. apply expect_nil in Ex. subst ft'.
+    eapply safe_bind; [eapply C; eauto; rewrite Cc; reflexivity|]. rewrite Cc. simpl.
+    intros [v| |] O; simpl in O; try contradiction.
+    + constructor; exact O.
+    + eapply E; eauto.
+  - destruct (check_expression s start) as [ts ds] eqn:Es.
+    destruct (as_value (check_steps s ts path) at_) as [result dc] eqn:Av. inversion H; subst.
+    apply app_nil in H2 as [? H2]; apply app_nil in H2 as [Sh ?]; subst.
+    destruct (typed_some _ _ _ _ Es eq_refl) as [ts' T]. subst ts.
+    apply as_value_some in Av as (G & F & D).
+    assert (path <> No_steps) as N by (intros Z; subst; eapply slide_shape_empty; eauto).
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv. unfold has_type in Tv. subst ts'.
+    eapply safe_bind; [eapply Sl; eauto|]. rewrite G, F. intros [w| |] O; simpl in O; try contradiction; try discriminate.
+    constructor; exact O.
+  - inversion H.
+Qed.
+
+
+Lemma arguments_step : forall f, all_safe f -> arguments_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s given env Ps M K.
+  destruct given as [| label value rest]; cbn [evaluate_arguments check_arguments] in *.
+  - constructor. constructor.
+  - destruct (check_expression s value) as [t d] eqn:Ev. inversion K as [| ? ? Kd Kr]; subst.
+    unfold clean in Kd; simpl in Kd; subst d.
+    destruct (typed_some _ _ _ _ Ev eq_refl) as [t' T]; subst t.
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv.
+    eapply safe_bind; [eapply A; eauto|]. intros vs Tvs. constructor. constructor; simpl; [|exact Tvs].
+    rewrite Tv; reflexivity.
+Qed.
+
+Lemma call_step : forall f, all_safe f -> call_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s name given at_ env Ps M D.
+  cbn [call].
+  assert (Forall clean (check_arguments s given)) as K.
+  { eapply call_clean; eauto. apply (proj1 (proj2 unknown_reported)). }
+  eapply safe_bind; [eapply A; eauto|]. intros values T.
+  destruct (call_ready _ _ _ _ _ D T) as (target & R & Ready & G & F).
+  rewrite G, F. rewrite Ps in R. eapply Ap; eauto.
+Qed.
+
+Lemma slide_step : forall f, all_safe f -> slide_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s v path env Ps M N D.
+  destruct path as [| name bracketed given at_ rest]; [contradiction N; reflexivity|].
+  cbn [slide check_steps] in *.
+  set (this := check_step s name (Some (type_of_value v)) (check_arguments s given) at_) in *.
+  assert (call_diagnostics this = [] ->
+            safe (typed (check_arguments s given)) (evaluate_arguments f p env given)) as Av.
+  { intros Dc. eapply A; eauto. eapply step_clean; eauto. }
+  assert (call_diagnostics this = [] -> forall values, typed (check_arguments s given) values ->
+            safe (outcome_ok (call_gives this) (call_can_fail this)) (apply f p env name (v :: values) given at_)) as Rv.
+  { intros Dc values T. destruct (step_ready _ _ _ _ _ _ Dc T) as (target & R & Rd & G & F).
+    unfold this. rewrite G, F. rewrite Ps in R. eapply Ap; eauto. }
+  destruct rest as [| name2 bracketed2 given2 at2 rest2].
+  - eapply safe_bind; [exact (Av D)|]. intros values T.
+    eapply safe_bind; [exact (Rv D values T)|]. intros o O. constructor. exact O.
+  - destruct (as_value this at_) as [next d] eqn:Avl. simpl in D. apply app_nil in D as [Dd Dl]. subst d.
+    destruct next as [tn|].
+    2:{ exfalso. refine (as_value_reported this at_ _ _ _); [| rewrite Avl; reflexivity | rewrite Avl; reflexivity].
+        intros G. apply step_reported; [| exact G]. apply (proj1 (proj2 unknown_reported)). }
+    apply as_value_some in Avl as (G & F & Dt).
+    eapply safe_bind; [exact (Av Dt)|]. intros values T.
+    eapply safe_bind; [exact (Rv Dt values T)|]. rewrite G, F. intros [w| |] O; simpl in O; try contradiction; try discriminate.
+    subst tn. eapply Sl; eauto. discriminate.
+Qed.
+
+
+Definition body_ok (d : definition) (fl : flow) : Prop :=
+  match fl with
+  | Continue _ => definition_returns d = None
+  | Leave_loop _ => False
+  | Leave_procedure r => result_ok (definition_returns d) r
+  end.
+
+Lemma procedure_result_safe : forall d fl, body_ok d fl -> safe (outcome_ok (gives_of d) false) (procedure_result d fl).
+Proof.
+  intros d [env|env|[v|]] H; unfold procedure_result, gives_of; simpl in H;
+    destruct (definition_returns d); simpl in *; try contradiction; try discriminate; repeat constructor; auto.
+Qed.
+
+Definition start_setting (d : definition) : setting :=
+  {| setting_program := p; setting_scope := rev (map parameter_info (definition_parameters d));
+     setting_ended := []; setting_in_loop := false; setting_procedure := procedure_label d;
+     setting_returns := definition_returns d |}.
+
+Lemma definition_accepted : forall d, In d p -> check_definition p d = [].
+Proof.
+  intros d D. pose proof accepted as Acc. unfold check_program in Acc. apply app_nil in Acc as [_ F].
+  eapply flat_map_nil; eauto.
+Qed.
+
+Lemma definition_parts : forall d, check_definition p d = [] ->
+  exists rest names,
+    (definition_body d = rest \/ exists pairs at_, definition_body d = Then (Labels pairs at_) rest) /\
+    check_block (start_setting d) rest = (names, []) /\
+    (definition_returns d <> None -> always_returns_block rest = true) /\
+    (definition_name d = Main -> definition_parameters d = [] /\ definition_returns d = None).
+Proof.
+  intros d H. unfold check_definition in H. cbn zeta in H.
+  destruct (labels_and_rest (definition_body d)) as [labels_line rest] eqn:LR.
+  apply app_nil in H as [_ H]. apply app_nil in H as [Mr H]. apply app_nil in H as [Mp H].
+  apply app_nil in H as [_ H]. apply app_nil in H as [Cb H]. apply app_nil in H as [_ Mret].
+  match type of Cb with snd (check_block ?st rest) = [] => change st with (start_setting d) in Cb end.
+  destruct (check_block (start_setting d) rest) as [names dr] eqn:Cbk. simpl in Cb. subst dr.
+  exists rest, names. repeat split.
+  - unfold labels_and_rest in LR. destruct (definition_body d) as [|first more]; [inversion LR; auto|].
+    destruct first; inversion LR; subst; auto. right; eauto.
+  - exact Cbk.
+  - intros R. destruct (definition_returns d); [|contradiction].
+    destruct (always_returns_block rest); [reflexivity | discriminate].
+  - match goal with K : definition_name d = Main |- _ => rename K into Mn end. rewrite Mn in Mp. destruct (definition_parameters d); [reflexivity | discriminate].
+  - match goal with K : definition_name d = Main |- _ => rename K into Mn end. rewrite Mn in Mr. destruct (definition_returns d); [discriminate | reflexivity].
+Qed.
+
+Lemma restore_body_ok : forall d a env fl,
+  (definition_returns d <> None -> a = true) ->
+  (match fl with
+   | Continue _ => a = false
+   | Leave_loop _ => setting_in_loop (start_setting d) = true
+   | Leave_procedure r => result_ok (definition_returns d) r
+   end) ->
+  body_ok d (restore_flow env fl).
+Proof.
+  intros d a env [e|e|r] R H; simpl in *; auto; [|discriminate].
+  destruct (definition_returns d); [|reflexivity]. subst a. specialize (R ltac:(discriminate)). discriminate.
+Qed.
+
+Definition safe_below (f : nat) := forall m, m <= f -> all_safe m.
+
+Lemma body_safe : forall f d locals, safe_below f -> In d p ->
+  matches (setting_scope (start_setting d)) locals ->
+  safe (body_ok d) (execute_block f p locals (definition_body d)).
+Proof.
+  intros f d locals Below D M.
+  destruct (definition_parts d (definition_accepted d D)) as (rest & names & Body & Cb & Always & _).
+  destruct Body as [Body | (pairs & at_ & Body)]; rewrite Body.
+  - destruct (Below f (le_n f)) as (_ & _ & _ & _ & _ & _ & _ & B & _).
+    eapply safe_weaken; [eapply (B (start_setting d)); eauto; reflexivity|].
+    intros fl Fl. destruct fl as [e|e|r]; simpl in *; [| destruct Fl; discriminate | exact Fl].
+    destruct Fl as [A _]. destruct (definition_returns d) eqn:Rt; [|reflexivity].
+    rewrite (Always ltac:(discriminate)) in A. discriminate.
+  - destruct f as [|[|[|f3]]]; cbn [execute_block execute_statements execute bind];
+      try apply out_of_fuel_safe.
+    destruct (Below (S f3) ltac:(lia)) as (_ & _ & _ & _ & _ & _ & Ss & _ & _).
+    eapply safe_bind; [eapply (Ss (start_setting d)); eauto; reflexivity|].
+    intros fl Fl. constructor. eapply restore_body_ok; [exact Always|].
+    destruct fl as [e|e|r]; simpl in *; [destruct Fl; auto | destruct Fl; auto | exact Fl].
+Qed.
+
+Lemma apply_step : forall f, safe_below f -> apply_safe (S f).
+Proof.
+  intros f Below s name values given at_ env target Ps M R Ready.
+  cbn [apply]. rewrite R.
+  destruct target as [which | d].
+  - apply (apply_library_safe s); [exact M | exact Ready].
+  - simpl in Ready.
+    assert (Forall2 (fun p v => parameter_type p = type_of_value v) (definition_parameters d) values) as F2.
+    { clear - Ready. revert values Ready. induction (definition_parameters d) as [|q qs IH];
+        intros [|v vs] Ready; simpl in Ready; try discriminate; constructor.
+      - inversion Ready; auto.
+      - apply IH. inversion Ready; auto. }
+    destruct (parameters_match _ _ F2) as [locals [Bp Ml]]. rewrite Bp.
+    eapply safe_bind; [eapply body_safe; eauto; eapply resolve_user_in; eauto|].
+    intros fl Fl. simpl. apply procedure_result_safe. exact Fl.
+Qed.
+
+
+Lemma run_call_nothing : forall c procedure at_,
+  check_run_call c procedure at_ = [] -> (call_gives c = Gives_unknown -> call_diagnostics c <> []) ->
+  call_gives c = Gives_nothing /\ call_can_fail c = false /\ call_diagnostics c = [].
+Proof.
+  intros c procedure at_; unfold check_run_call.
+  destruct (call_gives c), (call_can_fail c); intros H U;
+    try (apply app_nil in H as [_ H]; discriminate H); auto.
+  exfalso; apply U; auto.
+Qed.
+
+Lemma with_ended_scope : forall s e, setting_scope (with_ended s e) = setting_scope s.
+Proof. reflexivity. Qed.
+
+Lemma statement_step : forall f, all_safe f -> statement_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s st s' env Ps M H.
+  destruct st as [changeable name name_at keyword_at written value at_ | name name_at value operator_at at_
+                 | action at_ | condition then_part rest at_ | condition body at_ | at_ | [value|] at_ | pairs at_];
+    cbn [check_statement] in H; cbn [execute always_returns].
+  - (* let and var *)
+    destruct (check_expression s value) as [t ds] eqn:Ev. inversion H; subst s'.
+    apply app_nil in H2 as [_ H2]. apply app_nil in H2 as [Ds Mm]. subst ds.
+    destruct (typed_some _ _ _ _ Ev eq_refl) as [t' T]; subst t. apply expect_nil in Mm; subst t'.
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv. constructor. simpl. split; [reflexivity|].
+    unfold declare, with_scope; simpl. constructor; [simpl; split; auto|exact M].
+  - (* = *)
+    destruct (check_expression s value) as [t ds] eqn:Ev.
+    destruct (find_variable name (setting_scope s)) as [info|] eqn:Fv; [|inversion H].
+    destruct (variable_kind info); inversion H; subst s'.
+    apply app_nil in H2 as [Ds Mm]. subst ds.
+    destruct (typed_some _ _ _ _ Ev eq_refl) as [t' T]; subst t. apply expect_nil in Mm.
+    eapply safe_bind; [eapply E; eauto|]. intros v Tv.
+    destruct (assign_matches _ _ _ _ v M Fv) as [env' [As Ma]]; [unfold has_type in Tv; congruence|].
+    rewrite As. constructor. simpl. auto.
+  - (* a call or slide standing alone *)
+    inversion H; subst s'. unfold check_run in H2.
+    destruct action as [ | | | | | | | | | name given call_at | attempt fallback operator_at fat | start path sat | ];
+      try (apply app_nil in H2 as [_ H2]; discriminate H2); try discriminate H2.
+    + apply app_nil in H2 as [Rc _].
+      apply run_call_nothing in Rc as (G & F & D).
+      2:{ apply call_reported. apply (proj1 (proj2 unknown_reported)). }
+      eapply safe_bind; [eapply C; eauto|]. rewrite G, F. intros [v| |] O; simpl in O; try contradiction.
+      constructor. simpl. auto.
+    + destruct attempt; try (apply app_nil in H2 as [_ H2]; discriminate H2).
+      destruct (check_expression _ _) as [[t|] ds] eqn:Ef; [apply app_nil in H2 as [_ H2]; discriminate H2|].
+      exfalso. match type of Ef with check_expression _ ?e = _ =>
+        apply (proj1 unknown_reported e s); rewrite Ef; simpl; auto end.
+    + destruct (check_expression s start) as [ts ds] eqn:Es.
+      apply app_nil in H2 as [Ds H2]. apply app_nil in H2 as [Sh Rc]. subst ds.
+      destruct (typed_some _ _ _ _ Es eq_refl) as [ts' T]; subst ts.
+      assert (path <> No_steps) as N by (intros Z; subst; eapply slide_shape_empty; eauto).
+      apply run_call_nothing in Rc as (G & F & D).
+      2:{ intros U. apply (proj2 (proj2 unknown_reported)); auto. }
+      eapply safe_bind; [eapply E; eauto|]. intros v Tv. unfold has_type in Tv. subst ts'.
+      eapply safe_bind; [eapply Sl; eauto|]. rewrite G, F. intros [w| |] O; simpl in O; try contradiction.
+      constructor. simpl. auto.
+  - (* if *)
+    destruct (check_block s then_part) as [ended_then dt] eqn:Bt.
+    destruct (check_else s rest) as [ended_else de] eqn:Be.
+    inversion H; subst s'.
+    apply app_nil in H2 as [Dc H2]. apply app_nil in H2 as [Dt De]. subst dt de.
+    unfold check_condition in Dc. destruct (check_expression s condition) as [tc dc] eqn:Ec.
+    destruct tc as [[]|]; try (apply app_nil in Dc as [_ Dc]; discriminate Dc);
+      [| exfalso; apply (proj1 unknown_reported condition s); rewrite Ec; simpl; auto].
+    subst dc.
+    eapply safe_bind; [eapply E; eauto|]. intros c Tc. apply safe_need_bool; [exact Tc| |].
+    + eapply safe_weaken; [eapply B; eauto|]. intros [e|e|r] Fl; simpl in *; auto.
+      destruct Fl as [Fa Fm]; rewrite Fa; auto.
+    + eapply safe_weaken; [eapply X; eauto|]. intros [e|e|r] Fl; simpl in *; auto.
+      destruct Fl as [Fa Fm]; rewrite Fa, andb_false_r; auto.
+  - (* while *)
+    destruct (check_block (in_loop s) body) as [ended_body db] eqn:Bb.
+    inversion H; subst s'.
+    apply app_nil in H2 as [Dc Db]. subst db.
+    unfold check_condition in Dc. destruct (check_expression s condition) as [tc dc] eqn:Ec.
+    destruct tc as [[]|]; try (apply app_nil in Dc as [_ Dc]; discriminate Dc);
+      [| exfalso; apply (proj1 unknown_reported condition s); rewrite Ec; simpl; auto].
+    subst dc.
+    eapply safe_bind; [eapply E; eauto|]. intros c Tc. apply safe_need_bool; [exact Tc| |].
+    + eapply safe_bind; [eapply (B (in_loop s)); eauto|]. intros [e|e|r] Fl; simpl in Fl.
+      * destruct Fl as [_ Fm]. apply (St s (While condition body at_) _ e Ps Fm). cbn [check_statement].
+        rewrite Bb. unfold check_condition. rewrite Ec. reflexivity.
+      * constructor. simpl. destruct Fl as [_ Fm]. auto.
+      * constructor. exact Fl.
+    + constructor. simpl. auto.
+  - (* break *)
+    destruct (setting_in_loop s) eqn:L; inversion H; subst. constructor. simpl. auto.
+  - (* return with a value *)
+    destruct (check_expression s value) as [t ds] eqn:Ev.
+    destruct (setting_returns s) as [expected|] eqn:Rt; inversion H; subst s'.
+    + apply app_nil in H2 as [Ds Mm]. subst ds.
+      destruct (typed_some _ _ _ _ Ev eq_refl) as [t' T]; subst t. apply expect_nil in Mm; subst t'.
+      eapply safe_bind; [eapply E; eauto|]. intros v Tv. constructor. simpl. rewrite Rt. exact Tv.
+    + apply app_nil in H2 as [_ H2]. discriminate H2.
+  - (* bare return *)
+    destruct (setting_returns s) eqn:Rt; inversion H; subst. constructor. simpl. rewrite Rt. exact I.
+  - inversion H.
+Qed.
+
+
+Lemma statements_step : forall f, all_safe f -> statements_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names Ps M H.
+  destruct b as [| st rest]; cbn [check_block] in H; cbn [execute_statements].
+  - inversion H; subst. constructor. simpl. split; [reflexivity|]. exists []; exact M.
+  - destruct (check_statement s st) as [s' ds] eqn:Cs.
+    destruct (check_block s' rest) as [names' dr] eqn:Cr.
+    inversion H; subst. apply app_nil in H2 as [Ds H2]. apply app_nil in H2 as [_ Dr]. subst ds dr.
+    destruct (check_statement_setting _ _ _ _ Cs) as (Pp & Pl & Pr & extra & Sc).
+    eapply safe_bind; [eapply St; eauto|]. intros fl Fl.
+    destruct fl as [e|e|r]; simpl in Fl.
+    + destruct Fl as [Fa Fm].
+      eapply safe_weaken; [eapply (Ss s' rest e names'); eauto; congruence|].
+      intros [e'|e'|r'] Bk; simpl in *; rewrite ?Pl, ?Pr in *.
+      * destruct Bk as [Ba [extra' Bm]]. split.
+        -- destruct rest; [simpl in *; congruence | exact Ba].
+        -- exists (extra' ++ extra). rewrite <- app_assoc, <- Sc. exact Bm.
+      * destruct Bk as [Ba [extra' Bm]]. split; [exact Ba|].
+        exists (extra' ++ extra). rewrite <- app_assoc, <- Sc. exact Bm.
+      * exact Bk.
+    + constructor. simpl. destruct Fl as [Fa Fm]. split; [exact Fa | exists []; exact Fm].
+    + constructor. exact Fl.
+Qed.
+
+Lemma block_step : forall f, all_safe f -> block_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s b env names Ps M H.
+  cbn [execute_block]. eapply safe_bind; [eapply Ss; eauto|]. intros [e|e|r] Bk; constructor; simpl in *.
+  - destruct Bk as [Ba [extra Bm]]. split; [exact Ba|]. eapply restore_matches; eauto.
+  - destruct Bk as [Ba [extra Bm]]. split; [exact Ba|]. eapply restore_matches; eauto.
+  - exact Bk.
+Qed.
+
+Lemma else_step : forall f, all_safe f -> else_safe (S f).
+Proof.
+  intros f (E & A & Ap & C & Sl & St & Ss & B & X) s e env names Ps M H.
+  destruct e as [| body at_ | condition body rest at_]; cbn [check_else] in H; cbn [execute_else always_returns_else].
+  - constructor. simpl. auto.
+  - eapply B; eauto.
+  - destruct (check_block s body) as [nb db] eqn:Cb. destruct (check_else s rest) as [nr dr] eqn:Cr.
+    inversion H; subst. apply app_nil in H2 as [Dc H2]. apply app_nil in H2 as [Db Dr]. subst db dr.
+    unfold check_condition in Dc. destruct (check_expression s condition) as [tc dc] eqn:Ec.
+    destruct tc as [[]|]; try (apply app_nil in Dc as [_ Dc]; discriminate Dc);
+      [| exfalso; apply (proj1 unknown_reported condition s); rewrite Ec; simpl; auto].
+    subst dc.
+    eapply safe_bind; [eapply E; eauto|]. intros c Tc. apply safe_need_bool; [exact Tc| |].
+    + eapply safe_weaken; [eapply B; eauto|]. intros [e|e|r] Fl; simpl in *; auto.
+      destruct Fl as [Fa Fm]; rewrite Fa; auto.
+    + eapply safe_weaken; [eapply X; eauto|]. intros [e|e|r] Fl; simpl in *; auto.
+      destruct Fl as [Fa Fm]; rewrite Fa, andb_false_r; auto.
+Qed.
+
+Lemma every_fuel_safe : forall fuel, all_safe fuel.
+Proof.
+  intros fuel. induction fuel as [fuel IH] using (well_founded_induction lt_wf).
+  destruct fuel as [|f]; [apply no_fuel_safe|].
+  assert (all_safe f) as Af by (apply IH; lia).
+  assert (safe_below f) as Below by (intros m Le; apply IH; lia).
+  repeat split.
+  - apply expression_step; exact Af.
+  - apply arguments_step; exact Af.
+  - apply apply_step; exact Below.
+  - apply call_step; exact Af.
+  - apply slide_step; exact Af.
+  - apply statement_step; exact Af.
+  - apply statements_step; exact Af.
+  - apply block_step; exact Af.
+  - apply else_step; exact Af.
+Qed.
+
+Lemma main_exists : forall mains names q, check_names mains names q = [] ->
+  mains <> [] \/ exists d, find_main q = Some d.
+Proof.
+  intros mains names q; revert mains names. induction q as [|d rest IH]; intros mains names H; simpl in H.
+  - destruct mains; [discriminate | left; discriminate].
+  - unfold find_main; simpl. destruct (definition_name d) eqn:N; simpl.
+    + right. exists d. unfold is_main. rewrite N. reflexivity.
+    + apply app_nil in H as [_ H]. apply app_nil in H as [_ H].
+      destruct (IH _ _ H) as [Ne | [d' F]]; [left; exact Ne|].
+      right. exists d'. unfold is_main at 1. rewrite N. exact F.
+Qed.
+
+Theorem run_safe : forall fuel, safe (fun _ => True) (run fuel p).
+Proof.
+  intros fuel. unfold run.
+  destruct (main_exists [] [] p) as [Ne | [d F]].
+  { pose proof accepted as Acc. unfold check_program in Acc. apply app_nil in Acc as [Cn _]. exact Cn. }
+  { contradiction Ne; reflexivity. }
+  rewrite F.
+  assert (In d p) as D by (apply find_some in F; tauto).
+  assert (definition_name d = Main) as Mn.
+  { apply find_some in F as [_ Im]. unfold is_main in Im. destruct (definition_name d); [reflexivity|discriminate]. }
+  destruct (definition_parts d (definition_accepted d D)) as (_ & _ & _ & _ & _ & Main_ok).
+  destruct (Main_ok Mn) as [Np Nr].
+  eapply safe_bind.
+  - apply (body_safe fuel d []); [intros m _; apply every_fuel_safe | exact D |].
+    simpl. rewrite Np. constructor.
+  - intros [e|e|[r|]] Bk; simpl in Bk; rewrite ?Nr in Bk; try contradiction; constructor; auto.
+Qed.
+
+End Safety_proof.
+
+(* THEOREM: type safety.
+   In plain words: if the checker accepts a program, then running it never gets stuck. However the input goes and
+   whatever random numbers come back, every way through it ends in one of four ways: it reaches the end of
+   `proc.main`; it stops with a failed runtime check, like D46's overflow check; it stops because something isn't
+   decided yet, like `random` with `from:` above `to:`; or `ask` finds no more input. Or it's still running when the
+   fuel, the evaluator's step counter, runs out. It never meets a variable that isn't there, a value of the wrong
+   type, a procedure that doesn't exist, a `break` outside a loop, or a procedure with `returns` that finishes
+   without giving a value. *)
+Theorem type_safety : forall p fuel, check_program p = [] -> safe (fun _ => True) (run fuel p).
+Proof. intros p fuel Accepted. apply run_safe. exact Accepted. Qed.

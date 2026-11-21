@@ -60,7 +60,7 @@ Each step ends with something running. Proofs grow with the core rather than at 
 5. [x] Text: `&`, escapes, `.fmt`. `d28_join_text`, `d29_fmt`, `d30_escapes`.
 6. [x] Procedures, `returns`, `return`, labels, slides; `ask`, `??`, `random`. `d05_slides`, `d24_procedures`,
    `d20_ask`, and the guessing game played by hand.
-7. [ ] **Prove type safety** for the subset: a program the checker accepts never gets stuck.
+7. [x] **Prove type safety** for the subset: a program the checker accepts never gets stuck.
 8. [x] The refusals the tests check, in the shell and the core, with D54's layout and D86's column.
 9. [ ] Every other decided refusal in the subset, or `NotBuiltYet` where it isn't built, so Ralph never accepts a
    program the standard refuses.
@@ -97,6 +97,10 @@ Known gaps, each to be built:
 - `whole_arithmetic_exact` (core/Whole.v): for any two whole numbers, `+`, `-` and `*` give the mathematically exact
   answer whenever it fits in a `Whole`; when the exact answer is bigger than the largest `Whole` they stop with D46's
   overflow check saying "too big", and when smaller than the smallest, "too small". Sent 2026-11-21.
+- `type_safety` (core/Safety.v): if the checker accepts a program, running it never gets stuck. However the input
+  goes and whatever random numbers come back, every way through it ends by reaching the end of `proc.main`, by a
+  failed runtime check (D46's overflow), by a stop for something not decided yet (`random` with `from:` above `to:`),
+  by `ask` finding no more input, or is still running when the fuel runs out. Sent 2026-11-21.
 - `whole_negate_exact` (core/Whole.v): `-` in front of a whole number gives exactly its negative when that fits; the
   one that doesn't, `-` of -9223372036854775808, stops with the overflow check, "too big". Sent 2026-11-21.
 
@@ -115,9 +119,9 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
 3. *(Answered, D142.)* **D128's three refusals** (a slide of one or two calls, three calls nested, a chain mixing both): their wording
    "comes with a later batch".
 4. *(Answered, D143: tabs too.)* **`be.Whole` and spaces (D95):** only the space character, or tabs too?
-5. *(Answered, D144: `\\r\\n` is one line break.)* **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
+5. *(Answered, D144: `\r\n` is one line break.)* **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
    a line.)
-6. **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
+6. *(Answered, D144.)* **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
 7. **A comment on a line of its own:** how is it indented? Ralph accepts the indentation of the line after it (or one
    level in, when that line is a closer or `else`), and stops with `NotDesignedYet` otherwise.
 8. **Two statements on one line**, as in `a(); b();`: Ralph stops with `NotDesignedYet`.
