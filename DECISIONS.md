@@ -5255,3 +5255,29 @@ Visual Basic's and C#'s, and how teachers describe Python's loop anyway.
 **Tankun's words.** The code block with "Personally, I kinda feel like it doesn't communicate the logic so good." (has
 code), then a code block with "Now I know first. But what does ... mean" (has code), then, asked "Should the loop be
 `for each $x in …:`, closed by `end for`?", the owner chose: "yea. Lol, I though `i` was for integer".
+
+## D172. `range` takes an optional `step_by:`, counting by 1, negative to count down
+
+2026-11-21.
+
+**Chosen.**
+- **`step_by:`** is optional; when it's left out, a range counts by 1. It's the first optional label in Unio; whether
+  a program's own procedures can have them is still open (chapter 4).
+- **A negative step counts down:** `range[from: 10, to: 1, step_by: -1]` is 10, 9, … 1.
+- **The range goes as far as it can without passing its end,** so `range[from: 0, to: 9, step_by: 2]` is 0, 2, 4, 6,
+  8.
+- **A step of 0, or one pointing away from the end,** as in `range[from: 10, to: 1]` with no step, is refused at
+  compile time when it's plain numbers, and stops with `check failed:` and status 4 otherwise, as D160 does for
+  `random`. Their wording comes with a later batch.
+
+**Weighed.**
+- `step_by:` always written. Most ranges count by 1, and writing it every time adds nothing.
+- An empty range when it points the wrong way, as Python's `range(10, 1)` quietly is. Almost always a mistake, hidden.
+- A separate word for counting down, like `down_to:`. One more label, where a negative step already says it.
+
+**Why this won.** The common case stays short, a countdown is written once with its direction, and a step that can't
+get anywhere is caught as early as it can be known. Tankun suggested `step_by` "needed when needed".
+
+**Tankun's words.** "Oh wait, now we could do `for $i in range[from: 1, to: 3]` with `step_by` needed when needed"
+(quoted in D170), then, asked "Should `range` take an optional `step_by:` that counts by 1 when left out, can be
+negative to count down, and is refused when it's 0 or points the wrong way?", the owner chose: "yea".
