@@ -4454,3 +4454,29 @@ the first part of Unio built.
 **Tankun's words.** "Should the oracle be `Ralph` instead? Rocq Alpha (Alpha because it's first)", "The effort deserves
 a name, though.", "I like Ralph, though.", then, asked "Should the oracle be named Ralph, still run as `unio oracle`?",
 the owner chose: "yea".
+
+## D142. The eighth batch: negation's overflow, four bad names, and D128's slide refusals
+
+2026-11-21.
+
+**Chosen.** These wordings, in D54's layout with D86's label column, D89's "but" and D101's `fix:`:
+
+| Message | Wording |
+|---|---|
+| overflow from a negating `-` (D46, D92) | `when:` `` -(-9223372036854775808) ``, the value brought into the calculation, in brackets since it starts with `-` |
+| a name starting with a digit (D99) | what: `` `$2x` starts with a digit, but names start with a letter ``; why: D102's |
+| a name starting with `_` (D99) | what: `` `$_x` starts with `_`, but names start with a letter ``; why: D102's |
+| a name ending with `_` (D99) | what: `` `$x_` ends with `_`, but `_` only goes between words ``; why: D102's |
+| a name with two `_` in a row (D99) | what: `` `$a__b` has two `_` in a row, but `_` only goes between words ``; why: D102's |
+| one or two calls written as a slide (D128) | `fix:` the line as calls, as in `` `    show_msg(be.Text($n));` ``; why: "one or two calls are written as calls; a chain of three or more is a slide." |
+| three or more calls nested, or a chain mixing calls and a slide (D128) | `fix:` the line as one slide, as in `` `    $points |> double |> be.Text |> show_msg;` ``; why: the same |
+
+**Weighed.**
+- `--9223372036854775808`, with no brackets. `--` reads as C's "subtract one", and the two signs blur together.
+
+**Why this won.** Each says exactly what was found against the rule, and D128's two refusals share one `why:`, so the
+rule reads the same whichever way it's broken. Ralph, building the oracle, found these were never worded.
+
+**Tankun's words.** "What's `-(-9223372036854775808)`", "What about no `()`", then, asked "Should the `when:` keep the
+brackets, `-(-9223372036854775808)`, as part of that batch?", the owner chose: "yea"; then, asked "Do those read right
+as proposed?" of the rest, the owner chose: "yea".
