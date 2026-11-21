@@ -3191,6 +3191,9 @@ Asked "Change that `why:` to "`show_msg`'s narrowings are `.fmt` and `.same_line
 asked "Do the other rows read right as they are, including parameters counting as variables in the D94 row?", the
 owner chose: "yea".
 
+(Changed by D128: the `x |> f + 1` row's fix, `(x |> f) + 1`, is itself a slide of one step, which D128 refuses; for a
+slide that short the fix is a call, `f($x) + 1`, and brackets go around slides of three or more.)
+
 ## D103. The wording of the sixth batch, part two: the command's own messages, words with no more narrowings, and `NotBuiltYet` and `NotDesignedYet`
 
 2026-11-20.
@@ -3242,6 +3245,8 @@ that will be built, and "further" admits a narrowing that's already there while 
 narrowings, right?". Asked "For an already-narrowed word with nothing more allowed, should the `why:` be "`be.Whole`
 can't be narrowed further"?", the owner chose: "yea". Then, asked "Do they all read right as drafted?" of the rest of
 part two, the owner chose: "yea".
+
+(Changed by D130: there's no PlainGC, so the internal error naming PlainGC goes.)
 
 ## D104. A program that stops with its line open finishes the line on standard output before the message
 
