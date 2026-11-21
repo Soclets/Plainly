@@ -25,6 +25,6 @@ happened; this standard says what the rules are today (D12).
 6. [Variables](06-variables.md): `let`, `var`, changing, and values
 7. [Types](07-types.md): `Whole`, `Bool`, `Text`, lists and converting
 8. [Failures](08-failures.md): `?`, `??`, `otherwise:` and handler families
-9. [Library](09-library.md): `random`
+9. [Built in](09-built-in.md): `range`, `sqrt`, `random`
 10. [Tools](10-tools.md): the compiler, the command, memory and build modes
 11. [Messages](11-messages.md): the layout, one mistake giving one message, and exit statuses

@@ -1,8 +1,11 @@
-# 9. Library
+# 9. Built in
 
-Procedures that come with Unio. The library targets the terminal: showing text, asking, single key presses,
-colours, drawing at a position and clearing the screen, on Windows, macOS and Linux. A GUI, if ever, is a
-separate package (D63). What the terminal part is built on isn't decided since D131 moved the runtime to C++.
+Procedures that are part of every Unio program, with nothing to import or list. They come with Unio's compiler and
+runtime rather than being written in Unio: most are doors to the operating system, like showing text, or to the
+machine, like `sqrt`'s one instruction (D131). Libraries are packages, written in Unio on top of these, or in C++
+through `extern.cpp` (D64). The built-in procedures target the terminal: showing text, asking, single key presses,
+colours, drawing at a position and clearing the screen, on Windows, macOS and Linux. A GUI, if ever, is a separate
+package (D63). What the terminal part is built on isn't decided since D131 moved the runtime to C++.
 
 ## `range`
 
