@@ -5772,6 +5772,6 @@ on the bits.
 **Why this won.** It keeps Ralph's trusted base small, standard and written down: these four, Rocq's kernel, extraction
 and OCaml. MetaRocq has proven Rocq's logic sound, given its consistency, which no logic can prove of itself.
 
-**Tankun's words.** "install", then, after asking whether the axioms were proved, whether Rocq is proved, and calling
-an unproven tester "so unresponsible", asked "Should Ralph accept these four standard axioms, listed in its axioms
+**Tankun's words.** "install", "Was the tester proved?", "That is so unresponsible, ugh", "Ah, they aren't proven,
+right?", "Is Rocq proven by SPARK Platinum and Rocq?", then, asked "Should Ralph accept these four standard axioms, listed in its axioms
 file, for proving floats?", the owner chose: "yea".
