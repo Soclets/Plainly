@@ -1,4 +1,4 @@
 proc.main:
     let $roll: Whole = random(from: 6, to: 1);
-    $roll |> be.Text |> show_msg;
+    show_msg(be.Text($roll));
 end proc.main
