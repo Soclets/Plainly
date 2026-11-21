@@ -90,9 +90,18 @@ let lex_line number text =
   let tokens, comment, doc_comment = scan 0 [] in
   { number; text; tokens; comment; doc_comment }
 
-(* Splits a file into lines; a line break at the very end doesn't start another line. *)
+(* Splits a file into lines; a line break at the very end doesn't start another line. A `\r` right before a line
+   break is part of the break (D144). *)
 let lines_of contents =
   let pieces = String.split_on_char '\n' contents in
+  let last = List.length pieces - 1 in
+  let pieces =
+    List.mapi
+      (fun i piece ->
+        if i < last && String.ends_with ~suffix:"\r" piece then String.sub piece 0 (String.length piece - 1)
+        else piece)
+      pieces
+  in
   let pieces =
     match List.rev pieces with "" :: rest -> List.rev rest | _ -> pieces
   in

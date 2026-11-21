@@ -103,7 +103,7 @@ Known gaps, each to be built:
 ## Questions for the design session
 
 Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 unless marked otherwise. Questions 1 to
-3 are answered by D142, 4 by D143, 10 from D128, all built; 5 to 8 are with Tankun.
+3 are answered by D142, 4 by D143, 5 and 6 by D144, 10 from D128, all built; 7 and 8 are with Tankun.
 
 1. *(Answered, D142.)* **Negation overflowing:** D92's `when:` shows the values, as in `9223372036854775807 + 1`. What does it show for
    `-$x` when `$x` is -9223372036854775808? (Draft: `-(-9223372036854775808)`.)
@@ -115,7 +115,7 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
 3. *(Answered, D142.)* **D128's three refusals** (a slide of one or two calls, three calls nested, a chain mixing both): their wording
    "comes with a later batch".
 4. *(Answered, D143: tabs too.)* **`be.Whole` and spaces (D95):** only the space character, or tabs too?
-5. **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
+5. *(Answered, D144: `\\r\\n` is one line break.)* **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
    a line.)
 6. **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
 7. **A comment on a line of its own:** how is it indented? Ralph accepts the indentation of the line after it (or one

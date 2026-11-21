@@ -42,6 +42,23 @@ let random_between low high =
   in
   draw ()
 
+(* trace: D20, D96, D144. One line of input, without its line break; `\r\n` is one line break. A last line with no
+   line break after it still counts; no input at all gives [None]. *)
+let read_answer () =
+  let buffer = Buffer.create 80 in
+  let rec go () =
+    match In_channel.input_char stdin with
+    | Some '\n' ->
+        let line = Buffer.contents buffer in
+        Some
+          (if String.ends_with ~suffix:"\r" line then String.sub line 0 (String.length line - 1) else line)
+    | Some c ->
+        Buffer.add_char buffer c;
+        go ()
+    | None -> if Buffer.length buffer = 0 then None else Some (Buffer.contents buffer)
+  in
+  go ()
+
 let arithmetic_symbol = function Core.Plus -> "+" | Core.Minus -> "-" | Core.Times -> "*"
 
 (* Walks the evaluator's tree of requests (core/Io.v), doing each one. *)
@@ -61,7 +78,7 @@ let rec walk file source (tree : unit Core.io) =
       print_string question;
       flush stdout;
       if question <> "" then line_open := true;
-      let answer = In_channel.input_line stdin in
+      let answer = read_answer () in
       (* trace: D106. Typed at a terminal, the player's Enter has ended the line. *)
       if Unix.isatty Unix.stdin then line_open := false;
       walk file source (next answer)
@@ -152,7 +169,7 @@ let () =
                 Option.map
                   (fun i ->
                     M.message M.Not_designed_yet (M.point l.number (i + 1) 1)
-                      ~what:"a line ending in `\\r`, as Windows writes them, isn't decided yet")
+                      ~what:"a `\\r` that isn't part of a line break isn't decided yet")
                   (String.index_opt l.text '\r'))
               lines
           in
