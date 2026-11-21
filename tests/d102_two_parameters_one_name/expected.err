@@ -1,4 +1,4 @@
-refused: program.cplus:1:21, line 1 column 21
+refused: program.unio:1:21, line 1 column 21
  1 | proc add($x: Whole, $x: Whole) returns Whole:
    |                     ^^
  what:    two parameters are named `$x`

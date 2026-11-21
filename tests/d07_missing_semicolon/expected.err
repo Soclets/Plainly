@@ -1,4 +1,4 @@
-refused: program.cplus:2:19, line 2 column 19
+refused: program.unio:2:19, line 2 column 19
  2 |     show_msg("Hi")
    |                   ^
  fix:     `    show_msg("Hi");`

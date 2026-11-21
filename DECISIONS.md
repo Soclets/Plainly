@@ -4292,3 +4292,27 @@ name): `Plainly` (`.plainly`), `Plain\n` (same joke as `OKAY\n`and `KAYO\n`)", t
 
 then "`cplus` is a lot easier, they don't have to know cmpiler", and, asked "should I log the full set as decided, C+
 with `.cplus` files, compiler `Clang\n`, typed `cplus`?", the owner chose: "yea".
+
+(Changed by D136: the language is Unio, with `.unio` files, typed `unio`.)
+
+## D136. The language is Unio, with `.unio` files, typed `unio`
+
+2026-11-21.
+
+**Chosen.** The language is **Unio**, Latin for "oneness": one owner each, as D130's memory gives every variable its
+own value. Its files end in `.unio`, as in `game.unio`, and the command is `unio`, as in `unio run game.unio
+--working`. This replaces C+, `.cplus` and `cplus` from D135; the compiler stays `Clang\n` for now. C+ IR is now Unio
+IR.
+
+**Weighed.**
+- C+ (D135). Crowded as a search term, a school grade first and C++ shorthand second, and it reads as "a bit more than
+  C".
+- Unlo, Tankun's first spelling. Free too, but it means nothing, and looks nearly the same as Unio in many fonts.
+- Plainly and Sabai, as in D135.
+
+**Why this won.** The name says the language's central idea, one owner for each value, and nothing else uses it as a
+language's name, so it searches cleanly.
+
+**Tankun's words.** "What about Unlo? (`.unlo`)", then "Unio: Latin for “oneness”, one owner each", then, asked
+"Should the language be Unio, with `.unio` files and the command `unio`?", the owner chose: "yea. What about the
+compiler? `Unlo\n`?"

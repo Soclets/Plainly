@@ -1,6 +1,6 @@
-# The C+ standard
+# The Unio standard
 
-What C+ is now, by topic. [`DECISIONS.md`](../DECISIONS.md) records how each rule was decided, in the order it
+What Unio is now, by topic. [`DECISIONS.md`](../DECISIONS.md) records how each rule was decided, in the order it
 happened; this standard says what the rules are today (D12).
 
 ## How it's written

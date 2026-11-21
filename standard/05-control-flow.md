@@ -103,7 +103,7 @@ end while
 
 ## Running several things at once
 
-A C+ program can run several parts of itself at once (D66), in two ways (D67):
+A Unio program can run several parts of itself at once (D66), in two ways (D67):
 
 1. **Tasks on one thread, the everyday way:** tasks take turns, each handing over only at points it chooses, like
    waiting for a key or a timer, so nothing changes behind a task's back and the turns go the same way every run.

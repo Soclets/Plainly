@@ -1,4 +1,4 @@
-# C+'s tests
+# Unio's tests
 
 The contract `Clang\n` and PlainOracle are built to pass (D12). Each test is written by hand from the standard,
 and names the decisions it checks.
@@ -9,7 +9,7 @@ Each test is a folder named after its main decision, as in `d16_if/`:
 
 | File | What it holds |
 |---|---|
-| `program.cplus` | the program |
+| `program.unio` | the program |
 | `about.txt` | one line: what it checks, with its decisions and standard chapters |
 | `expected.out` | exactly what the program writes to standard output |
 | `expected.status` | the exit status (D56), as a number |
@@ -21,13 +21,13 @@ A test passes when, run as
 
 ```
 cd tests/NAME
-cplus run program.cplus --working < input.txt
+unio run program.unio --working < input.txt
 ```
 
-from inside the test's own folder, so a message names the file as `program.cplus` (with no input when there's no
+from inside the test's own folder, so a message names the file as `program.unio` (with no input when there's no
 `input.txt`), its standard output, standard error and exit status match the expected
 files exactly. `Clang\n`'s own messages go to standard error. Once PlainOracle exists, every test runs on
-`cplus oracle` too, with the same expected files (D50).
+`unio oracle` too, with the same expected files (D50).
 
 A `check.py` runs with `python3 -I check.py` from the test's folder, and exits with status 0 when `expected.out`
 matches its own calculation.

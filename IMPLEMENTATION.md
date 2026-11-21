@@ -1,4 +1,4 @@
-# C+: rules
+# Unio: rules
 
 The rules for every session in this repository. A hook prints this file into every session at startup, after a
 compaction and after a clear, but not on a resume, when it's already there; there's no CLAUDE.md, so nothing is
@@ -6,7 +6,7 @@ repeated. A subagent doesn't get it from the hook, so its prompt carries these r
 changed here, with Tankun's OK.
 
 These rules are for every Claude session in this repository. The **design
-session** (the design claude) designs C+ with Tankun: it proposes,
+session** (the design claude) designs Unio with Tankun: it proposes,
 explains, and keeps the record in DECISIONS.md and `standard/`. **Building
 sessions**, such as `Clang\n`'s, build from the standard; they follow their
 prompt in `design/` as well as these rules, and they never decide anything
@@ -43,7 +43,7 @@ counts as decided for v2 until Tankun confirms it here and it's logged.
 - Building started on 2026-11-20, when Tankun asked for `Clang\n`'s prompt
   (`design/compiler-prompt.md`). Nothing else gets built until Tankun says so.
 - On the evening of 2026-11-20, Tankun chose to rewrite `Clang\n` and PlainGC from a clean start on 2026-11-21
-  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to C+. The first build
+  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to Unio. The first build
   (about 10,000 lines of Rust) stays in git history for reference; the decisions, the standard and the tests carry over
   unchanged.
 - Sketches from other chats (e.g. multifinity's) are leanings, not decisions,
@@ -94,9 +94,9 @@ Rules for the code of `Clang\n` and PlainOracle (owner, 2026-11-20):
 1. **Code uses the standard's terms,** as its Terms chapter defines them (procedure, narrowing, label, failure,
    handler, family, slide, step), so the code, the standard and the messages say the same thing. One name per
    concept: never `func` in one place and `procedure` in another.
-2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in C+;
+2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in Unio;
    compiler code is read like the docs, which teach the full word. A keyword like `proc` appears in code only as the
-   text C+ reads.
+   text Unio reads.
 3. **Each language's own casing:** C++ uses the standard library's style, `snake_case` for functions and variables
    and `CamelCase` for types; OCaml uses its own `snake_case`.
 4. **Tests are named after their decision,** like `d17_comparisons`, so a failing test points at its rule.
@@ -106,7 +106,7 @@ Rules for the code of `Clang\n` and PlainOracle (owner, 2026-11-20):
 ## Building
 
 Rules for building `Clang\n` and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
-2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: C+ is a
+2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Unio is a
 learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
 It can come later for one small, critical piece if a bug there ever gets through.
 
@@ -183,7 +183,7 @@ It can come later for one small, critical piece if a bug there ever gets through
     switch, built with `dune`, formatted with `ocamlformat`. Every warning on, as errors, non-exhaustive `match`es
     included. No functions that crash on a reachable path: no `List.hd`, `List.nth`, `Option.get`, `failwith`, `assert
     false` or exceptions used for failures; failures are `result` or `option`, checked. No `Obj`, no `-unsafe`, no
-    `Array.unsafe_get`. C+'s `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
+    `Array.unsafe_get`. Unio's `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
     plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for PlainOracle's core: one pinned Rocq version.
     No `Admitted` and no `Axiom`, except a short list in one file, each with a comment saying why it's believed, such as
     how Rocq's integers become OCaml's `Int64` on extraction. `Print Assumptions` runs on every main theorem in each

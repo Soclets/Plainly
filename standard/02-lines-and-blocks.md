@@ -89,9 +89,9 @@ A blank line may separate parts of a procedure, or procedures, anywhere; two or 
 
 ## Files
 
-A C+ file's name ends in `.cplus`, as in `game.cplus` (D35, D135).
+A Unio file's name ends in `.unio`, as in `game.unio` (D35, D135, D136).
 
-A program is every `.cplus` file in its folder, with exactly one `proc.main` across them. There are no imports: a
+A program is every `.unio` file in its folder, with exactly one `proc.main` across them. There are no imports: a
 procedure in one file calls one in another directly, in any order (D64).
 
 ## Packages
