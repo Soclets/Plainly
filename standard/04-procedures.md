@@ -11,7 +11,8 @@ end proc name
 where `name` is the procedure's name, `parameters` its parameters separated by commas, `Type` the type it gives back,
 and `body` its statements. `proc`, `returns`, the brackets, the `:` and `end proc` are written as they are (D3, D8).
 
-A definition writes its parameters in `[ ]` (D165), and only when it has some. One that takes nothing has no brackets
+A definition writes its parameters in `[ ]` (D165), and only when it has some; written in `( )`, they're refused,
+with the `[ ]` form as the fix (D166). One that takes nothing has no brackets
 (D4):
 
 ```

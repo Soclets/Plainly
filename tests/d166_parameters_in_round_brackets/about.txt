@@ -1,0 +1,1 @@
+A definition with its parameters in ( ) is refused, with the [ ] form as the fix. D165, D166; standard ch. 4 and 11.

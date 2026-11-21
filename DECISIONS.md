@@ -5087,3 +5087,29 @@ brackets rule", "So... How about we follow Cyborg, except grouping. So, change t
 does `()` in grouping not an exception?", "So, what do the brackets mean with tha", "Wait, does idx count as call or
 ?", "Wait, wait. So, that doesn't run at runtime?", then, asked "Should Unio's brackets work that way: `( )` for calls,
 plus grouping, `[ ]` for values, parameters included, and `< >` for types?", the owner chose: "yea".
+
+## D166. A definition with its parameters in `( )` is refused with the `[ ]` form as its fix
+
+2026-11-21.
+
+**Chosen.** A procedure header that writes its parameters in `( )`, as before D165, is refused with the `[ ]` form as
+its fix:
+
+```
+refused: game.unio:1:9, line 1 column 9
+ 1 | proc add($a: Whole, $b: Whole) returns Whole:
+   |         ^
+ fix:     `proc add[$a: Whole, $b: Whole] returns Whole:`
+ why:     a definition writes its parameters in `[ ]`; `( )` calls a procedure.
+```
+
+**Weighed.**
+- D92's generic message, "`` `:` should be here, not `(` ``", as Ralph gave. True to the parser, but its fix,
+  `proc add:(...)`, is nonsense: advice that doesn't work is worse than none. The two implementations disagreed, which
+  Building rule 12 treats as a bug in one of them.
+
+**Why this won.** Anyone used to Python, or to Unio before D165, writes `( )` out of habit, and the message hands them
+the corrected line and the reason in one sentence. The compiler session drafted it.
+
+**Tankun's words.** "": should be here, not (" Motherfucker, isn't that a bug?", then, asked "Should old-style headers
+be refused with that `fix:` and `why:`, in both implementations?", the owner chose: "yea".
