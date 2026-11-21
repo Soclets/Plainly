@@ -2884,6 +2884,8 @@ wrong?", the owner chose: "no".
 
 (Changed by D135: the command is `cplus`, so its mistakes start `cplus:`, and the internal error names `Clang\n`.)
 
+(Changed by the repository's rename on 2026-11-21: the report address is https://github.com/Soclets/Unio-lang/issues.)
+
 ## D93. A variable declared inside a block ends with the block
 
 2026-11-20.
@@ -3261,6 +3263,8 @@ part two, the owner chose: "yea".
 (Changed by D130: there's no PlainGC, so the internal error naming PlainGC goes.)
 
 (Changed by D135: `cplus:` in place of `plainly:`, and `Clang\n` in place of PlainCompiler.)
+
+(Changed by the repository's rename on 2026-11-21: the report address is https://github.com/Soclets/Unio-lang/issues.)
 
 ## D104. A program that stops with its line open finishes the line on standard output before the message
 

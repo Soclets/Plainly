@@ -205,7 +205,7 @@ reach a subagent. Messaging another session isn't prompting, and is written like
 
 ## Git
 
-- Branch `main`; remote `Soclets/Plainly` (public).
+- Branch `main`; remote `Soclets/Unio-lang` (public; `Soclets/Plainly` until 2026-11-21).
 - Commit and push automatically, without asking each time.
 - Repo-local author: `Tankun Sriket <tankunsriket63741ecff056.invalid>`.
 - Subjects are `kind.folder.narrowing: sentence`. Kinds: `decision`,
