@@ -132,6 +132,14 @@ private:
             }
         }
         values_.assign(function_.values.size(), nullptr);
+        // Constants the optimizer made belong to no block; LLVM's constants don't need one either.
+        for (std::size_t index = 0; index < function_.values.size(); ++index) {
+            const ir::Value& value = function_.values.at(index);
+            if (value.block == ir::no_block &&
+                (value.op == Op::constant_whole || value.op == Op::constant_bool || value.op == Op::constant_text)) {
+                values_.at(index) = instruction(value, function);
+            }
+        }
         // Block parameters become phi nodes; the entry block's are the function's own parameters.
         for (std::size_t index = 0; index < function_.blocks.size(); ++index) {
             const ir::Block& block = function_.blocks.at(index);

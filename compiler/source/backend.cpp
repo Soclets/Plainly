@@ -210,6 +210,10 @@ std::expected<void, std::string> link(const std::vector<std::string>& objects, c
                                           UNIO_SDK_PATH, "-o",          output,        "-dead_strip"};
     arguments.insert(arguments.end(), objects.begin(), objects.end());
     arguments.push_back(runtime);
+    // A sanitized build's runtime needs the sanitizers' own library (Building rule 3).
+    if (const std::string sanitizers = UNIO_SANITIZER_LIBRARY_DIR; !sanitizers.empty()) {
+        arguments.insert(arguments.end(), {"-L" + sanitizers, "-lclang_rt.asan_osx_dynamic", "-rpath", sanitizers});
+    }
     arguments.emplace_back("-lSystem");
     std::vector<char*> argv;
     argv.reserve(arguments.size() + 1);

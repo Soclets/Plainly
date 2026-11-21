@@ -39,7 +39,6 @@ bool has_side_effects(const Function& function, const Module& module, const Valu
     case Op::release:
     case Op::join:
     case Op::whole_to_text:
-    case Op::parse_whole:
         return true;
     case Op::call:
         return !module.functions.at(value.callee).no_side_effects;
@@ -156,7 +155,14 @@ std::string print(const Function& function, const Module& module) {
                 out += " " + module.functions.at(value.callee).name;
             }
             for (const ValueId operand : value.operands) {
-                out += " %" + std::to_string(operand);
+                const Value& used = function.values.at(operand);
+                if (used.block == no_block && used.op == Op::constant_whole) {
+                    out += " " + std::to_string(used.immediate);
+                } else if (used.block == no_block && used.op == Op::constant_bool) {
+                    out += used.immediate != 0 ? " true" : " false";
+                } else {
+                    out += " %" + std::to_string(operand);
+                }
             }
             out += "\n";
         }

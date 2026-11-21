@@ -38,14 +38,20 @@ function(unio_target_options target)
   endif()
 endfunction()
 
-# The runtime every Unio program is linked with. It's built without sanitizers, since programs are linked by lld
-# without their runtime libraries, and it's small enough to read whole.
+# The runtime every Unio program is linked with. In a sanitized build it's sanitized too, and programs are linked with
+# the sanitizers' runtime, so every test's program runs under them as well (Building rule 3).
 add_library(unio_runtime STATIC runtime/runtime.cpp)
 target_compile_options(unio_runtime PRIVATE ${UNIO_WARNINGS} -fno-exceptions -fno-rtti -O2 -mmacosx-version-min=14.0
-  -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST)
+  -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST ${UNIO_SANITIZER_FLAGS})
 set_target_properties(unio_runtime PROPERTIES OUTPUT_NAME unio_runtime ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 if(UNIO_TIDY)
   set_target_properties(unio_runtime PROPERTIES CXX_CLANG_TIDY "${UNIO_TIDY_COMMAND}")
+endif()
+set(UNIO_SANITIZER_LIBRARY_DIR "")
+if(UNIO_SANITIZE)
+  execute_process(COMMAND "${CMAKE_CXX_COMPILER}" -print-resource-dir OUTPUT_VARIABLE UNIO_RESOURCE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(UNIO_SANITIZER_LIBRARY_DIR "${UNIO_RESOURCE_DIR}/lib/darwin")
 endif()
 
 llvm_map_components_to_libnames(UNIO_LLVM_LIBS core support passes target targetparser mc irreader bitwriter
@@ -67,7 +73,7 @@ add_library(unlo STATIC
 target_include_directories(unlo PUBLIC source)
 target_include_directories(unlo SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(unlo PUBLIC ${LLVM_DEFINITIONS_LIST}
-  UNIO_SDK_PATH="${CMAKE_OSX_SYSROOT}")
+  UNIO_SDK_PATH="${CMAKE_OSX_SYSROOT}" UNIO_SANITIZER_LIBRARY_DIR="${UNIO_SANITIZER_LIBRARY_DIR}")
 target_link_libraries(unlo PUBLIC ${UNIO_LLVM_LIBS})
 unio_target_options(unlo)
 
