@@ -17,7 +17,9 @@ range[from: 0, before: 10]
 - **Exactly one of `to:` or `before:`** says where it ends: `to: 3` includes 3, giving 1, 2, 3, and `before: 10` stops
   short of 10, giving 0 to 9, as for going through every `offset:` (D170).
 
-**Not decided:** what a range is used in, a `for` loop being the likely one; a step, as `step_by:`; counting down.
+A range is gone through with `for each` (D171).
+
+**Not decided:** a step, as `step_by:`; counting down.
 
 ## `random`
 

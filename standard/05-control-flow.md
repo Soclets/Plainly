@@ -81,6 +81,28 @@ while $tries < 5:
 end while
 ```
 
+## `for each`
+
+`for each` runs its body once for each item, in order (D171):
+
+```
+for each $name in $students:
+    show_msg($name);
+end for
+
+for each $round in range[from: 1, to: 3]:
+    show_msg.fmt("Round {$round}!");
+end for
+```
+
+- **It goes through a `List`, an `Array` or a `range[…]`** (D167, D170, D171).
+- **`$name` is a new variable for each pass,** declared by the `for each` itself as a `let`, and it ends with the loop
+  (D93, D171).
+- **It closes with `end for`,** and `break` leaves it, as it leaves a `while` (D8, D32, D171).
+
+**Not decided:** changing the list a `for each` is going through; going through text; the position as well as the
+item.
+
 ## `break`
 
 `break;` leaves the innermost loop it's in. There's no `continue`: ending one pass early is an `if` around the rest

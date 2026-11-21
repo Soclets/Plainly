@@ -5221,3 +5221,37 @@ everyday English. Tankun proposed `range` in `[ ]` and `before:`.
 "Another name for `range`? Or just use `range`?", "Doesn't `to:` already say it? And the alt is `before:`", "Why is it
 named range?", then, asked "Should it be `range`, taking `from:` plus exactly one of `to:` (top included) or `before:`
 (top left out)?", the owner chose: "yea".
+
+## D171. `for each $x in …:` loops, closed by `end for`
+
+2026-11-21.
+
+**Chosen.** Unio's loop through a collection is `for each`:
+
+```
+for each $name in $students:
+    show_msg($name);
+end for
+```
+
+- It goes through a `List`, an `Array` or a `range[…]` (D167, D170), in order, running its body once per item.
+- `$name` is a new variable for each pass, declared by the `for each` as a `let`, ending with the loop (D93).
+- It closes with `end for` (D8), and `break` leaves it, as it leaves a `while` (D32).
+
+What happens if the body changes the list being gone through, going through text, and getting the position as well as
+the item aren't decided yet.
+
+**Weighed.**
+- `for $name in $students:`, Python's shape, as the design claude first proposed. Tankun: it doesn't communicate the
+  logic well; it's maths' "for all x in S" in shorthand, and "for name in students" isn't an English sentence.
+- `each $name in $students:`. Shorter, but less of a sentence.
+- `repeat with $name in $students:`, as HyperTalk and Scratch's family say. Stresses the repeating over the
+  one-at-a-time.
+- `go through $students as $name:`. Reads well, but three words, with the name at the end.
+
+**Why this won.** "For each name in students, show the name" is exactly what the loop does, read aloud; the words are
+Visual Basic's and C#'s, and how teachers describe Python's loop anyway.
+
+**Tankun's words.** The code block with "Personally, I kinda feel like it doesn't communicate the logic so good." (has
+code), then a code block with "Now I know first. But what does ... mean" (has code), then, asked "Should the loop be
+`for each $x in …:`, closed by `end for`?", the owner chose: "yea. Lol, I though `i` was for integer".
