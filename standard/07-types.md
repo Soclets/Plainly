@@ -178,6 +178,17 @@ Unio doesn't promise a `Float` gives the same bits on every machine (D163). `+`,
 do anyway, since `final` never fuses or reorders float maths (D46, D124); maths functions, when Unio has them, may
 differ in the last digit between machines.
 
+A `Float` is always a real number: a result too big for it, which IEEE 754 would make infinite, stops the program
+with a failed check, as NaN does (D46, D177). Dividing a `Float` by zero is already a failed check (D46), so neither
+infinity nor NaN is ever held:
+
+```
+var $size: Float = 2.0;
+while true:
+    $size = $size * $size;   // stops once the result is too big for a Float
+end while
+```
+
 `Whole` and `Float` don't mix in one calculation: `$lives * $speed` is refused, and `be.Float($lives) * $speed` says
 so (D162).
 
@@ -185,7 +196,7 @@ so (D162).
 
 A `Float` is shown to a player rounded, with `places:` in `.fmt` braces (D175).
 
-**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; how `be.Text` shows
+**Not decided:** `Float`'s maths and its other conversions; the wording of D177's check; how `be.Text` shows
 IEEE 754's negative zero.
 
 ## Lists

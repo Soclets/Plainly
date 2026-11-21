@@ -5404,3 +5404,34 @@ isn't decided yet.
 
 **Tankun's words.** "What's correct", then, asked "Should `places:` drop the minus when a value rounds to zero, showing
 `0.00` and not `-0.00`?", the owner chose: "yea".
+
+## D177. A `Float` that would become infinite stops with a failed check, so a `Float` is always a real number
+
+2026-11-21.
+
+**Chosen.**
+- **A result too big for a `Float`,** which IEEE 754 would make +∞ or −∞, stops the program with a failed check and
+  status 4, as D46 already does for NaN and for a `Whole` that overflows.
+- **Dividing a `Float` by zero** is D46's division-by-zero check, so it never gives infinity or NaN either.
+- **So a `Float` only ever holds a real number:** no infinities, no NaN. IEEE 754's negative zero is the one special
+  value left, and how `be.Text` shows it isn't decided yet.
+- The check's wording comes with a later batch (D54), and its test with it.
+
+```
+var $size: Float = 2.0;
+while true:
+    $size = $size * $size;   // stops once the result is too big for a Float
+end while
+```
+
+**Weighed.**
+- Infinity as a value, as IEEE 754, C, Python's floats and most languages have it. A speed or position of ∞ is a bug
+  that spreads silently through every calculation it touches, as NaN does, and games have no use for it.
+- Clamping to the largest `Float`. Quietly wrong, and hides the bug.
+
+**Why this won.** It's the same mistake as `Whole` overflow, so it gets the same stop, and it costs almost nothing, since
+the CPU's flags that D46 reads for NaN also record overflow. What's given up is a few numeric tricks, like starting a
+search from ∞; a game starts from the first item instead.
+
+**Tankun's words.** Asked "Should a `Float` that would become infinite stop the program with a failed check, as NaN
+already does, so a `Float` is always a real number?", the owner chose: "yea".
