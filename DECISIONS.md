@@ -3928,6 +3928,10 @@ twenty-one: the twenty plus Graphite-style polyhedral loop optimization, built l
 (Changed by D131: the first optimization is LLVM's full optimizing, in place of Cranelift's; and by D130: the fourth,
 load barriers, has nothing to work on.)
 
+(Clarified on 2026-11-21: optimization 7 turns a running total into a loop only where the sums are proved to fit.
+Reordering checked additions can change which check fails, as `MAX + (1 + -1)` fits where `(MAX + 1) + -1` doesn't, and
+D46 forbids that; otherwise only real tail calls become loops. Found by the compiler session.)
+
 ## D125. Variable names start with `$` again
 
 2026-11-20.
