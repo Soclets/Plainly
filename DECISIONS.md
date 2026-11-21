@@ -4630,12 +4630,16 @@ proc first_big($start: Whole) returns Whole:
     while true:
         if $n > 100:
             return $n;
+        else:
+            $n = $n + 1;
         end if
-        $n = $n + 1;
     end while
     return $n;
 end proc first_big
 ```
+
+(Corrected on 2026-11-21: the example first had `$n = $n + 1;` after `end if`, which D9 refuses, since that `if` can
+leave. Ralph found it. The rule itself is unchanged.)
 
 **Weighed.**
 - Java's special case: `while true:` with no `break` counts as never ending. Smarter, but then a line after such a
