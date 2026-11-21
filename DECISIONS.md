@@ -2662,6 +2662,8 @@ on a `let`, the missing closer at the end of a file, and a missing `:` or `=` in
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no.".
 
+(Changed by D132: the spacing `why:` follows one pattern for every operator.)
+
 ## D86. The text after every label starts at the same column, the width of `because:`
 
 2026-11-20.
@@ -2716,6 +2718,8 @@ line (D84) and the label column of D86. Names and types in them are filled in fr
 Changed by D89: "but this is a `Whole` and a `Text`".
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
+
+(Changed by D132: the keyword message is for procedures' names.)
 
 ## D88. The wording of the third batch of refusals: procedures, calls and `return`
 
@@ -2782,6 +2786,8 @@ The fourth batch, with names and types filled in from the program:
 
 **Tankun's words.** "I think some may be using "and" wrongly, instead it should be "but"?", then, asked "With those
 changes, does the fourth batch read right, and should the two approved ones change too?", the owner chose: "yea\".
+
+(Changed by D132: D61's parameter form gets D126's fix and `why:`, and the both-forms message goes.)
 
 ## D90. "Compile time" and "runtime" are the words for when a program is checked and when it runs
 
@@ -2871,6 +2877,8 @@ The parser's three messages have no `why:`, since there's no rule to name beyond
 
 **Tankun's words.** Their questions about the first showing are quoted in D90; then, asked "Do any of those read
 wrong?", the owner chose: "no".
+
+(Changed by D132: the missing-mode line has backticks.)
 
 ## D93. A variable declared inside a block ends with the block
 
@@ -3627,6 +3635,8 @@ reads and exits the same way.
 **Tankun's words.** Asked "Should running out of memory stop the program as a `check failed:` with status 4, at the
 line that needed the memory, with the numbers in `when:`?", the owner chose: "yea".
 
+(Changed by D132: the `why:` no longer names PlainGC.)
+
 ## D116. A command with several mistakes shows all of them, one line each, before the usage
 
 2026-11-20.
@@ -4136,3 +4146,29 @@ very exciting for me, there's practically nothing on that by me, aswell as Swift
 `extern.cpp`?", "But it's less effort than with Lyftar, though", "But i don't do pararell, lol. I can't juggle two
 fucking langs at the same time". Then, asked "Should PlainCompiler be written in C++, on LLVM for both modes, with
 `extern.cpp`?", the owner chose: "yea. What about the C++ rules?"
+
+## D132. Five wordings brought up to date with D125, D126 and D130, and spacing's `why:` made one pattern
+
+2026-11-21.
+
+**Chosen.** A review of every decided message wording against later decisions changes these:
+
+| Message | Was | Now |
+|---|---|---|
+| a keyword used as a procedure's name (D87) | what: `` `if` is a keyword, so it can't be a name ``; why: "a name can't be one of Plainly's own words." | what: `` `if` is a keyword, so it can't be a procedure's name ``; why: "a procedure's name can't be one of Plainly's own words." |
+| D61's shared-type parameter form (D89) | why: "parameters sharing one type write it once, in front, when there are two or more; otherwise each writes its own." | `fix:` the line with each parameter's own type; why: "each parameter writes its own type after its name, as a declaration does." D89's message for both forms in one header goes |
+| running out of memory (D115) | why: "everything the program keeps is still in use, so PlainGC can't free any of it." | why: "everything the program keeps is still in use, so none of it can be freed." |
+| a missing space around an operator (D85, D102) | D85's "`<`, `>`, `+`, `-` and `*` between two values have a space on each side." for five operators, D102's "`==` has one space on each side." for the rest | one pattern for every operator: "`+` between two values has one space on each side." |
+| the missing mode (D92) | `plainly: run and compile need a mode: --working or --final` | ``plainly: `run` and `compile` need a mode: `--working` or `--final` `` |
+
+**Weighed.**
+- Leaving them. Three would teach rules that no longer hold (D125 lets a variable be named `$if`, D126 replaced
+  D61's form, and D130 has no PlainGC), and spacing would give two different reasons for the same kind of mistake.
+- "`+` has one space on each side.", D102's pattern as it stood, for every operator. A negating `-`, as in `-4`, has
+  no space after it (D27); "between two values" keeps it out.
+
+**Why this won.** Each message says what's true now, and the same mistake gets the same kind of reason.
+
+**Tankun's words.** "Anyways, you'll be reviewing the err msgs for now, by yourself. Find real problems, not invent
+one. If you aren't sure, bring it to me.", then, asked "Should those five wording fixes go in as proposed?", the owner
+chose: "yea".
