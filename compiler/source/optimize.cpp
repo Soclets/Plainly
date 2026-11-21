@@ -367,8 +367,10 @@ private:
                 if (inner.op == Op::add) {
                     if (const auto inner_right = constant_of(inner.operands.at(1))) {
                         if (!__builtin_add_overflow(*inner_right, *right, &result)) {
+                            // Making the constant can move the value list, so `current` is looked up again.
                             const ValueId base = inner.operands.at(0);
-                            current.operands = {base, whole(result)};
+                            const ValueId sum = whole(result);
+                            value(id).operands = {base, sum};
                             return std::nullopt;
                         }
                     }
@@ -389,8 +391,10 @@ private:
             }
             // x - c becomes x + (-c) when it's plain, so additions of constants can gather.
             if (current.op == Op::subtract && right && *right != lowest) {
-                current.op = Op::add;
-                current.operands.at(1) = whole(-*right);
+                const ValueId negated = whole(-*right);
+                Value& again = value(id);
+                again.op = Op::add;
+                again.operands.at(1) = negated;
                 return std::nullopt;
             }
             if (operand(0) == operand(1)) {

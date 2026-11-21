@@ -9,55 +9,103 @@ are in `compiler/test-status.txt`, written by every test run.
 cd compiler && cmake --workflow --preset check
 ```
 
-configures, builds (3 cores, AddressSanitizer and UndefinedBehaviorSanitizer, libc++ hardened), checks formatting and
-`clang-tidy`, runs the unit tests on Unio IR, then every test in `tests/` in both modes, and writes
+configures, builds (3 cores, AddressSanitizer and UndefinedBehaviorSanitizer, libc++ hardened, `clang-tidy`'s checks
+as errors), checks formatting, runs the unit tests on Unio IR, then every test in `tests/` in both modes, and writes
 `compiler/test-status.txt`. `cmake --workflow --preset fast` does the same without `clang-tidy`, for quick rounds.
+`compiler/build/dev/unit_tests --print FILE [--final]` prints a program's Unio IR, before or after `final`'s passes.
 
 ## Tools, pinned
 
-- **LLVM 23.1.2**, the self-contained static build at `~/llvm-self-contained/install` (LLVM and lld, built without
-  RTTI or exceptions, targets AArch64, ARM and X86). It never changes under us, unlike Homebrew's, which `brew upgrade`
-  can move. The compiler links LLVM and lld statically, and links programs with lld in its own process.
-- **Homebrew's LLVM 23.1.2** (`/opt/homebrew/opt/llvm@23`) for `clang++`, `clang-format` and `clang-tidy`, the same
-  version, and the compiler the static build was made with.
+- **LLVM 23.1.2**, the self-contained static build at `~/llvm-self-contained/install` (built without RTTI or
+  exceptions, targets AArch64, ARM and X86). It never changes under us, unlike Homebrew's, which `brew upgrade` can
+  move. The compiler links it statically.
+- **Homebrew's LLVM 23.1.2** (`/opt/homebrew/opt/llvm@23`) for `clang++`, `clang-format`, `clang-tidy` and the
+  sanitizers' runtime: the same version, and the compiler the static build was made with.
+- **Apple's `ld`** links programs. lld 23 can't read the macOS 27 SDK's library lists (their `arm64e.x1` targets are
+  newer than it), and Apple's linker always matches its own SDK. Programs target macOS 14 and up.
 - CMake 4.4.3, Ninja. Nothing installed.
 - Ralph, run as a black box: `oracle/_build/default/shell/ralph.exe PROGRAM.unio` after
-  `opam exec --switch=ralph -- dune build --root oracle`.
+  `opam exec --switch=ralph -- dune build --root oracle`. `unio oracle FILE` finds and runs it.
 
-## The plan for the first milestone
+## How it's built
 
-Each step ends with something running, in both modes.
+`source → syntax tree → typed tree → Unio IR → LLVM IR → native code` (D62), in `compiler/source/`:
 
-1. **Test runner** (`tools/test_runner.cpp`): every test, both modes, stdout, stderr and status byte for byte, plus
-   each `check.py`; writes `compiler/test-status.txt`. Every test fails at first.
-2. **Hello world end to end:** source → syntax tree → typed tree → Unio IR → LLVM IR → object → linked with the runtime
-   by lld in-process → run. Both modes. The parallel, cached back end arrives here, since it's the shape of the
-   compiler, not an extra: each procedure is its own LLVM module, compiled on its own thread, cached under a
-   fingerprint.
-3. **Whole numbers, variables, `if`, `while`, `break`** (d13, d16, d19), with overflow checks written out in Unio IR,
-   their failure path cold (D124 #13), and in `final`: check removal from what an `if` proved (#2, #8), and LLVM's full
-   optimizing (#1). Runtime check messages (d104).
-4. **Procedures, `return`, labels, slides** (d05, d24, d34), with `final`'s inlining of small procedures (#3), the
-   fib trick for procedures with no side effects (#6), recursion into loops (#7) and constants across procedures (#9),
-   each with unit tests on Unio IR where it applies and where it mustn't.
-5. **Text:** `&`, `be.Text`, `.fmt`, escapes, `ask`, `be.Whole`, `??`, `random` (d20, d28, d29, d30), with Text as
-   copy-on-write values (D130) and the 30% memory cap (D134).
-6. **Refusals** the tests check, then the rest of the subset's decided refusals, with D55's recovery.
-7. **Guessing game** in both modes; **fib** timed beside gfortran and C.
+- `source`, `lexer`, `parser`, `checker`: reading and refusing, with D54's layout (`messages`, `layout.h`, which the
+  runtime shares).
+- `lower`: the typed tree to Unio IR (`ir`), SSA with block parameters, built by Braun et al.'s algorithm. Every check
+  is an instruction with its site; every text has its owners written out as `retain` and `release` (D130).
+- `optimize`: `final`'s own passes on Unio IR (D124), below.
+- `codegen`: one LLVM module per procedure. Checks are LLVM's overflow intrinsics with a cold, unlikely branch to the
+  runtime's message.
+- `backend`: compiles the procedures in parallel on every core (D65; the test runner sets `UNIO_THREADS=1`, since it
+  runs 3 tests at once, rule 6), each cached in `~/Library/Caches/unio/objects` under a hash of its unoptimized LLVM
+  IR, the mode and the compiler's own file, then links with Apple's `ld`.
+- `runtime/runtime.cpp`: showing, asking, texts, the 30% memory cap, `be.Whole`, `random`, and runtime messages. It
+  uses only the C library. In the sanitized test build it's sanitized too, so every test's program runs under ASan.
 
-Where each of D124's optimizations for this subset arrives: #1 LLVM's full optimizing, step 2; #2 and #8 removing
-checks from what an `if` proved, step 3; #13 check-failure code out of the way, step 3; #3 inlining, step 4; #6 the fib
-trick, step 4; #7 recursion into loops, step 4; #9 constants across procedures, step 4.
+## `final`'s optimizations for this subset (D124)
+
+| # | What | Where | Unit test |
+|---|---|---|---|
+| 1 | LLVM's full optimizing (O3) | `backend.cpp` | (LLVM's) |
+| 1 | folding constants, simplifying, sweeping | `passes::simplify` | `test_folding` |
+| 2, 8 | removing checks ranges and `if`s prove can't fail | `passes::remove_checks`, and LLVM's CVP | `test_removing_checks` |
+| 3 | inlining small procedures | `passes::inline_small`, and LLVM's inliner | `test_inlining` |
+| 6 | finding procedures with no side effects | `passes::find_side_effects` | `test_finding_side_effects` |
+| 6 | the fib trick: inlining into itself where calls would repeat, then merging | `passes::inline_into_itself`, `duplicate_returns`, `merge_repeated` | `test_inlining_into_itself`, `test_merging_repeated` |
+| 7 | recursion into loops | `passes::recursion_into_loops`, and LLVM's TailCallElim | `test_recursion_into_loops` |
+| 9 | constants across procedures | `passes::constants_across` | `test_constants_across` |
+| 13 | check-failure code out of the way | `codegen.cpp` (unlikely branches, `cold` `noreturn` stops), LLVM's HotColdSplitting | none yet |
+
+The fib trick is general: a procedure with no side effects is inlined into itself at a call only where the copy's own
+calls, with that call's arguments put in, repeat a call already there (arguments compared as a parameter plus a
+constant). It applies to `fib`, to tribonacci-shaped procedures, and to nothing that repeats nothing.
+
+Recursion into loops "even with a running total" (D124 #7) is done only for real tail calls: reassociating a checked
+running total can change which check fails (`MAX + (1 + -1)` fits, `(MAX + 1) + -1` doesn't), which D46 forbids.
+
+## Timings
+
+`fib(44)` on Tankun's Mac, 2026-11-21, best of 5 (3 for the slow ones), the number read from standard input as the C
+version reads it from its arguments, so nothing's known at compile time:
+
+| | time |
+|---|---|
+| Unio `final` | 2.1 ms |
+| gfortran 16.2 `-O3` | 2.8 ms |
+| clang `-O3` (C) | 965 ms |
+| clang `-O0` (C) | 1757 ms |
+| Unio `working` | 1946 ms |
+| gfortran `-O0` | 2711 ms |
+
+Compiling hello world: 0.09 s in the sanitized debug build; a new program's first launch costs about 0.3 s more,
+macOS checking it.
 
 ## Status
 
-- 2026-11-21: plan written; tools checked, LLVM pinned. Nothing built yet.
+- 2026-11-21: every test passes in both modes (57 of 57 runs with `check.py`). The guessing game plays in both modes,
+  piped; not yet played by hand. `final`'s optimizations for the subset are in, with unit tests, except #13's.
+- Next: `clang-tidy` clean; #13's unit test; caching the linked program so `unio run` of an unchanged program skips
+  linking and macOS's first-launch check; the rest of the subset's decided refusals (spacing D98/D100, D9's and D57's
+  edge cases, knock-on errors D55/D83), compared against Ralph.
 
 ## Questions sent to the design session
 
-(none yet)
+1. Ralph crashes on any procedure that calls itself (`Fatal error: exception Stack overflow`, status 2), even
+   `one(3)` recursing three levels. For the oracle session.
+2. Not decided, and built provisionally (each a guess to confirm or change):
+   - `unio compile game.unio` writes `game` beside `game.unio`.
+   - The cache is `~/Library/Caches/unio` (D65 leaves the place open).
+   - `?? crash` is `NotDesignedYet` at compile time, since what it shows isn't decided.
+   - `random` with `from:` above `to:` stops at runtime with `NotDesignedYet`, status 3.
+3. Wordings drafted, not decided: "this line isn't inside a procedure"; "there's no type named `X`"; "`not` works on
+   a `Bool`, but this is a `Whole`"; "`and` joins two `Bool`s, but this is a `Whole`"; "this value isn't used"; "a
+   value should be here, not `x`"; the usage text; `unio oracle` without Ralph built (status 6); and D54's `because:`
+   in another file, which should name the file.
 
 ## Notes for the design session
 
 - The prompt's way to run Ralph, `dune exec --root oracle -- ralph`, says "Program 'ralph' not found"; the built
   program is `oracle/_build/default/shell/ralph.exe` (found from file names only, nothing in `oracle/` read).
+- I wrote the test runner and the first compiler together, so the "every test fails" stage was never seen.
