@@ -146,19 +146,23 @@ Empty text is `""` (D76).
 
 **Not decided:** a new line or a tab inside text; `\` before a letter; settings in braces; comparing text.
 
-## Decimal numbers
+## `Float`
 
-Which decimal types Unio has isn't decided. A binary float type, if Unio has one, is honest about what it can't store
-exactly (D155):
+`Float` is a binary floating-point number, stored as IEEE 754 binary64: about 15 to 17 significant digits, from about
+10⁻³⁰⁸ to 10³⁰⁸ (D157). Like `Whole`, it has no second name. It's approximate, and honest about it (D155):
 - **An inexact literal needs `~`:** `~0.1` is accepted, and `0.1` is refused with `~0.1` as the fix, since 0.1 can't
   be stored exactly in binary. A literal stored exactly, like `0.5`, takes no `~`.
 - **An inexact value shows its `~` when printed:** the shortest text that reads back as the same number, with `~` in
   front when the stored value isn't exactly that, as in `~0.30000000000000004`.
 
-An exact decimal type, if Unio has one, never needs `~`.
+```
+let $speed: Float = ~0.1;
+```
 
-**Not decided:** which decimal types Unio has; their names, sizes and literals; a rounded, `~`-free way to show a
-decimal to a player.
+`Decimal` is kept for an exact decimal type, if Unio adds one; it would never need `~` (D155, D157).
+
+**Not decided:** `Float`'s maths and conversions; NaN and infinities beyond D46's check; a rounded, `~`-free way to
+show a `Float` to a player.
 
 ## Lists
 

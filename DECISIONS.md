@@ -4823,3 +4823,35 @@ a pattern for later conversions that can fail. Ralph and the compiler session bo
 
 **Tankun's words.** "big case?", "No, I meant **W**hole", "Why is it `be.Text`", then, asked "Should `be.Whole`'s
 failure be called `not_a_whole`?", the owner chose: "yea".
+
+## D157. Unio's decimal type is `Float`, IEEE 754 binary64; `Decimal` is kept for an exact type
+
+2026-11-21.
+
+**Chosen.** Unio's first type for numbers with a point is **`Float`**, a binary floating-point number stored as IEEE
+754 binary64, with no second name (as `Whole`, D15). It's approximate, and D155's `~` shows where. `Decimal` is kept
+for an exact decimal type, where `0.1 + 0.2` is `0.3`, if Unio adds one later.
+
+```
+let $speed: Float = ~0.1;
+```
+
+**Weighed.**
+- An exact decimal type first. Several times slower, in software, where games mostly want speed for positions, speeds
+  and timing; D155's `~` removes most of the reason to need one.
+- `BinFloat`, Tankun's first idea, pairing with a later `DecFloat`. Accurate, but a word no learner meets anywhere
+  else.
+- `Binary64`, IEEE 754's own name. Puts a size in the name, where `Whole` has none, and names a storage format rather
+  than a kind of number.
+- `Decimal` for this type, following D15's school-maths rule. Wrong: it isn't decimal, it's stored in binary, which is
+  why `0.1` can't be exact.
+
+**Why this won.** `Float` is accurate, the word learners meet everywhere, and pairs with `Decimal` for an exact type,
+each name meaning what it says; the `~` covers what the name doesn't. Digging further for a perfect name wasn't worth
+it.
+
+**Tankun's words.** The messages quoted in D155, then "It's actually IEEE 754 Binary", a code block (has code),
+"`Bool` is shortened", "families don't exist mainstream either", "It's not a Decimal, c'mon", "What is a float", "Now,
+here's the thing. Is that rabbit hole worth it? Rather than just saying `Float` is ..., and `Decimal` is well... A
+real one", then, asked "Should the type be `Float`, IEEE 754 binary64, with `Decimal` kept for an exact type later?",
+the owner chose: "Fair enough".
