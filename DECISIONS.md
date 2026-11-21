@@ -5173,3 +5173,28 @@ A `List` with no limit never fails on `.add`.
 
 **Tankun's words.** Asked "Should `.add` on a list with `len.max` be able to fail with `full`, handled like any
 failure?", the owner chose: "yea".
+
+## D169. `[all: value]` starts every item of an array the same
+
+2026-11-21.
+
+**Chosen.** `[all: value]` is a list literal in which every item is `value`, its length taken from the type it's given
+to, as `[]` takes its type from where it goes (D76). It's allowed only where the length is known, as for an `Array`
+(D167); on a plain `List`, with no length to fill, it's refused.
+
+```
+var $board: Array<Whole>[len: 64] = [all: 0];
+var $seen: Array<Bool>[len: 100] = [all: false];
+```
+
+**Weighed.**
+- Rust's `[0; 64]`. A new meaning for `;` inside brackets, with no hint of what it does, and the count written a
+  second time.
+- A method, as in `.filled(0)`. A call where nothing needs to run (D165).
+- `[all 0]`, with no `:`. A bare word followed by a value appears nowhere else in Unio and would make `all` a keyword;
+  `all:` is one more label, read like `pos:` or `len:`.
+
+**Why this won.** It's `[ ]` describing values, D165's job for it, reads aloud as "all zero", and writes the length
+once, in the type, where it can't disagree with a count written elsewhere.
+
+**Tankun's words.** "With `:` or not?", then, asked "Should it be `[all: 0]`, with the `:`?", the owner chose: "yea".

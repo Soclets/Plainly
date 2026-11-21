@@ -216,8 +216,12 @@ list.
 let $week: Array<Text>[len: 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 ```
 
-**Not decided:** an array's first value when it isn't written out item by
-item.
+Every item can start the same with `[all: value]`, which takes its length from the type, the way `[]` takes its type
+from where it goes (D76, D169). It's only allowed where the length is known, as for an `Array`:
+
+```
+var $board: Array<Whole>[len: 64] = [all: 0];
+```
 
 An empty list is `[]`, taking its type from where it goes (D76).
 
