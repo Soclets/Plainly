@@ -99,6 +99,10 @@ line break, the same as `\n` (D144).
 A program is every `.unio` file in its folder, with exactly one `proc.main` across them. There are no imports: a
 procedure in one file calls one in another directly, in any order (D64).
 
+The files are read in the byte order of their names, whichever file is named on the command line, so `Map.unio` comes
+before `map.unio` and `enemies.unio` before `game.unio`. Running a program never depends on the order, but its messages
+do: which of two definitions of one name came first, and which mistake is reported first (D188).
+
 ## Packages
 
 Packages are listed once, in a manifest file in the program's folder, and their procedures are then usable in every

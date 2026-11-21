@@ -5727,3 +5727,23 @@ The refusal's wording comes with a later batch (D54).
 D162), and Rust, Swift, Go and Java all do the same. Ralph raised it while building the oracle.
 
 **Tankun's words.** Asked "Should an `if` or `while` condition have to be a `Bool`?", the owner chose: "yea".
+
+## D188. A program's files are read in the byte order of their names
+
+2026-11-21.
+
+**Chosen.** The `.unio` files of a program (D64) are read in the byte order of their names, whichever file is named on
+the command line: `Map.unio` before `map.unio`, and `enemies.unio` before `game.unio`. Running a program never depends
+on the order; its messages do, such as which of two definitions of one name came first (D94) and which mistake is
+reported first.
+
+**Weighed.**
+- The file named on the command line first, then the rest, as `Unlo\n` had it. The same program would give different
+  messages depending on which file was named.
+- The order the operating system sorts names in. It differs between macOS, Linux and Windows.
+
+**Why this won.** The same folder always gives the same messages, on every system and however it's run. Found as a
+disagreement between Ralph, which read in name order, and `Unlo\n`.
+
+**Tankun's words.** Asked "Should a program's files be read in the byte order of their names, whichever file is named
+on the command line?", the owner chose: "yea".
