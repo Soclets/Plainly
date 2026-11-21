@@ -91,6 +91,10 @@ const char* op_name(Op op) {
         return "call";
     case Op::choose:
         return "choose";
+    case Op::value_or_crash:
+        return "value_or_crash";
+    case Op::deeper:
+        return "deeper";
     case Op::show:
         return "show";
     case Op::ask:

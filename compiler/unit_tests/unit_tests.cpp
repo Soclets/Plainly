@@ -438,6 +438,60 @@ void test_cold_check_failures() {
     }
 }
 
+// D154: a repeated call is merged only into one made at least as deep, so merging never changes where a program
+// stops for going too deep. `wrap` is inlined, putting its `count($n)` one call deeper than `g`'s own.
+std::size_t calls_to(const unio::ir::Function& function, const unio::ir::Module& module, const std::string& name) {
+    std::size_t total = 0;
+    for (const auto& block : function.blocks) {
+        if (block.dead) {
+            continue;
+        }
+        for (const auto id : block.instructions) {
+            const auto& value = function.values.at(id);
+            total += value.op == Op::call && module.functions.at(value.callee).name == name ? 1U : 0U;
+        }
+    }
+    return total;
+}
+
+void test_merging_keeps_depth() {
+    const auto program = [](const std::string& sum) {
+        return "proc count($n: Whole) returns Whole:\n"
+               "    if $n < 1:\n"
+               "        return 0;\n"
+               "    else:\n"
+               "        return count($n - 1) + 1;\n"
+               "    end if\n"
+               "end proc count\n"
+               "\n"
+               "proc wrap($n: Whole) returns Whole:\n"
+               "    return count($n);\n"
+               "end proc wrap\n"
+               "\n"
+               "proc g($n: Whole) returns Whole:\n"
+               "    return " +
+               sum +
+               ";\n"
+               "end proc g\n"
+               "\n"
+               "proc.main:\n"
+               "    let $n: Whole = be.Whole(ask(\"\")) ?? 0;\n"
+               "    $n |> g |> be.Text |> show_msg;\n"
+               "end proc.main\n";
+    };
+    auto deeper_first = compile(program("wrap($n) + count($n)"));
+    unio::optimize(deeper_first);
+    const auto* first_g = find(deeper_first, "g");
+    expect(calls_to(*first_g, deeper_first, "count") == 1,
+           "the later, shallower `count($n)` is merged into the deeper one made first", print(*first_g, deeper_first));
+    auto shallower_first = compile(program("count($n) + wrap($n)"));
+    unio::optimize(shallower_first);
+    const auto* second_g = find(shallower_first, "g");
+    expect(calls_to(*second_g, shallower_first, "count") == 2,
+           "the later, deeper `count($n)` stays, since it could go too deep where the first didn't",
+           print(*second_g, shallower_first));
+}
+
 // `unit_tests --print FILE [--final]` prints a program's Unio IR, for working on the compiler.
 int print_file(const char* path, bool final) {
     std::ifstream file(path, std::ios::binary);
@@ -464,10 +518,17 @@ int main(int argc, char** argv) {
         return print_file(arguments[2], arguments.size() >= 4 && std::string_view(arguments[3]) == "--final");
     }
     const std::vector<std::function<void()>> tests = {
-        test_lowering_writes_out_checks, test_folding,          test_removing_checks,
-        test_finding_side_effects,       test_inlining,         test_inlining_into_itself,
-        test_merging_repeated,           test_constants_across, test_recursion_into_loops,
+        test_lowering_writes_out_checks,
+        test_folding,
+        test_removing_checks,
+        test_finding_side_effects,
+        test_inlining,
+        test_inlining_into_itself,
+        test_merging_repeated,
+        test_constants_across,
+        test_recursion_into_loops,
         test_cold_check_failures,
+        test_merging_keeps_depth,
     };
     for (const auto& test : tests) {
         test();

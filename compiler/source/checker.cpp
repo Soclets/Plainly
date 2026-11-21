@@ -730,12 +730,7 @@ private:
             return;
         }
         if (expression.fallback == Fallback::crash) {
-            // trace: D152
-            // D152's `what:` names the failure, and what a failed conversion's failure is called isn't decided.
-            messages_.not_designed_yet(expression.op_place, "what `" + call.builtin +
-                                                                "`'s failure is called, for `?? crash`'s message "
-                                                                "(D152), isn't decided yet");
-            return;
+            return; // trace: D152, D156
         }
         check_value(*expression.right);
         const Type fallback = expression.right->type;

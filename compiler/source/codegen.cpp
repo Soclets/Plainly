@@ -30,7 +30,7 @@ public:
         pointer_ = llvm::PointerType::getUnqual(context_);
         int32_ = llvm::Type::getInt32Ty(context_);
         void_ = llvm::Type::getVoidTy(context_);
-        site_type_ = llvm::StructType::get(context_, {pointer_, pointer_, int32_, int32_, int32_, int32_});
+        site_type_ = llvm::StructType::get(context_, {pointer_, pointer_, pointer_, int32_, int32_, int32_, int32_});
         llvm::Function* function = declare(function_);
         function->setLinkage(llvm::GlobalValue::ExternalLinkage);
         generate(*function);
@@ -95,10 +95,10 @@ private:
         }
         const ir::Site& site = unio_.sites.at(index);
         auto* value = llvm::ConstantStruct::get(
-            site_type_,
-            {string_constant(site.file), string_constant(site.source_line), llvm::ConstantInt::get(int32_, site.line),
-             llvm::ConstantInt::get(int32_, site.column), llvm::ConstantInt::get(int32_, site.length),
-             llvm::ConstantInt::get(int32_, static_cast<std::uint64_t>(site.kind))});
+            site_type_, {string_constant(site.file), string_constant(site.source_line), string_constant(site.detail),
+                         llvm::ConstantInt::get(int32_, site.line), llvm::ConstantInt::get(int32_, site.column),
+                         llvm::ConstantInt::get(int32_, site.length),
+                         llvm::ConstantInt::get(int32_, static_cast<std::uint64_t>(site.kind))});
         auto* global =
             new llvm::GlobalVariable(*module_, site_type_, true, llvm::GlobalValue::PrivateLinkage, value, "site");
         sites_.emplace(index, global);
@@ -221,6 +221,21 @@ private:
         }
     }
 
+    // Stops the program through the runtime when `condition` holds, on a cold, unlikely path (D124 #13).
+    void stop_if(llvm::Value* condition, const char* stop_name, const std::vector<llvm::Value*>& arguments,
+                 const std::vector<llvm::Type*>& types, llvm::Function& function) {
+        auto* fail = llvm::BasicBlock::Create(context_, "stop", &function);
+        auto* fine = llvm::BasicBlock::Create(context_, "", &function);
+        llvm::MDBuilder weights(context_);
+        builder_.CreateCondBr(condition, fail, fine, weights.createUnlikelyBranchWeights());
+        builder_.SetInsertPoint(fail);
+        llvm::FunctionCallee stop = runtime(stop_name, void_, types, true);
+        auto* call = builder_.CreateCall(stop, arguments);
+        call->setDoesNotReturn();
+        builder_.CreateUnreachable();
+        builder_.SetInsertPoint(fine);
+    }
+
     // trace: D46, D92, D124
     // A checked operation: LLVM's overflow intrinsic, and a branch to a cold block that stops the program with the
     // check's message, marked unlikely so it's moved out of the way (D124 #13).
@@ -286,6 +301,19 @@ private:
             return builder_.CreateNot(operand(0));
         case Op::choose:
             return builder_.CreateSelect(operand(0), operand(1), operand(2));
+        case Op::value_or_crash: {
+            // trace: D152
+            llvm::Value* failed = builder_.CreateExtractValue(operand(0), 0);
+            stop_if(failed, "unio_crash", {site(value.site)}, {pointer_}, function);
+            return builder_.CreateExtractValue(operand(0), 1);
+        }
+        case Op::deeper: {
+            // trace: D154
+            llvm::Value* deeper = builder_.CreateAdd(operand(0), llvm::ConstantInt::get(whole_, 1));
+            llvm::Value* too_deep = builder_.CreateICmpSGT(deeper, llvm::ConstantInt::get(whole_, ir::deepest_calls));
+            stop_if(too_deep, "unio_too_deep", {site(value.site), operand(0)}, {pointer_, whole_}, function);
+            return deeper;
+        }
         case Op::call: {
             llvm::Function* callee = declare(unio_.functions.at(value.callee));
             std::vector<llvm::Value*> arguments;

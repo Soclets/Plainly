@@ -46,6 +46,7 @@ public:
             for (const Parameter& parameter : procedure->parameters) {
                 function.parameter_kinds.push_back(kind_of(parameter.type.type));
             }
+            function.parameter_kinds.push_back(Kind::whole); // the depth it runs at (D154)
             function.returns = procedure->returns.transform([](const TypeName& type) { return kind_of(type.type); })
                                    .value_or(Kind::none);
             indices_.emplace(procedure.get(), static_cast<std::uint32_t>(module_.functions.size()));
@@ -169,7 +170,7 @@ private:
         return function_->append(current_, std::move(value));
     }
 
-    std::uint32_t site(ir::SiteKind kind, Place place) {
+    std::uint32_t site(ir::SiteKind kind, Place place, std::string detail = "") {
         const LineColumn where = sources_.line_column(place);
         ir::Site site;
         site.kind = kind;
@@ -178,6 +179,7 @@ private:
         site.column = where.column;
         site.length = place.length;
         site.source_line = std::string(sources_.line_text(place.file, where.line));
+        site.detail = std::move(detail);
         module_.sites.push_back(std::move(site));
         return static_cast<std::uint32_t>(module_.sites.size() - 1);
     }
@@ -235,6 +237,7 @@ private:
             const ValueId parameter = add_parameter(entry, function_->parameter_kinds.at(index));
             write_variable(static_cast<std::uint32_t>(index), entry, parameter);
         }
+        depth_ = add_parameter(entry, Kind::whole);
         scopes_.emplace_back();
         lower_body(procedure.body);
         if (reachable_) {
@@ -577,6 +580,10 @@ private:
             }
             const std::uint32_t callee = indices_.at(procedure);
             const Kind returns = module_.functions.at(callee).returns;
+            // trace: D154
+            operands.push_back(
+                emit(Op::deeper, Kind::whole, {depth_}, 0,
+                     site(ir::SiteKind::depth, place, function_->is_main ? "proc.main" : function_->name)));
             ir::Value value;
             value.op = Op::call;
             value.kind = returns;
@@ -619,6 +626,16 @@ private:
     // trace: D23, D95
     Lowered lower_handled(const Expression& expression) {
         const Lowered attempt = lower_expression(*expression.left);
+        if (expression.fallback == Fallback::crash) {
+            // trace: D152, D156
+            const Place marks{.file = expression.op_place.file,
+                              .offset = expression.op_place.offset,
+                              .length = expression.place.end() - expression.op_place.offset};
+            const std::string what = "`" + expression.left->builtin + "` failed with `not_a_whole`";
+            return {.value = emit(Op::value_or_crash, Kind::whole, {attempt.value}, 0,
+                                  site(ir::SiteKind::crash, marks, what)),
+                    .owned = false};
+        }
         const ValueId failed = emit(Op::failed, Kind::boolean, {attempt.value});
         const BlockId fine = new_block();
         const BlockId fallback = new_block();
@@ -649,6 +666,7 @@ private:
     std::map<const Procedure*, std::uint32_t> indices_;
     std::map<std::string, std::size_t> text_indices_;
     ir::Function* function_ = nullptr;
+    ValueId depth_ = ir::no_value; // the current procedure's hidden depth parameter (D154)
     BlockId current_ = 0;
     bool reachable_ = false;
     std::vector<bool> sealed_;

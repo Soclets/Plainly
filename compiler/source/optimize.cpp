@@ -467,6 +467,12 @@ private:
             }
             return std::nullopt;
         }
+        case Op::deeper:
+            // A known depth well short of the deepest can't stop the program (D154).
+            if (const auto depth = constant(0); depth && *depth < ir::deepest_calls) {
+                return whole(*depth + 1);
+            }
+            return std::nullopt;
         case Op::choose:
             if (const auto chosen = constant(0)) {
                 return operand(*chosen != 0 ? 1 : 2);
@@ -841,6 +847,21 @@ private:
         case Op::checked_negate:
             result = negate_range(operand(0));
             break;
+        case Op::deeper: {
+            // trace: D154
+            const Range depth = operand(0);
+            if (depth.high < ir::deepest_calls) {
+                // Proved short of the deepest: only the addition is left.
+                const ValueId one = free_constant(function_, Op::constant_whole, Kind::whole, 1);
+                base_.resize(function_.values.size(), Range{});
+                base_.at(one) = Range{.low = 1, .high = 1};
+                Value& again = function_.values.at(id);
+                again.op = Op::add;
+                again.operands.push_back(one);
+                return Range{.low = depth.low + 1, .high = depth.high + 1};
+            }
+            return Range{.low = depth.low == highest ? highest : depth.low + 1, .high = ir::deepest_calls};
+        }
         case Op::random:
             // `random` gives a number from its first value to its second, or stops the program (D26).
             return Range{.low = operand(0).low, .high = operand(1).high};
@@ -1034,6 +1055,13 @@ std::optional<Affine> affine(const Function& function, ValueId id) {
     if (value.op == Op::constant_whole) {
         return Affine{.parameter = std::nullopt, .offset = value.immediate};
     }
+    if (value.op == Op::deeper) {
+        const auto inner = affine(function, value.operands.at(0));
+        if (inner && inner->offset < highest) {
+            return Affine{.parameter = inner->parameter, .offset = inner->offset + 1};
+        }
+        return std::nullopt;
+    }
     if (value.op == Op::add) {
         const auto inner = affine(function, value.operands.at(0));
         const Value& right = function.values.at(value.operands.at(1));
@@ -1043,6 +1071,36 @@ std::optional<Affine> affine(const Function& function, ValueId id) {
         }
     }
     return std::nullopt;
+}
+
+// Whether a call made first, `earlier`, does the work of `later`: the same values, made at least as deep, so if the
+// earlier one didn't go too deep, the later one wouldn't have either (D154). The depth is the last argument.
+bool repeats_call(const std::vector<Affine>& earlier, const std::vector<Affine>& later) {
+    if (earlier.size() != later.size() || earlier.empty()) {
+        return false;
+    }
+    const std::size_t depth = earlier.size() - 1;
+    for (std::size_t index = 0; index < depth; ++index) {
+        if (earlier.at(index) != later.at(index)) {
+            return false;
+        }
+    }
+    return earlier.at(depth).parameter == later.at(depth).parameter &&
+           earlier.at(depth).offset >= later.at(depth).offset;
+}
+
+// Whether the call `earlier` ran at least as deep as `later` would: then `later` couldn't go too deep where `earlier`
+// didn't, so merging them never changes where a program stops (D154).
+bool made_as_deep(const Function& function, ValueId earlier, ValueId later) {
+    const ValueId first = function.values.at(earlier).operands.back();
+    const ValueId second = function.values.at(later).operands.back();
+    if (first == second) {
+        return true;
+    }
+    const auto first_depth = affine(function, first);
+    const auto second_depth = affine(function, second);
+    return first_depth && second_depth && first_depth->parameter == second_depth->parameter &&
+           first_depth->offset >= second_depth->offset;
 }
 
 std::vector<std::pair<BlockId, ValueId>> self_calls(const Function& function, std::uint32_t self) {
@@ -1220,7 +1278,7 @@ void inline_into_itself(Module& module) {
                     continue;
                 }
                 for (std::size_t other = 0; other < calls.size(); ++other) {
-                    if (other != candidate && shapes.at(other) && *shapes.at(other) == substituted) {
+                    if (other != candidate && shapes.at(other) && repeats_call(substituted, *shapes.at(other))) {
                         repeats = true;
                         break;
                     }
@@ -1342,6 +1400,7 @@ void merge_repeated(Function& function, const Module& module) {
         case Op::parse_whole:
         case Op::failed:
         case Op::value_of:
+        case Op::deeper:
             return true;
         case Op::call:
             // The same values give the same result, and if the first call came back, so would this one.
@@ -1382,6 +1441,10 @@ void merge_repeated(Function& function, const Module& module) {
                 value.op == Op::checked_multiply || value.op == Op::equal || value.op == Op::not_equal) {
                 std::ranges::sort(operands);
             }
+            // A call's depth (D154) isn't part of what it gives back, so it's left out of the key, and checked below.
+            if (value.op == Op::call) {
+                operands.pop_back();
+            }
             Key key{value.op == Op::checked_add        ? Op::add
                     : value.op == Op::checked_subtract ? Op::subtract
                     : value.op == Op::checked_multiply ? Op::multiply
@@ -1389,8 +1452,12 @@ void merge_repeated(Function& function, const Module& module) {
                                                        : value.op,
                     value.kind, operands, value.immediate, value.op == Op::call ? value.callee : 0};
             if (const auto found = available.find(key); found != available.end()) {
-                // A plain calculation proved to fit is the same number as a checked one that passed.
-                replacements.replace(id, found->second);
+                if (value.op != Op::call || made_as_deep(function, found->second, id)) {
+                    // A plain calculation proved to fit is the same number as a checked one that passed.
+                    replacements.replace(id, found->second);
+                    continue;
+                }
+                kept.push_back(id);
                 continue;
             }
             available.emplace(key, id);
@@ -1475,14 +1542,14 @@ void recursion_into_loops(Function& function, std::uint32_t self) {
     if (tails.empty()) {
         return;
     }
-    // The body moves to a new loop block, whose parameters stand for the procedure's own.
+    // The body moves to a new loop block, whose parameters stand for the procedure's own. The hidden depth is one of
+    // them, so each pass still runs one call deeper, and stops where the recursion would (D154).
     const BlockId loop = function.add_block();
     Block moved = std::move(function.blocks.front());
     function.blocks.front() = Block{};
-    Block& body = function.blocks.at(loop);
-    body.instructions = std::move(moved.instructions);
-    body.end = moved.end;
-    for (const ValueId id : body.instructions) {
+    function.blocks.at(loop).instructions = std::move(moved.instructions);
+    function.blocks.at(loop).end = moved.end;
+    for (const ValueId id : function.blocks.at(loop).instructions) {
         function.values.at(id).block = loop;
     }
     Replacements replacements(function.values.size());

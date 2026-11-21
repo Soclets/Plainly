@@ -18,6 +18,11 @@ using BlockId = std::uint32_t;
 constexpr ValueId no_value = std::numeric_limits<ValueId>::max();
 constexpr BlockId no_block = std::numeric_limits<BlockId>::max();
 
+// How many calls may be in progress at once (D154). Every procedure takes the depth it runs at as a hidden last
+// parameter, so the limit is the same in both modes, whatever `final` inlines or turns into a loop, and far less than
+// the runtime's stack holds.
+constexpr std::int64_t deepest_calls = 1'000'000;
+
 enum class Kind : std::uint8_t { none, whole, boolean, text, whole_or_failure };
 
 enum class Op : std::uint8_t {
@@ -42,22 +47,24 @@ enum class Op : std::uint8_t {
     at_least,
     at_most,
     logical_not,
-    call,          // callee: index into Module::functions
-    show,          // text; immediate 1 leaves the line open (D6)
-    ask,           // text -> text (D20)
-    random,        // whole, whole -> whole (D26)
-    whole_to_text, // be.Text (D22)
-    join,          // & (D28)
-    parse_whole,   // be.Whole (D95): -> whole_or_failure
-    failed,        // whole_or_failure -> bool
-    value_of,      // whole_or_failure -> whole
-    retain,        // a second owner for a text (D130)
-    release,       // an owner of a text ends (D130)
-    choose,        // bool, a, b -> a when true, b when false
+    call,           // callee: index into Module::functions
+    show,           // text; immediate 1 leaves the line open (D6)
+    ask,            // text -> text (D20)
+    random,         // whole, whole -> whole (D26)
+    whole_to_text,  // be.Text (D22)
+    join,           // & (D28)
+    parse_whole,    // be.Whole (D95): -> whole_or_failure
+    failed,         // whole_or_failure -> bool
+    value_of,       // whole_or_failure -> whole
+    retain,         // a second owner for a text (D130)
+    release,        // an owner of a text ends (D130)
+    choose,         // bool, a, b -> a when true, b when false
+    value_or_crash, // whole_or_failure -> whole, or stops the program at its site with D152's `failed:` message
+    deeper,         // whole -> whole + 1: the depth a call runs at, stopping at its site past the deepest (D154)
 };
 
 // What a check reports when it fails at runtime: its place, shown as D54 lays out.
-enum class SiteKind : std::uint8_t { add, subtract, multiply, negate, memory, random_order };
+enum class SiteKind : std::uint8_t { add, subtract, multiply, negate, memory, random_order, crash, depth };
 
 struct Site {
     SiteKind kind = SiteKind::add;
@@ -66,6 +73,7 @@ struct Site {
     std::uint32_t column = 0;
     std::uint32_t length = 0;
     std::string source_line;
+    std::string detail; // a `?? crash`'s `what:`, or the procedure a call that goes too deep is inside
 };
 
 struct Value {
@@ -104,7 +112,7 @@ struct Function {
     std::string name; // the Unio name, as `fib`, or `main` for proc.main
     std::string symbol;
     bool is_main = false;
-    std::vector<Kind> parameter_kinds;
+    std::vector<Kind> parameter_kinds; // the last is the hidden depth (D154)
     Kind returns = Kind::none;
     std::vector<Value> values;
     std::vector<Block> blocks; // blocks[0] is the entry; its parameters are the function's

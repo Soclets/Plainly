@@ -70,18 +70,28 @@ running total can change which check fails (`MAX + (1 + -1)` fits, `(MAX + 1) + 
 `fib(44)` on Tankun's Mac, 2026-11-21, best of several runs, the number read from standard input as the C version reads
 it from its arguments, so nothing's known at compile time:
 
-| | time |
-|---|---|
-| Unio `final` | 2.1 to 2.3 ms |
-| gfortran 16.2 `-O3` | 2.8 ms |
-| clang `-O3` (C) | 965 to 999 ms |
-| clang `-O0` (C) | 1757 ms |
-| Unio `working` | 1946 to 2058 ms |
-| gfortran `-O0` | 2711 ms |
+| | fib(44) | fib(60) |
+|---|---|---|
+| Unio `final` | 2.1 ms before D154, 2.9 ms with it | 30.9 ms |
+| gfortran 16.2 `-O3` | 2.8 to 3.1 ms | 19.5 ms |
+| clang `-O3` (C) | 965 to 999 ms | |
+| clang `-O0` (C) | 1757 ms | |
+| Unio `working` | 1946 ms before D154, 2922 ms with it | |
+| gfortran `-O0` | 2711 ms | |
 
-Compiling hello world: 0.09 s in the sanitized debug build. Running an unchanged program again: 0.10 s, since the linked
-program is cached (`~/Library/Caches/unio/programs`); a new program's first launch costs about 0.3 s more, macOS
-checking it.
+At fib(44) a process's start dominates, so fib(60) shows the real cost: Unio `final` is about 1.5x gfortran `-O3`, the
+depth check (D154) being one compare and branch per call. Compiling hello world: 0.09 s in the sanitized debug build.
+Running an unchanged program again: 0.10 s, since the linked program is cached (`~/Library/Caches/unio/programs`); a new
+program's first launch costs about 0.3 s more, macOS checking it.
+
+## How calls going too deep is caught (D154)
+
+Every procedure takes the depth it runs at as a hidden last parameter; each call passes `deeper` of it, which stops the
+program past 1,000,000 calls (`ir::deepest_calls`) with D154's message, and `proc.main` runs on a thread with a 1 GiB
+stack, so the real stack never runs out first. Counting in Unio IR, not by the machine's stack, keeps the stop in the
+same place in both modes, whatever `final` inlines or turns into a loop: recursion into loops passes the depth along
+like any parameter, constants across procedures fold it (removing the check) for procedures only `proc.main` calls,
+and merging joins a repeated call only into one made at least as deep (`test_merging_keeps_depth`).
 
 ## Status
 
@@ -99,7 +109,7 @@ Also checked: `clang-tidy` clean; 66 of 69 small refusal programs and all 21 spa
 byte (the other 3 are refusals Ralph hasn't built, and Ralph's extra `NotDesignedYet` after `show_msg;`); 12 runtime
 programs match Ralph in both modes; 2,500 randomly broken programs never crash `unio check`.
 
-Not built, waiting on decisions: `?? crash` (D152 names the failure, and `be.Whole`'s failure has no name yet).
+Since the milestone: `?? crash` (D152, D156) and calls going too deep (D154) are built, both matching in both modes.
 
 What comes next is Tankun's call.
 
@@ -107,7 +117,9 @@ What comes next is Tankun's call.
 
 1. (Answered: Ralph's recursion crash is fixed; D150, D151, D152 and D153 decided.)
 2. Still provisional: `random` with `from:` above `to:` stops at runtime with `NotDesignedYet`, status 3.
-4. What `be.Whole`'s failure is called, for D152's `?? crash` message.
+4. (Answered by D156.)
+6. D154's depth is 1,000,000 calls here, the same in both modes; a test with a runaway recursion needs Ralph to stop at
+   the same number, since `when:` shows it.
 5. Standard chapter 10 says `run` compiles to a temporary file; `Unlo\n` runs the linked program from the cache.
 3. Wordings drafted, not decided: "this line isn't inside a procedure"; "there's no type named `X`"; "`not` works on
    a `Bool`, but this is a `Whole`"; "`and` joins two `Bool`s, but this is a `Whole`"; "this value isn't used"; "a

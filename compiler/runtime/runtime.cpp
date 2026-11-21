@@ -14,6 +14,7 @@
 #include <limits>
 #include <string_view>
 
+#include <pthread.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
 
@@ -30,13 +31,14 @@ struct Text {
 struct Site {
     const char* file;
     const char* source_line;
+    const char* detail; // a `?? crash`'s `what:`, or the procedure a call is inside
     std::uint32_t line;
     std::uint32_t column;
     std::uint32_t length;
     std::uint32_t kind;
 };
 
-enum class SiteKind : std::uint8_t { add, subtract, multiply, negate, memory, random_order };
+enum class SiteKind : std::uint8_t { add, subtract, multiply, negate, memory, random_order, crash, depth };
 
 const char* bytes(const Text* text) {
     // The bytes follow the header directly; the header is two 8-byte fields, so they're aligned for chars.
@@ -263,7 +265,36 @@ namespace std::inline __1 {
 
 extern "C" {
 
-void unio_main();
+// `proc.main`, with the depth it runs at: no calls in progress yet (D154).
+void unio_main(std::int64_t depth);
+
+// trace: D152, D156
+[[noreturn]] void unio_crash(const Site* site) {
+    static Buffer message;
+    heading(message, "failed", site);
+    unio::layout::append_label(message, "what", site->detail);
+    unio::layout::append_label(message, "why", "`?? crash` stops the program when the call before it fails.");
+    write_message(message);
+    std::_Exit(5);
+}
+
+// trace: D154
+[[noreturn]] void unio_too_deep(const Site* site, std::int64_t depth) {
+    static Buffer message;
+    heading(message, "check failed", site);
+    unio::layout::append_label(message, "what", "calls went too deep");
+    Buffer when;
+    unio::layout::append_number(when, depth);
+    when.append(" calls deep, inside `");
+    when.append(site->detail);
+    when.append("`");
+    unio::layout::append_label(message, "when", std::string_view(when.data(), when.size()));
+    unio::layout::append_label(message, "why",
+                               "every call still waiting for another needs a little memory, and the room for them is "
+                               "limited; a procedure that keeps calling itself without stopping fills it.");
+    write_message(message);
+    std::_Exit(4);
+}
 
 // trace: D6, D104
 void unio_show(const Text* text, std::int64_t same_line) {
@@ -464,6 +495,19 @@ std::int64_t unio_random(std::int64_t low, std::int64_t high, const Site* site) 
 
 } // extern "C"
 
+namespace {
+
+// trace: D154
+// The program runs on a thread with a stack large enough for the deepest calls the compiled code allows, so the
+// count's own message comes first, never a crash.
+void* run_program(void* /*unused*/) {
+    unio_main(0);
+    output.flush();
+    std::_Exit(0);
+}
+
+} // namespace
+
 int main() {
     // trace: D134
     std::uint64_t memory = 0;
@@ -472,7 +516,15 @@ int main() {
         memory = std::uint64_t{4} << 30U;
     }
     memory_cap = memory / 10 * 3;
-    unio_main();
-    output.flush();
+    pthread_attr_t attributes{};
+    pthread_attr_init(&attributes);
+    constexpr std::size_t stack = std::size_t{1} << 30U;
+    pthread_attr_setstacksize(&attributes, stack);
+    pthread_t thread{};
+    if (pthread_create(&thread, &attributes, run_program, nullptr) != 0) {
+        // Without the large stack, the program still runs; only very deep calls could crash.
+        run_program(nullptr);
+    }
+    pthread_join(thread, nullptr);
     return 0;
 }
