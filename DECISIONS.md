@@ -4655,3 +4655,20 @@ closing `return` that never runs, rarely comes up, since game loops usually live
 
 **Tankun's words.** Asked "Should every `while` count as able to end, whatever its condition?", the owner chose: "yea.
 New rule: design claude asks before msging"
+
+## D150. `unio compile` writes the program beside the source file, named after it
+
+2026-11-21.
+
+**Chosen.** `unio compile` writes the program it makes beside the source file, named after it without `.unio`:
+`unio compile games/guess.unio --final` makes `games/guess`, run as `./games/guess`.
+
+**Weighed.**
+- The folder the command is run from, as Go does. Where the program lands would depend on where you happened to be.
+- A separate `build/` folder, as Rust's Cargo uses. One more thing to learn and to find.
+
+**Why this won.** It's what a learner expects: compile `guess.unio`, get `guess`, right next to it. The compiler
+session built it this way meanwhile, since D91 didn't say.
+
+**Tankun's words.** "Why is Unio named Unio?", then, asked "Should `unio compile` write the program beside the source
+file, named after it without `.unio`?", the owner chose: "yea".
