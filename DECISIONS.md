@@ -5536,3 +5536,28 @@ does the same.
 problem is defaulting to Whole when there's no type. So, `.0` does look okay after all", then, asked "Should every
 number literal's type come from the point alone, with a point a `Float` and without one a `Whole`, everywhere?", the
 owner chose: "yea".
+
+## D181. `be.Text` shows a `Float` with no fraction with `.0`
+
+2026-11-21.
+
+**Chosen.** `be.Text` shows a `Float` with no fraction with `.0`, as `7.0`, so the text reads back as a `Float`
+(D180). D155's "shortest text that reads back as the same number" means the same number and the same type.
+
+```
+let $whole_speed: Float = 6.0 + 1.0;
+show_msg(be.Text($whole_speed));             // 7.0
+show_msg.fmt("{$whole_speed, places: 0}");   // 7, for a player
+```
+
+**Weighed.**
+- `7`, as JavaScript prints it. JavaScript has one number type, so it has nothing to tell apart; in Unio, `7` is a
+  `Whole`.
+
+**Why this won.** The text is how that `Float` is written in a program, so it tells a programmer what kind of number
+they're looking at, as the `~` does. Python and Rust print `7.0` too. A player sees `places:` (D175).
+
+How a `Float` too big or too small to write out in full shows, like 10³⁰⁰, isn't decided yet.
+
+**Tankun's words.** Asked "Should `be.Text` show a `Float` with no fraction as `7.0`, so it reads back as a `Float`?",
+the owner chose: "yea".

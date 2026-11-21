@@ -1,0 +1,1 @@
+be.Text shows a Float with no fraction with .0, and places: 0 shows it without. D175, D180, D181; standard ch. 7.
