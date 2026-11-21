@@ -159,9 +159,12 @@ Empty text is `""` (D76).
 let $speed: Float = ~0.1;
 ```
 
+`Whole` and `Float` don't mix in one calculation: `$lives * $speed` is refused, and `be.Float($lives) * $speed` says
+so (D162).
+
 `Decimal` is kept for an exact decimal type, if Unio adds one; it would never need `~` (D155, D157).
 
-**Not decided:** `Float`'s maths and conversions; NaN and infinities beyond D46's check; a rounded, `~`-free way to
+**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; a rounded, `~`-free way to
 show a `Float` to a player.
 
 ## Lists

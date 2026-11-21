@@ -4970,3 +4970,20 @@ that looks like it does something and does nothing. The compiler session drafted
 **Tankun's words.** "?", "Just say bool?", "What is the 5th err msg about", ""`$score + 1` works out a `Whole`, but
 nothing uses it" What about "`$score + 1` has no place to be in"? Or something", "Nah, it's fine. I was just asking",
 then, asked "Do they all read right, including refusing a value-only line?", the owner chose: "approved".
+
+## D162. `Whole` and `Float` don't mix without `be.Float`
+
+2026-11-21.
+
+**Chosen.** A calculation can't mix a `Whole` and a `Float`: `$lives * $speed` is refused, and the `Whole` is
+converted explicitly, as in `be.Float($lives) * $speed`, the way a number joins text only through `be.Text` (D28).
+
+**Weighed.**
+- Mixing them freely, the `Whole` turned into a `Float`, as Python does. Quiet, but the moment an exact number turns
+  approximate would be invisible, and a count could quietly lose its fraction the other way round.
+
+**Why this won.** It follows Unio's existing rule for text, keeps the `~` honest by making the step from exact to
+approximate visible, and catches real bugs, for the cost of a few `be.Float(...)`s, as in Rust.
+
+**Tankun's words.** Asked "Should mixing `Whole` and `Float` need an explicit `be.Float`?", the owner chose: "yea. Our
+floats aren't stable like Cyborg's, right?"
