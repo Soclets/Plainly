@@ -46,7 +46,8 @@ public:
             for (const Parameter& parameter : procedure->parameters) {
                 function.parameter_kinds.push_back(kind_of(parameter.type.type));
             }
-            function.returns = procedure->returns ? kind_of(procedure->returns->type) : Kind::none;
+            function.returns = procedure->returns.transform([](const TypeName& type) { return kind_of(type.type); })
+                                   .value_or(Kind::none);
             indices_.emplace(procedure.get(), static_cast<std::uint32_t>(module_.functions.size()));
             module_.functions.push_back(std::move(function));
         }
@@ -136,7 +137,7 @@ private:
     void jump(BlockId to, std::vector<ValueId> arguments = {}) {
         ir::Terminator& end = function_->blocks.at(current_).end;
         end.kind = ir::TerminatorKind::jump;
-        end.then_target = ir::Target{to, std::move(arguments)};
+        end.then_target = ir::Target{.block = to, .arguments = std::move(arguments)};
         predecessors_.at(to).push_back(current_);
         reachable_ = false;
     }
@@ -145,8 +146,8 @@ private:
         ir::Terminator& end = function_->blocks.at(current_).end;
         end.kind = ir::TerminatorKind::branch;
         end.condition = condition;
-        end.then_target = ir::Target{when_true, {}};
-        end.else_target = ir::Target{when_false, {}};
+        end.then_target = ir::Target{.block = when_true, .arguments = {}};
+        end.else_target = ir::Target{.block = when_false, .arguments = {}};
         predecessors_.at(when_true).push_back(current_);
         predecessors_.at(when_false).push_back(current_);
         reachable_ = false;
@@ -365,7 +366,7 @@ private:
         branch(condition.value, body, exit);
         seal(body);
         start(body);
-        loops_.push_back(Loop{exit, scopes_.size()});
+        loops_.push_back(Loop{.exit = exit, .scope_depth = scopes_.size()});
         lower_body(statement.body);
         loops_.pop_back();
         if (reachable_) {
@@ -381,28 +382,28 @@ private:
     Lowered lower_expression(const Expression& expression) {
         switch (expression.kind) {
         case ExpressionKind::whole:
-            return {emit(Op::constant_whole, Kind::whole, {}, expression.whole), false};
+            return {.value = emit(Op::constant_whole, Kind::whole, {}, expression.whole), .owned = false};
         case ExpressionKind::boolean:
-            return {emit(Op::constant_bool, Kind::boolean, {}, expression.boolean ? 1 : 0), false};
+            return {.value = emit(Op::constant_bool, Kind::boolean, {}, expression.boolean ? 1 : 0), .owned = false};
         case ExpressionKind::text:
-            return {text_constant(expression.text), false};
+            return {.value = text_constant(expression.text), .owned = false};
         case ExpressionKind::variable:
-            return {read_variable(expression.variable->index, current_), false};
+            return {.value = read_variable(expression.variable->index, current_), .owned = false};
         case ExpressionKind::group:
             return lower_expression(*expression.left);
         case ExpressionKind::negate: {
             // trace: D27
             if (expression.left->kind == ExpressionKind::whole) {
-                return {emit(Op::constant_whole, Kind::whole, {}, -expression.left->whole), false};
+                return {.value = emit(Op::constant_whole, Kind::whole, {}, -expression.left->whole), .owned = false};
             }
             const Lowered operand = lower_expression(*expression.left);
-            return {
-                emit(Op::checked_negate, Kind::whole, {operand.value}, 0, site(ir::SiteKind::negate, expression.place)),
-                false};
+            return {.value = emit(Op::checked_negate, Kind::whole, {operand.value}, 0,
+                                  site(ir::SiteKind::negate, expression.place)),
+                    .owned = false};
         }
         case ExpressionKind::logical_not: {
             const Lowered operand = lower_expression(*expression.left);
-            return {emit(Op::logical_not, Kind::boolean, {operand.value}), false};
+            return {.value = emit(Op::logical_not, Kind::boolean, {operand.value}), .owned = false};
         }
         case ExpressionKind::binary:
             return lower_binary(expression);
@@ -415,7 +416,7 @@ private:
         case ExpressionKind::error:
             break;
         }
-        return {emit(Op::constant_whole, Kind::whole, {}, 0), false};
+        return {.value = emit(Op::constant_whole, Kind::whole, {}, 0), .owned = false};
     }
 
     // trace: D34
@@ -438,7 +439,7 @@ private:
         jump(join, {right.value});
         seal(join);
         start(join);
-        return {result, false};
+        return {.value = result, .owned = false};
     }
 
     Lowered lower_binary(const Expression& expression) {
@@ -449,23 +450,23 @@ private:
         const Lowered right = lower_expression(*expression.right);
         switch (expression.op) {
         case BinaryOperator::add:
-            return {emit(Op::checked_add, Kind::whole, {left.value, right.value}, 0,
-                         site(ir::SiteKind::add, expression.place)),
-                    false};
+            return {.value = emit(Op::checked_add, Kind::whole, {left.value, right.value}, 0,
+                                  site(ir::SiteKind::add, expression.place)),
+                    .owned = false};
         case BinaryOperator::subtract:
-            return {emit(Op::checked_subtract, Kind::whole, {left.value, right.value}, 0,
-                         site(ir::SiteKind::subtract, expression.place)),
-                    false};
+            return {.value = emit(Op::checked_subtract, Kind::whole, {left.value, right.value}, 0,
+                                  site(ir::SiteKind::subtract, expression.place)),
+                    .owned = false};
         case BinaryOperator::multiply:
-            return {emit(Op::checked_multiply, Kind::whole, {left.value, right.value}, 0,
-                         site(ir::SiteKind::multiply, expression.place)),
-                    false};
+            return {.value = emit(Op::checked_multiply, Kind::whole, {left.value, right.value}, 0,
+                                  site(ir::SiteKind::multiply, expression.place)),
+                    .owned = false};
         case BinaryOperator::join: {
             const ValueId joined =
                 emit(Op::join, Kind::text, {left.value, right.value}, 0, site(ir::SiteKind::memory, expression.place));
             release_if_owned(left);
             release_if_owned(right);
-            return {joined, true};
+            return {.value = joined, .owned = true};
         }
         default:
             break;
@@ -491,7 +492,7 @@ private:
             op = Op::at_most;
             break;
         }
-        return {emit(op, Kind::boolean, {left.value, right.value}), false};
+        return {.value = emit(op, Kind::boolean, {left.value, right.value}), .owned = false};
     }
 
     // `.fmt` text: its plain pieces and its variables, each number made text, joined in order (D29).
@@ -501,13 +502,13 @@ private:
         for (const Expression::Piece& piece : expression.pieces) {
             Lowered part;
             if (piece.variable == nullptr) {
-                part = {text_constant(piece.text), false};
+                part = {.value = text_constant(piece.text), .owned = false};
             } else if (piece.variable->type == Type::whole) {
-                part = {emit(Op::whole_to_text, Kind::text, {read_variable(piece.variable->index, current_)}, 0,
-                             site(ir::SiteKind::memory, place)),
-                        true};
+                part = {.value = emit(Op::whole_to_text, Kind::text, {read_variable(piece.variable->index, current_)},
+                                      0, site(ir::SiteKind::memory, place)),
+                        .owned = true};
             } else {
-                part = {read_variable(piece.variable->index, current_), false};
+                part = {.value = read_variable(piece.variable->index, current_), .owned = false};
             }
             if (result.value == ir::no_value) {
                 result = part;
@@ -517,7 +518,7 @@ private:
                 emit(Op::join, Kind::text, {result.value, part.value}, 0, site(ir::SiteKind::memory, place));
             release_if_owned(result);
             release_if_owned(part);
-            result = {joined, true};
+            result = {.value = joined, .owned = true};
         }
         return result;
     }
@@ -538,27 +539,27 @@ private:
             return lower_format(*format);
         }
         if (name == "be.Text") {
-            return {
-                emit(Op::whole_to_text, Kind::text, {arguments.front().value}, 0, site(ir::SiteKind::memory, place)),
-                true};
+            return {.value = emit(Op::whole_to_text, Kind::text, {arguments.front().value}, 0,
+                                  site(ir::SiteKind::memory, place)),
+                    .owned = true};
         }
         if (name == "ask") {
             const ValueId answer =
                 emit(Op::ask, Kind::text, {arguments.front().value}, 0, site(ir::SiteKind::memory, place));
-            return {answer, true};
+            return {.value = answer, .owned = true};
         }
         if (name == "random") {
-            return {emit(Op::random, Kind::whole, {arguments.at(0).value, arguments.at(1).value}, 0,
-                         site(ir::SiteKind::random_order, place)),
-                    false};
+            return {.value = emit(Op::random, Kind::whole, {arguments.at(0).value, arguments.at(1).value}, 0,
+                                  site(ir::SiteKind::random_order, place)),
+                    .owned = false};
         }
         if (name == "be.Whole") {
-            return {emit(Op::parse_whole, Kind::whole_or_failure, {arguments.front().value}), false};
+            return {.value = emit(Op::parse_whole, Kind::whole_or_failure, {arguments.front().value}), .owned = false};
         }
         return {};
     }
 
-    Lowered finish_call(const Procedure* procedure, const std::string& builtin, std::vector<Lowered> arguments,
+    Lowered finish_call(const Procedure* procedure, const std::string& builtin, const std::vector<Lowered>& arguments,
                         const Expression* format, Place place) {
         Lowered result;
         if (procedure != nullptr) {
@@ -574,7 +575,7 @@ private:
             value.kind = returns;
             value.operands = std::move(operands);
             value.callee = callee;
-            result = {function_->append(current_, std::move(value)), returns == Kind::text};
+            result = {.value = function_->append(current_, std::move(value)), .owned = returns == Kind::text};
         } else {
             result = call_builtin(builtin, arguments, format, place);
         }
@@ -591,7 +592,7 @@ private:
                 arguments.push_back(lower_expression(*argument.value));
             }
         }
-        return finish_call(expression.procedure, expression.builtin, std::move(arguments),
+        return finish_call(expression.procedure, expression.builtin, arguments,
                            expression.pieces.empty() ? nullptr : &expression, expression.place);
     }
 
@@ -603,7 +604,7 @@ private:
             for (const Argument& argument : step.arguments) {
                 arguments.push_back(lower_expression(*argument.value));
             }
-            slid = finish_call(step.procedure, step.builtin, std::move(arguments), nullptr, step.place);
+            slid = finish_call(step.procedure, step.builtin, arguments, nullptr, step.place);
         }
         return slid;
     }
@@ -627,7 +628,7 @@ private:
         jump(join, {instead.value});
         seal(join);
         start(join);
-        return {result, false};
+        return {.value = result, .owned = false};
     }
 
     struct Loop {

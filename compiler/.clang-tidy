@@ -6,6 +6,10 @@
 #   used only at those edges.
 # - cppcoreguidelines-pro-type-vararg: the runtime's one printf-style call, snprintf for decimal numbers.
 # - bugprone-easily-swappable-parameters: fires on every pair of same-typed parameters, like (line, column).
+# - cppcoreguidelines-pro-bounds-avoid-unchecked-container-access: libc++'s hardened mode (rule 3) already checks
+#   every `[]`, stopping at a bad index, which is what `.at()` would add.
+# - cppcoreguidelines-avoid-const-or-ref-data-members: the checker, parser and code generator are short-lived objects
+#   that read the program through references and are never copied or assigned.
 Checks: >
   -*,
   bugprone-*,
@@ -17,6 +21,8 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-type-vararg,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -cppcoreguidelines-avoid-const-or-ref-data-members
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(source|runtime|unit_tests|tools)/.*'

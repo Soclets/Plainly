@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <map>
+#include <ranges>
 #include <set>
 #include <string_view>
 
@@ -96,7 +97,8 @@ private:
 
     [[nodiscard]] bool one_line(Place place) const {
         const auto start = sources_.line_column(place);
-        const auto end = sources_.line_column(Place{place.file, place.end() == 0 ? 0 : place.end() - 1, 0});
+        const auto end = sources_.line_column(
+            Place{.file = place.file, .offset = place.end() == 0 ? 0 : place.end() - 1, .length = 0});
         return start.line == end.line;
     }
 
@@ -109,7 +111,7 @@ private:
         Message message;
         message.place = place;
         message.what = std::move(what);
-        message.because = Because{std::move(because), cause};
+        message.because = Because{.sentence = std::move(because), .place = cause};
         message.why = std::move(why);
         messages_.add(std::move(message));
     }
@@ -160,7 +162,7 @@ private:
         }
         if (main == nullptr && sources_.size() > 0) {
             Message message;
-            message.place = Place{0, 0, 1};
+            message.place = Place{.file = 0, .offset = 0, .length = 1};
             message.what = "this program has no `proc.main`";
             message.why = "a program starts with `proc.main`.";
             messages_.add(std::move(message));
@@ -303,8 +305,8 @@ private:
     }
 
     Variable* find(const std::string& name) {
-        for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
-            if (const auto found = scope->names.find(name); found != scope->names.end()) {
+        for (auto& scope : std::views::reverse(scopes_)) {
+            if (const auto found = scope.names.find(name); found != scope.names.end()) {
                 return found->second;
             }
         }
@@ -788,7 +790,7 @@ private:
             }
             Signature signature;
             signature.name = std::string("show_msg") + (formats ? ".fmt" : "") + (same_line ? ".same_line" : "");
-            signature.parameters = {ParameterInfo{Type::text, std::nullopt}};
+            signature.parameters = {ParameterInfo{.type = Type::text, .label = std::nullopt}};
             signature.formats = formats;
             return signature;
         }
@@ -801,11 +803,12 @@ private:
             signature.name = word;
             if (word == "ask") {
                 // trace: D20
-                signature.parameters = {ParameterInfo{Type::text, std::nullopt}};
+                signature.parameters = {ParameterInfo{.type = Type::text, .label = std::nullopt}};
                 signature.returns = Type::text;
             } else {
                 // trace: D24, D26
-                signature.parameters = {ParameterInfo{Type::whole, "from"}, ParameterInfo{Type::whole, "to"}};
+                signature.parameters = {ParameterInfo{.type = Type::whole, .label = "from"},
+                                        ParameterInfo{.type = Type::whole, .label = "to"}};
                 signature.returns = Type::whole;
             }
             return signature;
@@ -835,7 +838,7 @@ private:
                 }
                 // trace: D22, D95
                 signature.name = base;
-                signature.parameters = {ParameterInfo{Type::text, std::nullopt}};
+                signature.parameters = {ParameterInfo{.type = Type::text, .label = std::nullopt}};
                 signature.returns = Type::whole;
                 signature.can_fail = true;
                 return signature;
@@ -851,7 +854,8 @@ private:
             }
             signature.name = rest.empty() ? base : base + ".fmt";
             signature.formats = !rest.empty();
-            signature.parameters = {ParameterInfo{rest.empty() ? Type::unknown : Type::text, std::nullopt}};
+            signature.parameters = {
+                ParameterInfo{.type = rest.empty() ? Type::unknown : Type::text, .label = std::nullopt}};
             signature.returns = Type::text;
             return signature;
         }
@@ -871,7 +875,7 @@ private:
         signature.procedure = &procedure;
         signature.returns = procedure.returns ? procedure.returns->type : Type::nothing;
         for (const Parameter& parameter : procedure.parameters) {
-            signature.parameters.push_back(ParameterInfo{parameter.type.type, parameter.label});
+            signature.parameters.push_back(ParameterInfo{.type = parameter.type.type, .label = parameter.label});
         }
         return signature;
     }
@@ -919,8 +923,9 @@ private:
                 fix(argument.place, 0, *parameter.label + ": ", "every call writes the labels its procedure chose.");
                 fine = false;
             } else if (!parameter.label && argument.label) {
-                const Place label{argument.label_place.file, argument.label_place.offset,
-                                  argument.value->place.offset - argument.label_place.offset};
+                const Place label{.file = argument.label_place.file,
+                                  .offset = argument.label_place.offset,
+                                  .length = argument.value->place.offset - argument.label_place.offset};
                 fix(label, label.length, "", "a call writes only the labels its procedure chose.");
                 fine = false;
             } else if (parameter.label && argument.label && *parameter.label != *argument.label) {
@@ -1041,28 +1046,31 @@ private:
             }
             const std::size_t close = raw.find('}', index + 1);
             if (close == std::string_view::npos || close >= raw.size() - 1) {
-                messages_.not_designed_yet(Place{literal.file, literal.offset + static_cast<std::uint32_t>(index), 1},
+                messages_.not_designed_yet(Place{.file = literal.file,
+                                                 .offset = literal.offset + static_cast<std::uint32_t>(index),
+                                                 .length = 1},
                                            "a `{` with no `}` after it in `.fmt` text isn't decided yet");
                 expression.type = Type::unknown;
                 return;
             }
             const std::string_view inside = raw.substr(index + 1, close - index - 1);
-            const Place inside_place{literal.file, literal.offset + static_cast<std::uint32_t>(index + 1),
-                                     static_cast<std::uint32_t>(inside.size())};
+            const Place inside_place{.file = literal.file,
+                                     .offset = literal.offset + static_cast<std::uint32_t>(index + 1),
+                                     .length = static_cast<std::uint32_t>(inside.size())};
             const Variable* variable = format_variable(inside, inside_place, expression);
             if (variable == nullptr) {
                 expression.type = Type::unknown;
                 return;
             }
             if (!plain.empty()) {
-                expression.pieces.push_back(Expression::Piece{plain, nullptr});
+                expression.pieces.push_back(Expression::Piece{.text = plain, .variable = nullptr});
                 plain.clear();
             }
-            expression.pieces.push_back(Expression::Piece{"", variable});
+            expression.pieces.push_back(Expression::Piece{.text = "", .variable = variable});
             index = close + 1;
         }
         if (!plain.empty() || expression.pieces.empty()) {
-            expression.pieces.push_back(Expression::Piece{plain, nullptr});
+            expression.pieces.push_back(Expression::Piece{.text = plain, .variable = nullptr});
         }
         expression.builtin = signature.name;
     }
@@ -1135,7 +1143,7 @@ private:
         }
         const std::size_t from = skip_first ? 1 : 0;
         if (call.arguments.size() > from) {
-            out += "(";
+            out += '(';
             for (std::size_t index = from; index < call.arguments.size(); ++index) {
                 if (index > from) {
                     out += ", ";
@@ -1146,7 +1154,7 @@ private:
                 }
                 out += print(*argument.value);
             }
-            out += ")";
+            out += ')';
         }
         return out;
     }
@@ -1204,17 +1212,17 @@ private:
                     out += "." + narrowing.name;
                 }
                 if (!step.arguments.empty()) {
-                    out += "(";
+                    out += '(';
                     for (std::size_t index = 0; index < step.arguments.size(); ++index) {
                         if (index > 0) {
                             out += ", ";
                         }
-                        if (step.arguments.at(index).label) {
-                            out += *step.arguments.at(index).label + ": ";
+                        if (const auto& label = step.arguments.at(index).label) {
+                            out += *label + ": ";
                         }
                         out += print(*step.arguments.at(index).value);
                     }
-                    out += ")";
+                    out += ')';
                 }
             }
             fix(expression.place, expression.place.length, out,

@@ -23,7 +23,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-extern char** environ;
+extern char** environ; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables): POSIX defines it
 
 namespace unio {
 
@@ -186,7 +186,7 @@ int run_oracle(const std::string& file) {
 
 unsigned thread_count() {
     if (const char* threads = std::getenv("UNIO_THREADS")) {
-        return static_cast<unsigned>(std::max(1, std::atoi(threads)));
+        return static_cast<unsigned>(std::clamp(std::strtol(threads, nullptr, 10), 1L, 1024L));
     }
     return 0;
 }
@@ -236,11 +236,12 @@ int drive(std::span<char*> arguments) {
     }
 
     ir::Module module = lower(sources, program);
-    if (*command->mode == Mode::final) {
+    const Mode mode = command->mode.value_or(Mode::working);
+    if (mode == Mode::final) {
         optimize(module);
     }
     BuildSettings settings;
-    settings.mode = *command->mode;
+    settings.mode = mode;
     settings.threads = thread_count();
     if (command->name == "compile") {
         llvm::SmallString<256> output(command->file);
@@ -257,11 +258,12 @@ int drive(std::span<char*> arguments) {
     }
     settings.output = std::string(temporary);
     if (const auto built = build(module, settings); !built) {
-        (void)llvm::sys::fs::remove(temporary);
+        // A leftover temporary file is harmless, so failing to remove it isn't reported.
+        [[maybe_unused]] const std::error_code ignored = llvm::sys::fs::remove(temporary);
         return internal_error(built.error());
     }
     const int status = run_program(settings.output);
-    (void)llvm::sys::fs::remove(temporary);
+    [[maybe_unused]] const std::error_code left_over = llvm::sys::fs::remove(temporary);
     return status;
 }
 

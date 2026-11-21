@@ -13,8 +13,11 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <fstream>
 #include <functional>
+#include <print>
 #include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,12 +27,12 @@ namespace {
 using unio::ir::Op;
 using unio::ir::print;
 
-int failures = 0;
+int failures = 0; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables): counted across every test
 
 void expect(bool holds, const std::string& what, const std::string& context = "") {
     if (!holds) {
         ++failures;
-        std::fprintf(stderr, "FAIL: %s\n%s\n", what.c_str(), context.c_str());
+        std::println(stderr, "FAIL: {}\n{}", what, context);
     }
 }
 
@@ -43,7 +46,7 @@ unio::ir::Module compile(const std::string& text) {
     unio::parse(sources, 0, lexed, program, messages);
     unio::check(sources, program, messages);
     if (!messages.empty()) {
-        std::fprintf(stderr, "the test's program was refused:\n%s", messages.render(sources).c_str());
+        std::print(stderr, "the test's program was refused:\n{}", messages.render(sources));
         ++failures;
         return {};
     }
@@ -400,22 +403,19 @@ void test_recursion_into_loops() {
 
 // `unit_tests --print FILE [--final]` prints a program's Unio IR, for working on the compiler.
 int print_file(const char* path, bool final) {
-    std::FILE* file = std::fopen(path, "rb");
-    if (file == nullptr) {
-        std::fprintf(stderr, "can't read %s\n", path);
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        std::println(stderr, "can't read {}", path);
         return 2;
     }
-    std::string text;
-    std::array<char, 4096> buffer{};
-    for (std::size_t count = 0; (count = std::fread(buffer.data(), 1, buffer.size(), file)) > 0;) {
-        text.append(buffer.data(), count);
-    }
-    std::fclose(file);
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    const std::string text = contents.str();
     auto module = compile(text);
     if (final) {
         unio::optimize(module);
     }
-    std::printf("%s", unio::ir::print(module).c_str());
+    std::print("{}", unio::ir::print(module));
     return failures > 0 ? 1 : 0;
 }
 
@@ -435,9 +435,9 @@ int main(int argc, char** argv) {
         test();
     }
     if (failures > 0) {
-        std::fprintf(stderr, "%d unit test checks failed\n", failures);
+        std::println(stderr, "{} unit test checks failed", failures);
         return 1;
     }
-    std::printf("unit tests passed\n");
+    std::println("unit tests passed");
     return 0;
 }

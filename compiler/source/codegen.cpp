@@ -59,6 +59,7 @@ private:
             return existing;
         }
         std::vector<llvm::Type*> parameters;
+        parameters.reserve(function.parameter_kinds.size());
         for (const Kind kind : function.parameter_kinds) {
             parameters.push_back(type_of(kind));
         }
@@ -69,7 +70,7 @@ private:
         return declared;
     }
 
-    llvm::FunctionCallee runtime(const char* name, llvm::Type* returns, std::vector<llvm::Type*> parameters,
+    llvm::FunctionCallee runtime(const char* name, llvm::Type* returns, const std::vector<llvm::Type*>& parameters,
                                  bool cold_stop = false) {
         auto* type = llvm::FunctionType::get(returns, parameters, false);
         llvm::FunctionCallee callee = module_->getOrInsertFunction(name, type);
@@ -286,6 +287,7 @@ private:
         case Op::call: {
             llvm::Function* callee = declare(unio_.functions.at(value.callee));
             std::vector<llvm::Value*> arguments;
+            arguments.reserve(value.operands.size());
             for (std::size_t index = 0; index < value.operands.size(); ++index) {
                 arguments.push_back(operand(index));
             }

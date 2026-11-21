@@ -12,7 +12,7 @@ namespace unio {
 
 Place span(Place first, Place last) {
     const std::uint32_t end = std::max(first.end(), last.end());
-    return Place{first.file, first.offset, end - first.offset};
+    return Place{.file = first.file, .offset = first.offset, .length = end - first.offset};
 }
 
 namespace {
@@ -77,7 +77,7 @@ std::expected<std::uint32_t, std::string> Sources::read(const std::string& path,
 }
 
 std::uint32_t Sources::add(std::string name, std::string text) {
-    SourceFile file{std::move(name), std::move(text), {0}};
+    SourceFile file{.name = std::move(name), .text = std::move(text), .line_starts = {0}};
     for (std::size_t index = 0; index < file.text.size(); ++index) {
         if (file.text[index] == '\n') {
             file.line_starts.push_back(static_cast<std::uint32_t>(index + 1));
@@ -89,10 +89,10 @@ std::uint32_t Sources::add(std::string name, std::string text) {
 
 LineColumn Sources::line_column(Place place) const {
     const SourceFile& source = files_.at(place.file);
-    const auto after = std::upper_bound(source.line_starts.begin(), source.line_starts.end(), place.offset);
+    const auto after = std::ranges::upper_bound(source.line_starts, place.offset);
     const auto line = static_cast<std::uint32_t>(after - source.line_starts.begin());
     const std::uint32_t start = source.line_starts.at(line - 1);
-    return LineColumn{line, place.offset - start + 1};
+    return LineColumn{.line = line, .column = place.offset - start + 1};
 }
 
 std::uint32_t Sources::line_count(std::uint32_t file) const {

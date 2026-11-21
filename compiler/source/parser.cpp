@@ -69,7 +69,7 @@ bool is_arithmetic(BinaryOperator op) {
 namespace {
 
 void print_arguments(std::string& out, const std::vector<Argument>& arguments) {
-    out += "(";
+    out += '(';
     bool first = true;
     for (const Argument& argument : arguments) {
         if (!first) {
@@ -81,7 +81,7 @@ void print_arguments(std::string& out, const std::vector<Argument>& arguments) {
         }
         out += print(*argument.value);
     }
-    out += ")";
+    out += ')';
 }
 
 void print_word(std::string& out, const std::string& word, const std::vector<Narrowing>& narrowings) {
@@ -99,7 +99,7 @@ std::string quote_text(const std::string& text) {
         }
         out.push_back(character);
     }
-    out += "\"";
+    out += '"';
     return out;
 }
 
@@ -299,7 +299,8 @@ private:
         const auto indentation = static_cast<std::uint32_t>(first.place.offset - start);
         const std::string text = line_text(line);
         Message message;
-        message.place = Place{file_, static_cast<std::uint32_t>(start), indentation == 0 ? 1U : indentation};
+        message.place = Place{
+            .file = file_, .offset = static_cast<std::uint32_t>(start), .length = indentation == 0 ? 1U : indentation};
         message.fix = std::string(expected, ' ') + text.substr(indentation);
         message.why = "each level of indentation is 4 spaces, and tabs aren't used.";
         messages_.add(std::move(message));
@@ -322,7 +323,8 @@ private:
             if (run_end > line) {
                 const std::uint32_t extra = run_end - line;
                 Message message;
-                message.place = Place{file_, static_cast<std::uint32_t>(line_start(line + 1)), 0};
+                message.place =
+                    Place{.file = file_, .offset = static_cast<std::uint32_t>(line_start(line + 1)), .length = 0};
                 message.what = std::to_string(extra) + " extra blank line" + (extra == 1 ? "" : "s") +
                                ", after the one on line " + std::to_string(line);
                 message.why = "one blank line is enough to separate the parts of a program.";
@@ -350,8 +352,9 @@ private:
             const std::string text = line_text(comment);
             const std::size_t content = text.find_first_not_of(" \t");
             Message message;
-            message.place = Place{file_, static_cast<std::uint32_t>(line_start(comment)),
-                                  content == 0 ? 1U : static_cast<std::uint32_t>(content)};
+            message.place = Place{.file = file_,
+                                  .offset = static_cast<std::uint32_t>(line_start(comment)),
+                                  .length = content == 0 ? 1U : static_cast<std::uint32_t>(content)};
             message.fix = std::string(static_cast<std::size_t>(expected), ' ') + text.substr(content);
             message.why = "each level of indentation is 4 spaces, and tabs aren't used.";
             messages_.add(std::move(message));
@@ -364,7 +367,7 @@ private:
     void expected_semicolon() {
         const Token& last = previous();
         if (peek().first_on_line || at_end()) {
-            const Place after{file_, last.place.end(), 1};
+            const Place after{.file = file_, .offset = last.place.end(), .length = 1};
             messages_.fix(after, replaced_line(after, 0, ";"), "every statement ends with `;`.");
             return;
         }
@@ -379,10 +382,10 @@ private:
     void expected_here(std::string_view wanted) {
         Message message;
         if (at_end()) {
-            message.place = Place{file_, previous().place.end(), 1};
+            message.place = Place{.file = file_, .offset = previous().place.end(), .length = 1};
             message.what = "the file ends where " + std::string(wanted) + " should be";
         } else if (peek().first_on_line) {
-            message.place = Place{file_, previous().place.end(), 1};
+            message.place = Place{.file = file_, .offset = previous().place.end(), .length = 1};
             message.what = "the line ends where " + std::string(wanted) + " should be";
         } else {
             message.place = peek().place;
@@ -524,7 +527,7 @@ private:
                 advance();
             }
         } else {
-            const Place after{file_, previous().place.end(), 1};
+            const Place after{.file = file_, .offset = previous().place.end(), .length = 1};
             messages_.fix(after, replaced_line(after, 0, ":"), "a block's opening line ends with `:`.");
         }
         if (on_line()) {
@@ -626,10 +629,11 @@ private:
         const std::string closer = procedure.is_main ? std::string("end proc.main") : "end proc " + procedure.name;
         if (at_end()) {
             Message message;
-            message.place = Place{file_, previous().place.end(), 1};
+            message.place = Place{.file = file_, .offset = previous().place.end(), .length = 1};
             const std::uint32_t last_line = previous().line;
-            message.place = Place{file_, static_cast<std::uint32_t>(line_start(last_line)),
-                                  static_cast<std::uint32_t>(line_text(last_line).size())};
+            message.place = Place{.file = file_,
+                                  .offset = static_cast<std::uint32_t>(line_start(last_line)),
+                                  .length = static_cast<std::uint32_t>(line_text(last_line).size())};
             message.what = "the file ends before `" + closer + "`";
             message.why = "every block ends with `end` and what it closes.";
             messages_.add(std::move(message));
@@ -662,11 +666,14 @@ private:
             return;
         }
         if (written == closer + ";") {
-            const Place semicolon{file_, static_cast<std::uint32_t>(start + content_end - 1), 1};
+            const Place semicolon{
+                .file = file_, .offset = static_cast<std::uint32_t>(start + content_end - 1), .length = 1};
             messages_.fix(semicolon, replaced_line(semicolon, 1, ""), "a closer stands alone, with no `;`.");
             return;
         }
-        const Place place{file_, static_cast<std::uint32_t>(start + from), static_cast<std::uint32_t>(written.size())};
+        const Place place{.file = file_,
+                          .offset = static_cast<std::uint32_t>(start + from),
+                          .length = static_cast<std::uint32_t>(written.size())};
         messages_.fix(place, replaced_line(place, place.length, closer), "a closer is `end` and what it closes.");
     }
 
@@ -738,7 +745,11 @@ private:
                 return;
             }
             const Token& label = advance();
-            labels_.push_back(LabelEntry{procedure, name.text, name.place, label.text, label.place});
+            labels_.push_back(LabelEntry{.procedure = procedure,
+                                         .parameter = name.text,
+                                         .parameter_place = name.place,
+                                         .label = label.text,
+                                         .label_place = label.place});
             if (is(TokenKind::comma) && on_line()) {
                 advance();
                 continue;
@@ -753,6 +764,8 @@ private:
     }
 
 public:
+    [[nodiscard]] const auto& labels() const { return labels_; }
+
     struct LabelEntry {
         Procedure* procedure;
         std::string parameter;
@@ -760,9 +773,10 @@ public:
         std::string label;
         Place label_place;
     };
-    std::vector<LabelEntry> labels_;
 
 private:
+    std::vector<LabelEntry> labels_;
+
     std::unique_ptr<Statement> parse_statement(int depth) {
         const Token& first = peek();
         statement_start_ = index_;
@@ -861,7 +875,7 @@ private:
             advance();
             statement.type = parse_type();
         } else if (is(TokenKind::word) && on_line() && peek(1).kind == TokenKind::equals) {
-            const Place gap{file_, name.place.end(), 1};
+            const Place gap{.file = file_, .offset = name.place.end(), .length = 1};
             messages_.fix(gap, replaced_line(gap, 0, ":"),
                           "a declaration writes `:` between the variable's name and its type.");
             statement.type = parse_type();
@@ -885,7 +899,7 @@ private:
             return;
         }
         if (on_line() && !is(TokenKind::semicolon)) {
-            const Place gap{file_, previous().place.end(), 1};
+            const Place gap{.file = file_, .offset = previous().place.end(), .length = 1};
             messages_.fix(gap, replaced_line(gap, 0, " ="),
                           "a declaration gives its variable a first value after `=`.");
             statement.value = parse_expression(0);
@@ -921,7 +935,7 @@ private:
             }
             return;
         } else {
-            const Place after{file_, previous().place.end(), 1};
+            const Place after{.file = file_, .offset = previous().place.end(), .length = 1};
             messages_.fix(after, replaced_line(after, 0, ":"), "a block's opening line ends with `:`.");
         }
         if (on_line()) {
@@ -984,8 +998,9 @@ private:
         if (at_end()) {
             Message message;
             const std::uint32_t last_line = previous().line;
-            message.place = Place{file_, static_cast<std::uint32_t>(line_start(last_line)),
-                                  static_cast<std::uint32_t>(line_text(last_line).size())};
+            message.place = Place{.file = file_,
+                                  .offset = static_cast<std::uint32_t>(line_start(last_line)),
+                                  .length = static_cast<std::uint32_t>(line_text(last_line).size())};
             message.what = "the file ends before `" + closer + "`";
             message.why = "every block ends with `end` and what it closes.";
             messages_.add(std::move(message));
@@ -1233,7 +1248,7 @@ private:
         while (is(TokenKind::dot) && on_line() && peek(1).kind == TokenKind::word) {
             advance();
             const Token& name = advance();
-            narrowings.push_back(Narrowing{name.text, name.place});
+            narrowings.push_back(Narrowing{.name = name.text, .place = name.place});
         }
         if (is(TokenKind::dot_star) && on_line()) {
             messages_.not_built_yet(peek().place, "handlers, `.*` (D42), aren't built yet");
@@ -1372,7 +1387,7 @@ private:
             advance();
             if (token.unterminated) {
                 Message message;
-                message.place = Place{file_, token.place.end(), 1};
+                message.place = Place{.file = file_, .offset = token.place.end(), .length = 1};
                 message.what = "the line ends where `\"` should be";
                 messages_.add(std::move(message));
                 return error_expression();
@@ -1504,7 +1519,7 @@ void parse(const Sources& sources, std::uint32_t file, const Lexed& lexed, Progr
     Parser parser(sources, file, lexed, program, messages);
     parser.run();
     // Labels lines become their parameters' labels; the checker refuses any that don't fit (D25, D89).
-    for (const auto& entry : parser.labels_) {
+    for (const auto& entry : parser.labels()) {
         Procedure& procedure = *entry.procedure;
         auto parameter = std::ranges::find_if(
             procedure.parameters, [&](const Parameter& candidate) { return candidate.name == entry.parameter; });

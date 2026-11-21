@@ -3,6 +3,7 @@
 #include "lexer.h"
 
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <string_view>
 
@@ -40,7 +41,7 @@ public:
         }
         Token end;
         end.kind = TokenKind::end_of_file;
-        end.place = Place{file_, static_cast<std::uint32_t>(text_.size()), 0};
+        end.place = Place{.file = file_, .offset = static_cast<std::uint32_t>(text_.size()), .length = 0};
         end.line = line_total + 1;
         end.first_on_line = true;
         result_.tokens.push_back(end);
@@ -50,7 +51,8 @@ public:
 
 private:
     [[nodiscard]] Place place(std::size_t offset, std::size_t length) const {
-        return Place{file_, static_cast<std::uint32_t>(offset), static_cast<std::uint32_t>(length)};
+        return Place{
+            .file = file_, .offset = static_cast<std::uint32_t>(offset), .length = static_cast<std::uint32_t>(length)};
     }
 
     [[nodiscard]] std::size_t line_start(std::uint32_t line) const {
@@ -60,7 +62,7 @@ private:
     // trace: D74
     // A `comment name:` line starts a block comment, which runs to its own `end comment name`.
     std::optional<std::uint32_t> block_comment(std::uint32_t line, std::string_view content) {
-        if (!content.starts_with("comment ") || !content.ends_with(":")) {
+        if (!content.starts_with("comment ") || !content.ends_with(':')) {
             return std::nullopt;
         }
         const std::string_view name = content.substr(8, content.size() - 9);
@@ -222,20 +224,31 @@ private:
             std::string_view spelling;
             TokenKind kind;
         };
-        static constexpr Symbol symbols[] = {
-            {"|>", TokenKind::slide},         {"??", TokenKind::question_question},
-            {"==", TokenKind::equals_equals}, {"!=", TokenKind::not_equals},
-            {"::", TokenKind::double_colon},  {".*", TokenKind::dot_star},
-            {"(", TokenKind::open_round},     {")", TokenKind::close_round},
-            {"[", TokenKind::open_square},    {"]", TokenKind::close_square},
-            {",", TokenKind::comma},          {":", TokenKind::colon},
-            {";", TokenKind::semicolon},      {".", TokenKind::dot},
-            {"=", TokenKind::equals},         {"<", TokenKind::less},
-            {">", TokenKind::greater},        {"+", TokenKind::plus},
-            {"-", TokenKind::minus},          {"*", TokenKind::star},
-            {"/", TokenKind::slash},          {"&", TokenKind::ampersand},
-            {"?", TokenKind::question},
-        };
+        static constexpr auto symbols = std::to_array<Symbol>({
+            {.spelling = "|>", .kind = TokenKind::slide},
+            {.spelling = "??", .kind = TokenKind::question_question},
+            {.spelling = "==", .kind = TokenKind::equals_equals},
+            {.spelling = "!=", .kind = TokenKind::not_equals},
+            {.spelling = "::", .kind = TokenKind::double_colon},
+            {.spelling = ".*", .kind = TokenKind::dot_star},
+            {.spelling = "(", .kind = TokenKind::open_round},
+            {.spelling = ")", .kind = TokenKind::close_round},
+            {.spelling = "[", .kind = TokenKind::open_square},
+            {.spelling = "]", .kind = TokenKind::close_square},
+            {.spelling = ",", .kind = TokenKind::comma},
+            {.spelling = ":", .kind = TokenKind::colon},
+            {.spelling = ";", .kind = TokenKind::semicolon},
+            {.spelling = ".", .kind = TokenKind::dot},
+            {.spelling = "=", .kind = TokenKind::equals},
+            {.spelling = "<", .kind = TokenKind::less},
+            {.spelling = ">", .kind = TokenKind::greater},
+            {.spelling = "+", .kind = TokenKind::plus},
+            {.spelling = "-", .kind = TokenKind::minus},
+            {.spelling = "*", .kind = TokenKind::star},
+            {.spelling = "/", .kind = TokenKind::slash},
+            {.spelling = "&", .kind = TokenKind::ampersand},
+            {.spelling = "?", .kind = TokenKind::question},
+        });
         for (const Symbol& symbol : symbols) {
             if (rest.starts_with(symbol.spelling)) {
                 push(symbol.kind, line, start + index, symbol.spelling.size(), first, std::string(symbol.spelling));

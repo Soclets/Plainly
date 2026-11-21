@@ -118,11 +118,11 @@ namespace {
 void print_target(std::string& out, const Target& target) {
     out += "b" + std::to_string(target.block);
     if (!target.arguments.empty()) {
-        out += "(";
+        out += '(';
         for (std::size_t index = 0; index < target.arguments.size(); ++index) {
             out += (index > 0 ? ", %" : "%") + std::to_string(target.arguments.at(index));
         }
-        out += ")";
+        out += ')';
     }
 }
 
@@ -133,7 +133,7 @@ std::string print(const Function& function, const Module& module) {
     if (function.no_side_effects) {
         out += " [no side effects]";
     }
-    out += "\n";
+    out += '\n';
     for (std::size_t block_index = 0; block_index < function.blocks.size(); ++block_index) {
         const Block& block = function.blocks.at(block_index);
         if (block.dead) {
@@ -164,7 +164,7 @@ std::string print(const Function& function, const Module& module) {
                     out += " %" + std::to_string(operand);
                 }
             }
-            out += "\n";
+            out += '\n';
         }
         const Terminator& end = block.end;
         switch (end.kind) {
@@ -188,7 +188,7 @@ std::string print(const Function& function, const Module& module) {
             out += "  (no terminator)";
             break;
         }
-        out += "\n";
+        out += '\n';
     }
     return out;
 }

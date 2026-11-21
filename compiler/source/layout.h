@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -14,14 +16,14 @@ namespace unio::layout {
 // The digits of a number, most significant first; `sign` is -1 when it's negative, so the most negative `Whole`
 // stays exact.
 template <typename Out> void append_digits(Out& out, std::int64_t number, int sign) {
-    char digits[20]; // NOLINT(cppcoreguidelines-avoid-c-arrays): no library strings in the runtime
+    std::array<char, 20> digits{};
     int count = 0;
     while (number != 0) {
-        digits[count++] = static_cast<char>('0' + sign * static_cast<int>(number % 10)); // NOLINT
+        digits.at(static_cast<std::size_t>(count++)) = static_cast<char>('0' + sign * static_cast<int>(number % 10));
         number /= 10;
     }
     while (count > 0) {
-        out.push_back(digits[--count]); // NOLINT
+        out.push_back(digits.at(static_cast<std::size_t>(--count)));
     }
 }
 

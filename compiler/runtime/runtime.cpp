@@ -6,6 +6,7 @@
 
 #include "../source/layout.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -35,7 +36,7 @@ struct Site {
     std::uint32_t kind;
 };
 
-enum class SiteKind : std::uint32_t { add, subtract, multiply, negate, memory, random_order };
+enum class SiteKind : std::uint8_t { add, subtract, multiply, negate, memory, random_order };
 
 const char* bytes(const Text* text) {
     // The bytes follow the header directly; the header is two 8-byte fields, so they're aligned for chars.
@@ -51,7 +52,7 @@ class Buffer {
 public:
     void push_back(char character) {
         if (size_ < capacity) {
-            data_[size_++] = character; // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+            data_.at(size_++) = character;
         }
     }
     void append(std::string_view text) {
@@ -64,12 +65,12 @@ public:
             push_back(character);
         }
     }
-    [[nodiscard]] const char* data() const { return data_; }
+    [[nodiscard]] const char* data() const { return data_.data(); }
     [[nodiscard]] std::size_t size() const { return size_; }
 
 private:
     static constexpr std::size_t capacity = 8192;
-    char data_[capacity]{}; // NOLINT(cppcoreguidelines-avoid-c-arrays)
+    std::array<char, capacity> data_{};
     std::size_t size_ = 0;
 };
 
@@ -97,13 +98,13 @@ public:
         if (size >= capacity) {
             write_all(1, data, size);
         } else {
-            std::memcpy(buffer_ + used_, data, size); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            std::memcpy(buffer_.data() + used_, data, size); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             used_ += size;
         }
         line_open_ = data[size - 1] != '\n'; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
     void flush() {
-        write_all(1, buffer_, used_);
+        write_all(1, buffer_.data(), used_);
         used_ = 0;
     }
     // trace: D104
@@ -117,12 +118,13 @@ public:
 
 private:
     static constexpr std::size_t capacity = 65536;
-    char buffer_[capacity]{}; // NOLINT(cppcoreguidelines-avoid-c-arrays)
+    std::array<char, capacity> buffer_{};
     std::size_t used_ = 0;
     bool line_open_ = false;
 };
 
-Output output;
+// The program has one standard output and one standard input, so the runtime keeps one of each.
+Output output; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 // Standard input, read a line at a time (D20).
 class Input {
@@ -132,7 +134,7 @@ public:
         bool any = false;
         while (true) {
             if (start_ == end_) {
-                const ssize_t count = read(0, buffer_, capacity);
+                const ssize_t count = read(0, buffer_.data(), capacity);
                 if (count <= 0) {
                     return any;
                 }
@@ -140,7 +142,7 @@ public:
                 end_ = static_cast<std::size_t>(count);
             }
             any = true;
-            const char* begin = buffer_ + start_; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const char* begin = buffer_.data() + start_; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             const auto* line_break = static_cast<const char*>(std::memchr(begin, '\n', end_ - start_));
             if (line_break != nullptr) {
                 take(begin, static_cast<std::size_t>(line_break - begin));
@@ -154,12 +156,12 @@ public:
 
 private:
     static constexpr std::size_t capacity = 65536;
-    char buffer_[capacity]{}; // NOLINT(cppcoreguidelines-avoid-c-arrays)
+    std::array<char, capacity> buffer_{};
     std::size_t start_ = 0;
     std::size_t end_ = 0;
 };
 
-Input input;
+Input input; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 void write_message(const Buffer& message) {
     output.end_open_line();
@@ -173,8 +175,9 @@ void heading(Buffer& message, std::string_view kind, const Site* site) {
 
 // --- Memory (D115, D122, D134) ------------------------------------------------------------------------------------
 
-std::uint64_t memory_in_use = 0;
-std::uint64_t memory_cap = 0;
+// How much the program holds, and the most it may (D134), for the whole program.
+std::uint64_t memory_in_use = 0; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+std::uint64_t memory_cap = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 void append_amount(Buffer& message, std::uint64_t amount) {
     if (amount < 1024) {
@@ -182,7 +185,7 @@ void append_amount(Buffer& message, std::uint64_t amount) {
         message.append(amount == 1 ? " byte" : " bytes");
         return;
     }
-    const char* units[] = {"KiB", "MiB", "GiB", "TiB"}; // NOLINT(cppcoreguidelines-avoid-c-arrays)
+    static constexpr std::array<std::string_view, 4> units{"KiB", "MiB", "GiB", "TiB"};
     std::size_t unit = 0;
     std::uint64_t scale = 1024;
     while (unit < 3 && amount >= scale * 1024) {
@@ -195,7 +198,7 @@ void append_amount(Buffer& message, std::uint64_t amount) {
     message.push_back('.');
     message.push_back(static_cast<char>('0' + tenths % 10));
     message.push_back(' ');
-    message.append(units[unit]); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+    message.append(units.at(unit));
 }
 
 [[noreturn]] void out_of_memory(const Site* site, std::uint64_t needed) {
@@ -223,7 +226,8 @@ Text* allocate_text(std::int64_t length, const Site* site) {
         out_of_memory(site, size);
     }
     // The runtime is where Unio's own ownership (D130) meets the machine: a text is freed when its last owner ends.
-    auto* text = static_cast<Text*>(std::malloc(size)); // NOLINT(cppcoreguidelines-no-malloc)
+    auto* text = // NOLINT(cppcoreguidelines-owning-memory): owned by the text's Unio owners, not by C++
+        static_cast<Text*>(std::malloc(size)); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
     if (text == nullptr) {
         out_of_memory(site, size);
     }
@@ -235,10 +239,27 @@ Text* allocate_text(std::int64_t length, const Site* site) {
 
 void free_text(Text* text) {
     memory_in_use -= sizeof(Text) + static_cast<std::uint64_t>(text->length);
-    std::free(text); // NOLINT(cppcoreguidelines-no-malloc)
+    std::free(text); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
 }
 
 } // namespace
+
+// libc++'s hardened checks (Building rule 3) end here when one fails. libc++ lets a program supply this function,
+// so the runtime needs no C++ library: a failed check in the runtime is a bug in it, reported as one (D82, D103).
+// NOLINTNEXTLINE(bugprone-std-namespace-modification): libc++ documents supplying this as the way to customize it
+namespace std::inline __1 {
+[[noreturn]] void __libcpp_verbose_abort(const char* format, ...) noexcept { // NOLINT: libc++'s own signature
+    output.end_open_line();
+    constexpr std::string_view text =
+        "internal error: Unlo\\n's runtime itself went wrong, not your program\n"
+        " what:    a check inside the runtime failed\n"
+        " why:     this is a bug in Unlo\\n. Please report it at https://github.com/Soclets/Unio-lang/issues, with the "
+        "program that caused it.\n";
+    (void)format;
+    write_all(2, text.data(), text.size());
+    std::_Exit(7);
+}
+} // namespace std::inline __1
 
 extern "C" {
 
@@ -266,7 +287,9 @@ Text* unio_ask(const Text* question, const Site* site) {
             while (grown < length + size) {
                 grown *= 2;
             }
-            auto* larger = static_cast<char*>(std::realloc(line, grown)); // NOLINT(cppcoreguidelines-no-malloc)
+            auto* larger = // NOLINT(cppcoreguidelines-owning-memory): the reused line buffer, kept for the whole run
+                static_cast<char*>(
+                    std::realloc(line, grown)); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
             if (larger == nullptr) {
                 out_of_memory(site, grown);
             }
@@ -386,9 +409,12 @@ std::int64_t unio_random(std::int64_t low, std::int64_t high, const Site* site) 
         // Rejecting the top sliver keeps every value equally likely.
         const std::uint64_t limit =
             std::numeric_limits<std::uint64_t>::max() - std::numeric_limits<std::uint64_t>::max() % span;
-        do {
+        while (true) {
             arc4random_buf(&drawn, sizeof drawn);
-        } while (drawn >= limit);
+            if (drawn < limit) {
+                break;
+            }
+        }
         drawn %= span;
     }
     return static_cast<std::int64_t>(static_cast<std::uint64_t>(low) + drawn);

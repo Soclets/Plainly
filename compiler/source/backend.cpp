@@ -33,12 +33,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-extern char** environ;
+extern char** environ; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables): POSIX defines it
 
 namespace unio {
 
 namespace {
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): LLVM sets up its targets once per process
 std::once_flag targets_ready;
 
 // The oldest macOS a compiled program runs on.
@@ -59,9 +60,9 @@ std::string executable_path() {
     }
     std::array<char, PATH_MAX> resolved{};
     if (realpath(path.data(), resolved.data()) == nullptr) {
-        return std::string(path.data());
+        return {path.data()};
     }
-    return std::string(resolved.data());
+    return {resolved.data()};
 }
 
 // What changes whenever the compiler does: its own file's size and time, so a rebuilt compiler never reuses objects
@@ -85,7 +86,8 @@ std::string cache_folder() {
         llvm::SmallString<256> fallback;
         llvm::sys::path::system_temp_directory(true, fallback);
         llvm::sys::path::append(fallback, "unio-objects");
-        (void)llvm::sys::fs::create_directories(fallback);
+        // If even this fails, writing an object says so with its own error.
+        [[maybe_unused]] const std::error_code ignored = llvm::sys::fs::create_directories(fallback);
         return std::string(fallback);
     }
     return std::string(folder);

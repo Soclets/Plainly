@@ -39,10 +39,10 @@ struct Range {
 };
 
 Range intersect(Range left, Range right) {
-    return Range{std::max(left.low, right.low), std::min(left.high, right.high)};
+    return Range{.low = std::max(left.low, right.low), .high = std::min(left.high, right.high)};
 }
 Range hull(Range left, Range right) {
-    return Range{std::min(left.low, right.low), std::max(left.high, right.high)};
+    return Range{.low = std::min(left.low, right.low), .high = std::max(left.high, right.high)};
 }
 
 // The range of a calculation's exact result, or nothing when it might not fit in a `Whole`.
@@ -52,7 +52,7 @@ std::optional<Range> add_ranges(Range left, Range right) {
     if (__builtin_add_overflow(left.low, right.low, &low) || __builtin_add_overflow(left.high, right.high, &high)) {
         return std::nullopt;
     }
-    return Range{low, high};
+    return Range{.low = low, .high = high};
 }
 
 std::optional<Range> subtract_ranges(Range left, Range right) {
@@ -61,7 +61,7 @@ std::optional<Range> subtract_ranges(Range left, Range right) {
     if (__builtin_sub_overflow(left.low, right.high, &low) || __builtin_sub_overflow(left.high, right.low, &high)) {
         return std::nullopt;
     }
-    return Range{low, high};
+    return Range{.low = low, .high = high};
 }
 
 std::optional<Range> multiply_ranges(Range left, Range right) {
@@ -77,14 +77,14 @@ std::optional<Range> multiply_ranges(Range left, Range right) {
             high = std::max(high, product);
         }
     }
-    return Range{low, high};
+    return Range{.low = low, .high = high};
 }
 
 std::optional<Range> negate_range(Range range) {
     if (range.low == lowest) {
         return std::nullopt;
     }
-    return Range{-range.high, -range.low};
+    return Range{.low = -range.high, .high = -range.low};
 }
 
 // --- The control-flow graph and dominators --------------------------------------------------------------------------
@@ -484,12 +484,12 @@ private:
     bool fold() {
         Replacements replacements(function_.values.size());
         bool changed = false;
-        for (std::size_t block_index = 0; block_index < function_.blocks.size(); ++block_index) {
-            if (function_.blocks.at(block_index).dead) {
+        for (auto& block : function_.blocks) {
+            if (block.dead) {
                 continue;
             }
             std::vector<ValueId> kept;
-            const std::vector<ValueId> instructions = function_.blocks.at(block_index).instructions;
+            const std::vector<ValueId> instructions = block.instructions;
             for (const ValueId id : instructions) {
                 for (ValueId& operand : value(id).operands) {
                     operand = replacements.find(operand);
@@ -501,7 +501,7 @@ private:
                 }
                 kept.push_back(id);
             }
-            function_.blocks.at(block_index).instructions = std::move(kept);
+            block.instructions = std::move(kept);
         }
         apply(function_, replacements);
         return changed;
@@ -647,9 +647,9 @@ private:
                 if (block.dead) {
                     continue;
                 }
-                const auto end = std::remove_if(block.instructions.begin(), block.instructions.end(), [&](ValueId id) {
-                    return uses.at(id) == 0 && removable(function_.values.at(id).op);
-                });
+                const auto end = std::ranges::remove_if(block.instructions, [&](ValueId id) {
+                                     return uses.at(id) == 0 && removable(function_.values.at(id).op);
+                                 }).begin();
                 if (end != block.instructions.end()) {
                     block.instructions.erase(end, block.instructions.end());
                     removed = true;
@@ -678,7 +678,7 @@ public:
         for (std::size_t index = 0; index < function_.values.size(); ++index) {
             const Value& value = function_.values.at(index);
             if (value.block == ir::no_block && value.op == Op::constant_whole) {
-                base_.at(index) = Range{value.immediate, value.immediate};
+                base_.at(index) = Range{.low = value.immediate, .high = value.immediate};
             }
         }
         for (const BlockId block : graph_.order) {
@@ -752,15 +752,15 @@ private:
         switch (op) {
         case Op::less:
             if (right_range.high != lowest) {
-                narrow(facts, left, Range{lowest, right_range.high - 1}, from);
+                narrow(facts, left, Range{.low = lowest, .high = right_range.high - 1}, from);
             }
             if (left_range.low != highest) {
-                narrow(facts, right, Range{left_range.low + 1, highest}, from);
+                narrow(facts, right, Range{.low = left_range.low + 1, .high = highest}, from);
             }
             break;
         case Op::at_most:
-            narrow(facts, left, Range{lowest, right_range.high}, from);
-            narrow(facts, right, Range{left_range.low, highest}, from);
+            narrow(facts, left, Range{.low = lowest, .high = right_range.high}, from);
+            narrow(facts, right, Range{.low = left_range.low, .high = highest}, from);
             break;
         case Op::equal:
             narrow(facts, left, right_range, from);
@@ -818,7 +818,7 @@ private:
         std::optional<Range> result;
         switch (value.op) {
         case Op::constant_whole:
-            return Range{value.immediate, value.immediate};
+            return Range{.low = value.immediate, .high = value.immediate};
         case Op::add:
         case Op::checked_add:
             result = add_ranges(operand(0), operand(1));
@@ -837,7 +837,7 @@ private:
             break;
         case Op::random:
             // `random` gives a number from its first value to its second, or stops the program (D26).
-            return Range{operand(0).low, operand(1).high};
+            return Range{.low = operand(0).low, .high = operand(1).high};
         default:
             return Range{};
         }
@@ -1022,17 +1022,18 @@ std::optional<Affine> affine(const Function& function, ValueId id) {
     const Value& value = function.values.at(id);
     if (value.op == Op::parameter && value.block == 0) {
         const auto& parameters = function.blocks.front().parameters;
-        return Affine{static_cast<std::size_t>(std::ranges::find(parameters, id) - parameters.begin()), 0};
+        return Affine{.parameter = static_cast<std::size_t>(std::ranges::find(parameters, id) - parameters.begin()),
+                      .offset = 0};
     }
     if (value.op == Op::constant_whole) {
-        return Affine{std::nullopt, value.immediate};
+        return Affine{.parameter = std::nullopt, .offset = value.immediate};
     }
     if (value.op == Op::add) {
         const auto inner = affine(function, value.operands.at(0));
         const Value& right = function.values.at(value.operands.at(1));
         std::int64_t sum = 0;
         if (inner && right.op == Op::constant_whole && !__builtin_add_overflow(inner->offset, right.immediate, &sum)) {
-            return Affine{inner->parameter, sum};
+            return Affine{.parameter = inner->parameter, .offset = sum};
         }
     }
     return std::nullopt;
@@ -1207,7 +1208,7 @@ void inline_into_itself(Module& module) {
                         fits = false;
                         break;
                     }
-                    substituted.push_back(Affine{given.parameter, sum});
+                    substituted.push_back(Affine{.parameter = given.parameter, .offset = sum});
                 }
                 if (!fits) {
                     continue;
@@ -1367,6 +1368,7 @@ void merge_repeated(Function& function, const Module& module) {
                 continue;
             }
             std::vector<Operand> operands;
+            operands.reserve(value.operands.size());
             for (const ValueId operand : value.operands) {
                 operands.push_back(operand_key(operand));
             }
@@ -1491,7 +1493,7 @@ void recursion_into_loops(Function& function, std::uint32_t self) {
     Block& entry = function.blocks.front();
     entry.parameters = moved.parameters;
     entry.end.kind = TerminatorKind::jump;
-    entry.end.then_target = Target{loop, arguments};
+    entry.end.then_target = Target{.block = loop, .arguments = arguments};
     for (BlockId tail : tails) {
         if (tail == 0) {
             tail = loop;
@@ -1501,7 +1503,7 @@ void recursion_into_loops(Function& function, std::uint32_t self) {
         block.instructions.pop_back();
         block.end = ir::Terminator{};
         block.end.kind = TerminatorKind::jump;
-        block.end.then_target = Target{loop, function.values.at(call).operands};
+        block.end.then_target = Target{.block = loop, .arguments = function.values.at(call).operands};
     }
 }
 
