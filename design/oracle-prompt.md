@@ -126,8 +126,11 @@ on from it, the test status file and `git log`.
 
 <first_steps>
 1. Run `pwd`, then read the sources above.
-2. Check the tools: `opam`, OCaml 5.5 and `dune` are installed; Rocq isn't. Pin one OCaml and one Rocq version in
-   their own opam switch (rule 14). Ask Tankun to approve the install before running it.
+2. Use the opam switch `ralph`, Ralph's own toolchain (rule 14): OCaml 5.5.2 with Rocq (`rocq-core`, `rocq-stdlib`),
+   `dune`, `menhir` and `ocamlformat`, installed by the design session. Run tools through it, as in
+   `opam exec --switch=ralph -- dune build`. If the switch isn't finished building yet, wait for it rather than
+   installing anything again. Record the exact OCaml and Rocq versions in PROGRESS.md as the pinned ones, and ask
+   Tankun before installing anything else.
 3. Write `oracle/PROGRESS.md` with your plan for the milestone, in small steps that each end with something running,
    and the order you'll prove things in.
 4. Write the test runner and watch every test fail.
