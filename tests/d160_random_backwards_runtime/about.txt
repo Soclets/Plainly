@@ -1,0 +1,1 @@
+random with from: above to:, from variables, stops at runtime as a failed check, showing both values. D26, D46, D160; standard ch. 9 and 11.

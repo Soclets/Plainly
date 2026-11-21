@@ -1,0 +1,1 @@
+random with from: above to:, both plain numbers, is refused at compile time, with them swapped as the fix. D26, D84, D160; standard ch. 9 and 11.
