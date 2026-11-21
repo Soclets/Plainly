@@ -4316,3 +4316,23 @@ language's name, so it searches cleanly.
 **Tankun's words.** "What about Unlo? (`.unlo`)", then "Unio: Latin for “oneness”, one owner each", then, asked
 "Should the language be Unio, with `.unio` files and the command `unio`?", the owner chose: "yea. What about the
 compiler? `Unlo\n`?"
+
+(Changed by D137: the compiler is `Unlo\n`.)
+
+## D137. The compiler is `Unlo\n`, typed `unio`
+
+2026-11-21.
+
+**Chosen.** The compiler is **`Unlo\n`**, with a backslash and an `n` in its name, not a real new line, replacing
+D135's `Clang\n`. It's typed `unio`, the language's name (D136). In many fonts, Unlo and Unio are hard to tell apart,
+as CyborgPL's `KAYO\n` and Cyborg's `OKAY\n` swap letters (Cyborg's D222).
+
+**Weighed.**
+- `Clang\n` (D135). Every message and build log would mix it up with LLVM's real Clang, which builds the compiler
+  itself (Building rule 3).
+
+**Why this won.** It keeps the family's `\n` joke, now as a near-lookalike of the language's own name, with no clash
+with any real tool, and learners only ever type `unio`.
+
+**Tankun's words.** "yea. What about the compiler? `Unlo\n`?" (in D136's answer), then, asked "Should the compiler be
+`Unlo\n`, typed `unio`?", the owner chose: "yea".
