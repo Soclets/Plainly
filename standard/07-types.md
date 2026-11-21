@@ -122,6 +122,8 @@ let $line: Text = be.Text.fmt("{$name}: {$score}");
 ```
 
 - **Braces hold only a variable's name, with its `$`;** a calculation or a call in them is refused (D29).
+- **A name in braces without its `$` is refused,** with the `$` added as the fix when there's a variable of that
+  name (D133).
 - **A number in braces becomes text by itself** (D29).
 - **The text is checked at compile time:** a name in braces that isn't a variable is refused (D29).
 - **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).

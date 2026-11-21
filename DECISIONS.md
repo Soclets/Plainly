@@ -4172,3 +4172,32 @@ fucking langs at the same time". Then, asked "Should PlainCompiler be written in
 **Tankun's words.** "Anyways, you'll be reviewing the err msgs for now, by yourself. Find real problems, not invent
 one. If you aren't sure, bring it to me.", then, asked "Should those five wording fixes go in as proposed?", the owner
 chose: "yea".
+
+## D133. `{name}` without `$` in `.fmt` text is refused, with the `$` as its fix
+
+2026-11-21.
+
+**Chosen.** In `.fmt` text, braces hold a variable's name with its `$` (D125). A name in braces without its `$` is
+refused. When the program has a variable of that name, the fix adds the `$`:
+
+```
+show_msg.fmt("You got it in {tries} tries.");
+```
+
+```
+ fix:     `    show_msg.fmt("You got it in {$tries} tries.");`
+ why:     braces in `.fmt` text hold a variable's name, with its `$`.
+```
+
+With no such variable, D92's message for a brace that isn't a variable applies. Literal braces are written `\{`, as
+before (D30).
+
+**Weighed.**
+- `{tries}` as plain text, since only `{$...}` would fill in. Literal braces would never need escaping, but a
+  forgotten `$`, the easy mistake right after D125, would show `{tries}` to the player, and nothing would catch it.
+
+**Why this won.** `.fmt` text is checked at compile time (D29), so a forgotten `$` is caught with the fix ready, not
+printed wrong.
+
+**Tankun's words.** Asked "Should `{name}` without `$` in `.fmt` text be refused, with the `$` added as its fix?", the
+owner chose: "yea".
