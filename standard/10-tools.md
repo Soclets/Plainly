@@ -56,6 +56,9 @@ Every variable owns its own value, and a value is freed when its owner ends: the
 with `check failed:` and status 4, at the line that needed the memory, with what was needed, what was in use and the cap
 in `when:` (D115, D122).
 
+Calls nesting too deep, as when a procedure keeps calling itself without stopping, stop the program with `check
+failed:` and status 4, at the call that went too deep, with the depth and the procedure in `when:` (D154).
+
 ## Build modes
 
 Every build names one of two modes, `--working` or `--final`. There's no default (D46).

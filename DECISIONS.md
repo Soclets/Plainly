@@ -4738,3 +4738,37 @@ own spelling what's shown is what's typed. Ralph stopped with `NotDesignedYet` h
 it surfaced.
 
 **Tankun's words.** Asked "Should `be.Text` turn a `Bool` into `"true"` or `"false"`?", the owner chose: "yea".
+
+## D154. Calls nesting too deep stop as a failed check, status 4
+
+2026-11-21.
+
+**Chosen.** When calls nest deeper than the room the machine gives them, as when a procedure keeps calling itself
+without stopping, the program stops with `check failed:` and status 4, at the call that went too deep:
+
+```
+check failed: game.unio:5:16, line 5 column 16
+ 5 |         return count($n + 1);
+   |                ^^^^^^^^^^^^^
+ what:    calls went too deep
+ when:    100000 calls deep, inside `count`
+ why:     every call still waiting for another needs a little memory, and the room for them is limited; a procedure that keeps calling itself without stopping fills it.
+```
+
+How deep is too deep depends on the machine; the compiler can give a program a large stack, so real programs never
+come close.
+
+**Weighed.**
+- An internal error, status 7, as Ralph had it meanwhile. It blames the tool for the program's own mistake.
+- D115's out-of-memory message. The room for waiting calls, the stack, is a small separate area, so a runaway
+  recursion fills it while the program as a whole uses almost nothing, and "out of memory" with gigabytes to spare
+  confuses.
+- "runs out" in the `why:`, as first drafted. Tankun asked what runs out; the room for waiting calls is what fills.
+
+**Why this won.** It names the actual mistake, a recursion with no way out, with the depth and the procedure to find
+it, in the same kind and status as overflow and running out of memory. The word "stack" stays out of the `why:` so a
+beginner can read it; the docs can explain it. Ralph, building the oracle, asked.
+
+**Tankun's words.** "Is it out of mem?", then ""every call that's waiting for another uses memory; a procedure that
+keeps calling itself without stopping runs out." What runs out", then, asked "Should calls nesting too deep stop as
+`check failed:`, status 4, with "calls went too deep" and this `why:`?", the owner chose: "yea".
