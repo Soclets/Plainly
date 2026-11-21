@@ -36,6 +36,8 @@ pass d160_random_backwards_runtime working
 pass d160_random_backwards_runtime final
 pass d161_value_only_line working
 pass d161_value_only_line final
+pass d166_parameters_in_round_brackets working
+pass d166_parameters_in_round_brackets final
 pass d16_if working
 pass d16_if final
 pass d19_while working
@@ -80,4 +82,4 @@ pass d97_extra_blank_lines working
 pass d97_extra_blank_lines final
 pass d99_bad_name working
 pass d99_bad_name final
-82 of 82 passed
+84 of 84 passed

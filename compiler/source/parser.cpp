@@ -521,6 +521,7 @@ private:
                     std::string fixed = replaced_line(previous().place, 1, "]");
                     const std::size_t at = open.place.offset - line_start(open.line);
                     fixed.replace(at, 1, "[");
+                    // trace: D166
                     messages_.fix(open.place, fixed,
                                   "a definition writes its parameters in `[ ]`; `( )` calls a procedure.");
                 }
