@@ -140,7 +140,8 @@ enum class StatementKind : std::uint8_t {
 struct Branch {
     ExpressionPointer condition; // none for `else:`
     Body body;
-    Place place; // the opening line's first word
+    Place place;  // the opening line's first word
+    Place opener; // the whole opening line, from its first word to its `:`
 };
 
 struct TypeName {

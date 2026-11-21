@@ -213,13 +213,12 @@ private:
         check_body(procedure.body);
         // trace: D57, D88, D149
         if (procedure.returns && procedure.returns->type != Type::unknown && !ends_in_return(procedure.body)) {
-            const Place place = procedure.end_place.length > 0 ? procedure.end_place : procedure.place;
-            refuse(place,
+            refuse(procedure.place,
                    "some way through `" + procedure.name + "` reaches its end without `return` giving back a " +
                        quoted_type(procedure.returns->type),
                    "every way through a procedure with `returns` ends in `return` and a value.");
         }
-        if (!procedure.returns && !procedure.body.empty()) {
+        if (!procedure.body.empty()) {
             const Statement& last = *procedure.body.back();
             if (last.kind == StatementKind::give_back && !last.value) {
                 refuse(last.whole_place, "a bare `return;` as a procedure's last line does nothing",
@@ -235,7 +234,7 @@ private:
         }
         const Statement& last = *body.back();
         if (last.kind == StatementKind::give_back) {
-            return true;
+            return last.value != nullptr;
         }
         if (last.kind == StatementKind::if_chain) {
             const bool has_else = !last.branches.back().condition;
@@ -293,14 +292,14 @@ private:
         if (leaving.kind == StatementKind::if_chain) {
             refuse_because(line, "this line follows an `if` that can leave",
                            "the `if` on line " + std::to_string(line_of(leaving.place)) + " can leave",
-                           leaving.branches.front().place,
+                           leaving.branches.front().opener,
                            "when any way through an `if` leaves, nothing may follow its `end if`; code that should "
                            "run afterwards goes in the ways that don't leave.");
             return;
         }
         const std::string word = leaving.kind == StatementKind::give_back ? "return" : "break";
         refuse_because(line, "this line comes after a `" + word + "` in the same block, so it can never run",
-                       "the `" + word + "` is here", leaving.place,
+                       "the `" + word + "` is here", leaving.whole_place,
                        "nothing may follow `" + word + "` in the same block.");
     }
 
@@ -474,8 +473,7 @@ private:
                    "a call that gives back a value is used: kept in a variable, passed on, or compared.");
             return;
         }
-        refuse(value.place, "this value isn't used",
-               "a call that gives back a value is used: kept in a variable, passed on, or compared.");
+        messages_.not_designed_yet(value.place, "a value standing alone as a statement isn't decided yet");
     }
 
     void check_condition(Expression& condition) {
@@ -923,10 +921,12 @@ private:
                 fix(argument.place, 0, *parameter.label + ": ", "every call writes the labels its procedure chose.");
                 fine = false;
             } else if (!parameter.label && argument.label) {
-                const Place label{.file = argument.label_place.file,
-                                  .offset = argument.label_place.offset,
-                                  .length = argument.value->place.offset - argument.label_place.offset};
-                fix(label, label.length, "", "a call writes only the labels its procedure chose.");
+                const std::uint32_t written = argument.value->place.offset - argument.label_place.offset;
+                Message message;
+                message.place = argument.label_place;
+                message.fix = replaced_line(argument.label_place, written, "");
+                message.why = "a call writes only the labels its procedure chose.";
+                messages_.add(std::move(message));
                 fine = false;
             } else if (parameter.label && argument.label && *parameter.label != *argument.label) {
                 refuse(argument.label_place,
@@ -1197,6 +1197,16 @@ private:
         }
     }
 
+    // trace: D5, D88
+    void refuse_empty_steps(const Expression& slide) {
+        for (const Step& step : slide.steps) {
+            if (step.has_brackets && step.arguments.empty()) {
+                fix(step.brackets_place, step.brackets_place.length, "",
+                    "a step with nothing else to pass is written bare, since the slide gives it its value.");
+            }
+        }
+    }
+
     void check_slide(Expression& expression) {
         Expression& start = *expression.left;
         const std::size_t start_calls = chain_length(start);
@@ -1250,6 +1260,7 @@ private:
             }
             fix(expression.place, expression.place.length, out,
                 "one or two calls are written as calls; a chain of three or more is a slide.");
+            refuse_empty_steps(expression);
             expression.type = Type::unknown;
             return;
         }

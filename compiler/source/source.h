@@ -41,6 +41,8 @@ public:
     // Reads a file, or gives the `what:` of D103's `can't read:` message.
     std::expected<std::uint32_t, std::string> read(const std::string& path, const std::string& name);
     std::uint32_t add(std::string name, std::string text);
+    // Puts `text` in place of line `line` (from 1), as when a message's fix is tried (D55).
+    void replace_line(std::uint32_t file, std::uint32_t line, std::string_view text);
 
     [[nodiscard]] const SourceFile& file(std::uint32_t index) const { return files_.at(index); }
     [[nodiscard]] std::size_t size() const { return files_.size(); }

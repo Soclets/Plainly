@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <optional>
+#include <tuple>
 
 #include <spawn.h>
 #include <sys/wait.h>
@@ -143,6 +144,53 @@ std::vector<std::string> program_files(const std::string& named) {
     return files;
 }
 
+// Reads, parses and checks every file, giving the typed tree and the messages in the order of their places.
+std::pair<Program, Messages> check_program(const Sources& sources) {
+    Messages messages;
+    Program program;
+    for (std::uint32_t file = 0; file < sources.size(); ++file) {
+        const Lexed lexed = lex(sources, file, messages);
+        parse(sources, file, lexed, program, messages);
+    }
+    check(sources, program, messages);
+    std::ranges::stable_sort(messages.list(), [](const Message& left, const Message& right) {
+        return std::pair(left.place.file, left.place.offset) < std::pair(right.place.file, right.place.offset);
+    });
+    return {std::move(program), std::move(messages)};
+}
+
+// trace: D55, D83
+// The first error's one fix is tried in memory and the program checked again: every later message that disappears
+// follows from it, and says so.
+void sort_knock_on_errors(const Sources& sources, Messages& messages) {
+    auto& list = messages.list();
+    const auto first =
+        std::ranges::find_if(list, [](const Message& message) { return message.kind == MessageKind::refused; });
+    if (first == list.end() || !first->fix) {
+        return;
+    }
+    const LineColumn where = sources.line_column(first->place);
+    Sources fixed = sources;
+    fixed.replace_line(first->place.file, where.line, *first->fix);
+    const auto [ignored, again] = check_program(fixed);
+    const auto key = [](const Sources& in, const Message& message) {
+        const LineColumn at = in.line_column(message.place);
+        return std::tuple(message.place.file, at.line, at.column, message.kind, message.fix.value_or(""),
+                          message.what.value_or(""));
+    };
+    const Place cause = first->place;
+    const std::string sentence =
+        "it follows from the error at line " + std::to_string(where.line) + " column " + std::to_string(where.column);
+    for (auto later = std::next(first); later != list.end(); ++later) {
+        const auto wanted = key(sources, *later);
+        const bool still_there =
+            std::ranges::any_of(again.list(), [&](const Message& other) { return key(fixed, other) == wanted; });
+        if (!still_there) {
+            later->because = Because{.sentence = sentence, .place = cause};
+        }
+    }
+}
+
 int run_program(const std::string& path) {
     const std::vector<std::string> owned{path};
     std::vector<char*> argv{const_cast<char*>(owned.front().c_str()), nullptr}; // NOLINT: posix_spawn's C signature
@@ -217,17 +265,9 @@ int drive(std::span<char*> arguments) {
             return 2;
         }
     }
-    Messages messages;
-    Program program;
-    for (std::uint32_t file = 0; file < sources.size(); ++file) {
-        const Lexed lexed = lex(sources, file, messages);
-        parse(sources, file, lexed, program, messages);
-    }
-    check(sources, program, messages);
+    auto [program, messages] = check_program(sources);
     if (!messages.empty()) {
-        std::ranges::stable_sort(messages.list(), [](const Message& left, const Message& right) {
-            return std::pair(left.place.file, left.place.offset) < std::pair(right.place.file, right.place.offset);
-        });
+        sort_knock_on_errors(sources, messages);
         write_error(messages.render(sources));
         return messages.status();
     }

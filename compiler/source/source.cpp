@@ -87,6 +87,24 @@ std::uint32_t Sources::add(std::string name, std::string text) {
     return static_cast<std::uint32_t>(files_.size() - 1);
 }
 
+void Sources::replace_line(std::uint32_t file, std::uint32_t line, std::string_view text) {
+    SourceFile& source = files_.at(file);
+    const std::uint32_t start = source.line_starts.at(line - 1);
+    std::size_t end = source.text.find('\n', start);
+    if (end == std::string::npos) {
+        end = source.text.size();
+    }
+    std::string replaced = source.text.substr(0, start) + std::string(text) + source.text.substr(end);
+    std::string name = std::move(source.name);
+    SourceFile rebuilt{.name = std::move(name), .text = std::move(replaced), .line_starts = {0}};
+    for (std::size_t index = 0; index < rebuilt.text.size(); ++index) {
+        if (rebuilt.text[index] == '\n') {
+            rebuilt.line_starts.push_back(static_cast<std::uint32_t>(index + 1));
+        }
+    }
+    source = std::move(rebuilt);
+}
+
 LineColumn Sources::line_column(Place place) const {
     const SourceFile& source = files_.at(place.file);
     const auto after = std::ranges::upper_bound(source.line_starts, place.offset);

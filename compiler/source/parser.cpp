@@ -264,6 +264,17 @@ private:
         return text;
     }
 
+    // Just past the end of the file's last line with anything on it, where a missing closer would go.
+    [[nodiscard]] Place file_end() const {
+        std::uint32_t line = sources_.line_count(file_);
+        while (line > 1 && line_text(line).empty()) {
+            --line;
+        }
+        return Place{.file = file_,
+                     .offset = static_cast<std::uint32_t>(line_start(line) + line_text(line).size()),
+                     .length = 1};
+    }
+
     void skip_statement() {
         while (!at_end()) {
             if (is(TokenKind::semicolon)) {
@@ -463,7 +474,7 @@ private:
             if (is_word("main")) {
                 procedure->is_main = true;
                 procedure->name = "main";
-                procedure->place = span(proc_token.place, advance().place);
+                procedure->place = advance().place;
             } else {
                 messages_.refuse(peek().place, "`proc` has no narrowing `." + peek().text + "`",
                                  "`proc`'s only narrowing is `.main`.");
@@ -629,11 +640,7 @@ private:
         const std::string closer = procedure.is_main ? std::string("end proc.main") : "end proc " + procedure.name;
         if (at_end()) {
             Message message;
-            message.place = Place{.file = file_, .offset = previous().place.end(), .length = 1};
-            const std::uint32_t last_line = previous().line;
-            message.place = Place{.file = file_,
-                                  .offset = static_cast<std::uint32_t>(line_start(last_line)),
-                                  .length = static_cast<std::uint32_t>(line_text(last_line).size())};
+            message.place = file_end();
             message.what = "the file ends before `" + closer + "`";
             message.why = "every block ends with `end` and what it closes.";
             messages_.add(std::move(message));
@@ -691,11 +698,12 @@ private:
             if (!first.first_on_line) {
                 // trace: D146
                 Message message;
-                message.place = first.place;
+                const Place start = first.place;
+                skip_statement();
+                message.place = span(start, previous().place);
                 message.what = "this line has two statements";
                 message.why = "each statement goes on a line of its own.";
                 messages_.add(std::move(message));
-                skip_statement();
                 continue;
             }
             check_indent(first, depth);
@@ -719,7 +727,11 @@ private:
         const Token& labels_token = advance();
         if (!allowed) {
             Message message;
-            message.place = labels_token.place;
+            const Place start = labels_token.place;
+            while (on_line() && !is(TokenKind::semicolon)) {
+                advance();
+            }
+            message.place = span(start, previous().place);
             message.what = "a `labels` line can only be the first line of a procedure's body";
             message.why = "a procedure declares its labels on the first line of its body.";
             messages_.add(std::move(message));
@@ -953,6 +965,7 @@ private:
         first.place = advance().place;
         first.condition = parse_condition();
         finish_opener();
+        first.opener = span(first.place, previous().place);
         first.body = parse_body(depth + 1, nullptr);
         statement.branches.push_back(std::move(first));
         bool seen_else = false;
@@ -997,10 +1010,7 @@ private:
     void parse_block_closer(int depth, const std::string& closer) {
         if (at_end()) {
             Message message;
-            const std::uint32_t last_line = previous().line;
-            message.place = Place{.file = file_,
-                                  .offset = static_cast<std::uint32_t>(line_start(last_line)),
-                                  .length = static_cast<std::uint32_t>(line_text(last_line).size())};
+            message.place = file_end();
             message.what = "the file ends before `" + closer + "`";
             message.why = "every block ends with `end` and what it closes.";
             messages_.add(std::move(message));
@@ -1169,9 +1179,12 @@ private:
         const std::string replacement =
             print(first) + " and " + print(middle) + " " + second_op.text + " " + print(*third);
         const Place whole = span(first.place, third->place);
-        messages_.fix(whole, replaced_line(whole, whole.length, replacement),
-                      "a comparison sets two values against each other; `and` joins two comparisons, naming the "
-                      "middle value twice.");
+        Message message;
+        message.place = second_op.place;
+        message.fix = replaced_line(whole, whole.length, replacement);
+        message.why = "a comparison sets two values against each other; `and` joins two comparisons, naming the "
+                      "middle value twice.";
+        messages_.add(std::move(message));
         failed_ = true;
     }
 
