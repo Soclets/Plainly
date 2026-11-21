@@ -3,8 +3,8 @@
 ## The compiler
 
 Unio's compiler, `Unlo\n` (D51, D135, D136, D137), is written in C++. It compiles a whole program ahead of time to one
-native executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it to a temporary
-file and starts it (D45, D131).
+native executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it and starts it,
+keeping the program in the compile cache (D45, D131, D159).
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
