@@ -95,8 +95,8 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 3. **Each language's own casing:** C++ uses the standard library's style, `snake_case` for functions and variables
    and `CamelCase` for types; OCaml uses its own `snake_case`.
 4. **Tests are named after their decision,** like `d17_comparisons`, so a failing test points at its rule.
-5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in C++ and OCaml alike, so a check can
-   list any decision nothing carries out yet.
+5. **Code that carries out a decision says so** with a comment, `// trace: D17` in C++ and `(* trace: D17 *)` in OCaml
+   and Rocq, so a check can list any decision nothing carries out yet.
 
 ## Building
 
