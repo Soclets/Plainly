@@ -15,6 +15,8 @@ Inductive refusal :=
 | Name_in_use (name : string) (at_ first_at : place)
 (* trace: D14, D85, D87 *)
 | Let_cannot_change (name : string) (at_ keyword_at : place)
+(* trace: D147: a parameter is read-only, like a `let` *)
+| Parameter_cannot_change (name : string) (at_ parameter_at : place)
 (* trace: D102, D126 *)
 | Two_parameters_one_name (name : string) (at_ : place)
 (* Types *)
@@ -137,7 +139,6 @@ Inductive not_designed :=
 | Library_name_taken             (* a procedure with the name of one of the library's *)
 | Label_order                    (* labels in a different order from the parameters (D24, D25) *)
 | Return_type_wording            (* the message for `return` giving a value of the wrong type (D57) *)
-| Changing_parameter             (* giving a parameter a new value (D130) *)
 | Main_returns.                  (* `proc.main` with `returns` (D4, D37) *)
 
 Inductive diagnostic :=

@@ -533,19 +533,26 @@ let begin_line st (t : token) depth =
   let first_on_line =
     match st.lines.(t.line - 1).tokens with first :: _ -> first.column = t.column | [] -> false
   in
-  if not first_on_line then not_designed st t "two statements on one line"
+  if not first_on_line then
+    (* trace: D146 *)
+    report st
+      (M.message M.Refused
+         (M.point t.line t.column (String.length text - t.column + 1))
+         ~what:"this line has two statements" ~why:"each statement goes on a line of its own.")
   else begin
     (* Lines holding only a comment, since the last line checked. *)
     for number = st.last_code_line + 1 to t.line - 1 do
       let l = st.lines.(number - 1) in
       if l.tokens = [] && l.comment then begin
-        let indent = String.length l.text - String.length (String.trim l.text) in
-        let starts_with_end = is_word "end" t || is_word "else" t in
-        let fits = indent = 4 * depth || (starts_with_end && indent = 4 * (depth + 1)) in
-        if (not fits) || String.contains (String.sub l.text 0 indent) '\t' then
+        (* trace: D145. Indented like the line after it, or one level in right before a closer or `else`. *)
+        let content = String.trim l.text in
+        let indent = String.length l.text - String.length content in
+        let levels = if is_word "end" t || is_word "else" t then depth + 1 else depth in
+        let wanted = String.make (4 * levels) ' ' in
+        if String.sub l.text 0 indent <> wanted then
           report st
-            (M.message M.Not_designed_yet (M.point number 1 (max 1 indent))
-               ~what:"how a comment on a line of its own is indented isn't decided yet")
+            (M.message M.Refused (M.point number 1 indent) ~fix:(wanted ^ content)
+               ~why:"each level of indentation is 4 spaces, and tabs aren't used.")
       end
     done;
     st.last_code_line <- t.line;
@@ -1138,10 +1145,10 @@ let parse (lines : Lexer.line list) =
   | None when not st.stopped ->
       for number = st.last_code_line + 1 to Array.length lines do
         let l = lines.(number - 1) in
-        if l.tokens = [] && l.comment && String.length l.text > 0 && l.text.[0] = ' ' then
+        if l.tokens = [] && l.comment && String.length l.text > 0 && (l.text.[0] = ' ' || l.text.[0] = '\t') then
           report st
             (M.message M.Not_designed_yet (M.point number 1 1)
-               ~what:"how a comment on a line of its own is indented isn't decided yet")
+               ~what:"how a comment after the last line of code is indented isn't decided yet")
       done
   | _ -> ());
   let stop_line = match peek st with Some t when st.stopped -> t.line | _ -> max_int in

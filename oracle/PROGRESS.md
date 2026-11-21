@@ -107,7 +107,7 @@ Known gaps, each to be built:
 ## Questions for the design session
 
 Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 unless marked otherwise. Questions 1 to
-3 are answered by D142, 4 by D143, 5 and 6 by D144, 10 from D128, all built; 7 and 8 are with Tankun.
+3 are answered by D142, 4 by D143, 5 and 6 by D144, 7 by D145, 8 by D146, 9 by D147, 10 from D128, all built.
 
 1. *(Answered, D142.)* **Negation overflowing:** D92's `when:` shows the values, as in `9223372036854775807 + 1`. What does it show for
    `-$x` when `$x` is -9223372036854775808? (Draft: `-(-9223372036854775808)`.)
@@ -122,10 +122,10 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
 5. *(Answered, D144: `\r\n` is one line break.)* **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
    a line.)
 6. *(Answered, D144.)* **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
-7. **A comment on a line of its own:** how is it indented? Ralph accepts the indentation of the line after it (or one
+7. *(Answered, D145.)* **A comment on a line of its own:** how is it indented? Ralph accepts the indentation of the line after it (or one
    level in, when that line is a closer or `else`), and stops with `NotDesignedYet` otherwise.
-8. **Two statements on one line**, as in `a(); b();`: Ralph stops with `NotDesignedYet`.
-9. **Giving a parameter a new value:** D130 leaves a parameter's words undecided, so Ralph stops with
+8. *(Answered, D146: refused.)* **Two statements on one line**, as in `a(); b();`: Ralph stops with `NotDesignedYet`.
+9. *(Answered, D147: refused, like a `let`.)* **Giving a parameter a new value:** D130 leaves a parameter's words undecided, so Ralph stops with
    `NotDesignedYet`.
 
 10. *(Answered by the design session from D128: the innermost call starts the slide whole when it takes more than
@@ -135,14 +135,15 @@ Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 u
 
 ## Readings taken where the standard is quiet
 
-Each is what Ralph does now. The design session confirmed all but 2 and 8 on 2026-11-21; those two are with
-Tankun.
+Each is what Ralph does now. The design session confirmed all but 2 and 8 on 2026-11-21; 2 became D148, and 8 is
+with Tankun.
 
 1. **Where refusals live:** the prompt puts "every refusal" in Rocq. Ralph's parser (OCaml) refuses what's about how
    text is written (`;`, `:`, closers, indentation, blank lines, quotes, names' spelling, `=` in a condition, chained
    comparisons), since those are found before there's a syntax tree; the Rocq checker refuses everything about
    meaning. The type-safety theorem covers what the checker accepts.
-2. **Status with both kinds:** a program with refusals and a `NotBuiltYet` or `NotDesignedYet` exits with 3.
+2. *(Decided, D148: status 1.)* **Status with both kinds:** a program with refusals and a `NotBuiltYet` or
+   `NotDesignedYet` exits with 1; 3 is only for limits alone.
 3. **The parser's messages,** generalised from D92's three: "`` `)` should be here, not `x` ``", "a value should be
    here, not `` `x` ``", "the line ends where `` `"` `` should be", with no `why:`.
 4. **Carets** where the decisions don't say: a type mismatch in `==` or `+` points at the operator; a missing `return`

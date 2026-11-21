@@ -150,6 +150,11 @@ let refusal source (r : Core.refusal) : M.message =
         ~what:(Printf.sprintf "%s can't be given a new value" (variable name))
         ~because:(Printf.sprintf "line %d declares it with `let`" keyword.place_line, Some (at keyword))
         ~why:"only a `var` can be given a new value."
+  | Core.Parameter_cannot_change (name, p, parameter) ->
+      refused p
+        ~what:(Printf.sprintf "%s can't be given a new value" (variable name))
+        ~because:(Printf.sprintf "%s is a parameter" (variable name), Some (at parameter))
+        ~why:"a parameter can't be given a new value; to change a copy, declare a `var` from it."
   | Core.Two_parameters_one_name (name, p) ->
       refused p ~what:(Printf.sprintf "two parameters are named %s" (variable name)) ~why:"each parameter needs its own name."
   | Core.Wrong_value_type (name, expected, found, p) ->
@@ -377,7 +382,6 @@ let not_designed (what : Core.not_designed) =
   | Core.Library_name_taken -> "a procedure with the name of one of the library's"
   | Core.Label_order -> "writing labels in a different order from the parameters"
   | Core.Return_type_wording -> "the message for `return` with a value of the wrong type"
-  | Core.Changing_parameter -> "giving a parameter a new value"
   | Core.Main_returns -> "`proc.main` with `returns`"
 
 (* Every core diagnostic as a message; [None] for a part the parser has already refused. *)

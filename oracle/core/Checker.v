@@ -585,7 +585,8 @@ Fixpoint check_statement (s : setting) (st : statement) {struct st} : setting * 
       | Some info =>
           match variable_kind info with
           | Let_variable => (s, [Refused (Let_cannot_change name name_at (variable_keyword_at info))] ++ ds)
-          | Parameter_variable => (s, [Not_designed_yet Changing_parameter name_at] ++ ds)
+          | Parameter_variable =>
+              (s, [Refused (Parameter_cannot_change name name_at (variable_name_at info))] ++ ds)
           | Var_variable =>
               (s, ds ++ expect t (variable_type info)
                           (fun found => Refused (Wrong_value_type name (variable_type info) found (expression_at value))))

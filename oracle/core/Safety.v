@@ -1098,6 +1098,9 @@ End Safety_proof.
    decided yet, like `random` with `from:` above `to:`; or `ask` finds no more input. Or it's still running when the
    fuel, the evaluator's step counter, runs out. It never meets a variable that isn't there, a value of the wrong
    type, a procedure that doesn't exist, a `break` outside a loop, or a procedure with `returns` that finishes
-   without giving a value. *)
+   without giving a value.
+   What it doesn't say: that the evaluator's rules are the standard's. It promises the evaluator never reaches its own
+   [Stuck] cases; the tests, and later the comparison with `Unlo\n`, check that what it does is what the standard
+   says. *)
 Theorem type_safety : forall p fuel, check_program p = [] -> safe (fun _ => True) (run fuel p).
 Proof. intros p fuel Accepted. apply run_safe. exact Accepted. Qed.

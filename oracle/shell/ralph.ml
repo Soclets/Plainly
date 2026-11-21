@@ -186,8 +186,9 @@ let () =
           in
           if messages <> [] then begin
             print_messages file source messages;
-            let limit = List.exists (fun (m : M.message) -> m.kind = M.Not_built_yet || m.kind = M.Not_designed_yet) messages in
-            finish (if limit then 3 else 1)
+            (* trace: D56, D148. Any refusal gives status 1; only limits alone give 3. *)
+            let refused = List.exists (fun (m : M.message) -> m.kind = M.Refused) messages in
+            finish (if refused then 1 else 3)
           end
           else walk file source (Core.run fuel definitions))
   | _ ->
