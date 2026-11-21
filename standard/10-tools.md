@@ -48,9 +48,10 @@ plainly oracle game.plainly
 
 ## Memory
 
-Every variable owns its own value, and a value is freed when its owner ends: there's no garbage collector, so no
-pauses (D130). Running out of memory stops the program with `check failed:` and status 4, at the line that needed the
-memory, with what was needed, what was in use and the limit in `when:` (D115, D122).
+Every variable owns its own value, and a value is freed when its owner ends: there's no garbage collector, so no pauses
+(D130). A program may hold at most 30% of the machine's memory, with no settings (D134). Running out stops the program
+with `check failed:` and status 4, at the line that needed the memory, with what was needed, what was in use and the cap
+in `when:` (D115, D122).
 
 ## Build modes
 

@@ -3604,6 +3604,8 @@ soft target of about twice what's in use, and no settings until one is needed?",
 
 (Replaced by D130: Hylo-style values.)
 
+(Replaced by D134: the cap is 30% of the machine's memory.)
+
 ## D115. Running out of memory stops the program as a failed check, status 4
 
 2026-11-20.
@@ -4201,3 +4203,41 @@ printed wrong.
 
 **Tankun's words.** Asked "Should `{name}` without `$` in `.fmt` text be refused, with the `$` added as its fix?", the
 owner chose: "yea".
+
+## D134. A program may hold at most 30% of the machine's memory
+
+2026-11-21.
+
+**Chosen.** The runtime caps the memory a program holds at 30% of the machine's memory, with no settings. A program that
+needs more stops as D115 says, with `check failed:` and status 4 at the line that needed it, and D122's `when:`
+naming the cap:
+
+```
+ when:    needed 1.0 GiB more, with 6.8 GiB of the 7.2 GiB it may use on this computer in use
+```
+
+| Machine's memory | Cap |
+|---|---|
+| 4 GiB | 1.2 GiB |
+| 8 GiB | 2.4 GiB |
+| 16 GiB | 4.8 GiB |
+| 24 GiB (Tankun's Mac) | 7.2 GiB |
+| 32 GiB | 9.6 GiB |
+
+This replaces D114's limit, the machine's memory less 10% or 1 GiB, which D130 had left without a collector to belong
+to.
+
+**Weighed.**
+- No cap of its own, leaving it to the system. macOS and Linux rarely refuse memory outright: the machine swaps and
+  crawls, then the system kills the program with no Plainly message, so D115's message would almost never appear.
+- D114's limit, 21.6 GiB on Tankun's Mac. With a browser and an editor open, the machine would swap before a runaway
+  program reached it. It suited PlainGC, which paced itself against its limit.
+- Half the machine's memory, as the design claude recommended. 30% stops a runaway program sooner, and still leaves
+  hundreds of times what a terminal game uses, even on a 2 GiB machine.
+
+**Why this won.** The cap's only job is to stop a runaway program, like a list that grows forever, with a clear message
+at the line that did it, before the machine slows down; a terminal game uses a few megabytes, so it never comes close.
+
+**Tankun's words.** "How much?", "Wait, did you just say my MacBook can't handle a browser and editor opened?", "Why
+not lower?", "What about 30%?", "What if 4GB machine?", then, asked "Should the runtime cap a program at 30% of the
+machine's memory?", the owner chose: "yea".
