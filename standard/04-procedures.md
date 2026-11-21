@@ -52,35 +52,20 @@ proc double($n: Whole) returns Whole:
 
 Failures in a header: chapter 8.
 
-## Procedures written in Rust
+## Procedures written in C++
 
-`extern.rust` in front of `proc` says the procedure's body is written in Rust, outside the Plainly file. Its body is
-empty, or holds only a `labels` line, and its closer doesn't repeat `extern.rust` (D36):
+`extern.cpp` in front of `proc` says the procedure's body is written in C++, outside the Plainly file. Its body is
+empty, or holds only a `labels` line, and its closer doesn't repeat `extern.cpp` (D36, D131):
 
 ```
-extern.rust proc beep returns Bool:
+extern.cpp proc beep returns Bool:
 end proc beep
 ```
 
 Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
 
-Its Rust code lives in a folder named `rust` in the program's folder, holding an ordinary Cargo project, which
-PlainCompiler builds and links into the program (D107), only when an `extern.rust` procedure uses it (D118). Each
-procedure's Rust function is marked with a macro naming it exactly, which writes the glue that links it, (D108):
-
-```rust
-#[plainly::procedure("show_msg.same_line")]
-fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
-```
-
-A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned directly; how a `Text` or a list
-crosses isn't decided yet (D109, D130).
-
-An `extern.rust` procedure that can fail lists its failures in its header as any procedure does; its Rust function
-returns Rust's `Result`, with the failures named in the macro, as in `fails = "not_found, unreadable"`, and
-PlainCompiler refuses a program whose macro and header disagree (D110). If its Rust code panics, going wrong rather than
-failing on purpose, the program stops with an `internal error:` naming the procedure, with status 7, and a `why:` naming
-the Rust file and line, to fix it there or report it to whoever wrote it (D111, D112).
+**Not decided:** where the C++ code lives, and how it's built and linked; how it's matched to its procedure; how
+values cross; how it fails on purpose, and what happens when it crashes (D131).
 
 ## Families
 

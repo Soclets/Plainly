@@ -2,8 +2,8 @@
 
 ## `Whole`
 
-A whole number from -9223372036854775808 to 9223372036854775807, negatives included: a 64-bit signed integer, Rust's
-`i64` (D15).
+A whole number from -9223372036854775808 to 9223372036854775807, negatives included: a 64-bit signed integer, C++'s
+`std::int64_t` (D15, D131).
 
 ```
 let $secret: Whole = 42;

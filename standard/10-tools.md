@@ -2,16 +2,16 @@
 
 ## The compiler
 
-Plainly's compiler, PlainCompiler (D51), is written in Rust. It compiles a whole program ahead of time to one native
-executable, through Cranelift, with no bytecode and no JIT. Running a program compiles it to a temporary file and starts
-it (D45).
+Plainly's compiler, PlainCompiler (D51), is written in C++. It compiles a whole program ahead of time to one native
+executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it to a temporary file
+and starts it (D45, D131).
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
 PlainCompiler works in stages (D62):
 
 ```
-source → syntax tree → typed tree → Plainly IR → Cranelift IR → native code
+source → syntax tree → typed tree → Plainly IR → LLVM IR → native code
 ```
 
 Refusals happen at the typed tree, so `plainly check` stops there. Plainly IR is the one intermediate form of Plainly's
@@ -59,13 +59,13 @@ Every build names one of two modes, `--working` or `--final`. There's no default
 | Mode | Optimizations | Checks |
 |---|---|---|
 | working | none, so the fastest compile | every check kept, each stopping at the exact line |
-| final | full, from Plainly's front end and Cranelift | none dropped; expensive ones made cheaper |
+| final | full, from Plainly's front end and LLVM | none dropped; expensive ones made cheaper |
 
 In final mode, checks the optimizer proves can never fail are removed, and the NaN check after every float operation
 becomes the CPU's own flags, read where a value leaves a procedure, so its message names the procedure (D46).
 
 Final mode's optimizations (D124), none of which changes what a program does:
-- Cranelift's full optimizing;
+- LLVM's full optimizing;
 - removing checks that can't fail, using what an `if` proved;
 - inlining small procedures, and moving check-failure code out of the way so more inline;
 - keeping short-lived values off the heap;

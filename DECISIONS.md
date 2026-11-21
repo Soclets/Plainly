@@ -1080,6 +1080,8 @@ D40, with v2's short forms.
 **Tankun's words.** Asked "`extern.rust proc` like that?", the owner chose: "yea. `returns` locked" (the second half
 is D37).
 
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
+
 ## D37. A procedure's header says what it gives back with `returns`
 
 2026-11-20.
@@ -1393,6 +1395,8 @@ the compiler and `extern.rust` procedures (D36) share one world. This is Plainly
 **Tankun's words.** Asked "A Rust compiler, ahead of time to native through Cranelift?", the owner chose: "yea, what
 about build modes? `--Working` (no optimization, every runtime check kept) and `--Final` (max optimization from backend
 and frontend, cheap checks kept)?"
+
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
 
 ## D46. Two build modes, working and final, with no default; final never drops a check
 
@@ -1947,6 +1951,8 @@ where tests and PlainOracle catch it.
 Plainly's own for its checks and optimizations, with the backend library doing the rest.
 
 **Tankun's words.** Asked "These stages for PlainCompiler?", the owner chose: "yea".
+
+(Changed by D131: the stage after Plainly IR is LLVM IR, not Cranelift IR.)
 
 ## D63. The standard library targets the terminal, on `crossterm`; a GUI only as a later package, if ever
 
@@ -3362,6 +3368,8 @@ the crates games need for the terminal, with one command still building everythi
 **Tankun's words.** Asked "Should `extern.rust` code live in a `rust` folder holding a Cargo project, beside the
 program's `.plainly` files, built and linked by PlainCompiler?", the owner chose: "yea".
 
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
+
 ## D108. An `extern.rust` procedure's Rust function is marked with `#[plainly::procedure("...")]`
 
 2026-11-20.
@@ -3397,6 +3405,8 @@ other ways leave to hand-written `unsafe` code, at the cost of a small crate tha
 `extern.rust` procedure's Rust function be marked with `#[plainly::procedure("...")]` naming its Plainly procedure,
 with the macro writing the glue that links it?", the owner chose: "yea".
 
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
+
 ## D109. `Whole` crosses into Rust as `i64` and `Bool` as `bool`, passed and returned directly
 
 2026-11-20.
@@ -3413,6 +3423,8 @@ D92) and its `Bool` values Rust's `bool`, as parameters and as what it returns, 
 
 **Tankun's words.** Asked "Should `Whole` cross into Rust as `i64` and `Bool` as `bool`, both passed and returned
 directly?", the owner chose: "yea".
+
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
 
 ## D110. A failing `extern.rust` procedure returns Rust's `Result`, its failures named in the macro and checked against the header
 
@@ -3446,6 +3458,8 @@ header at build time means a failure the Plainly code doesn't expect can't happe
 
 **Tankun's words.** Asked "Should a failing `extern.rust` procedure return Rust's `Result`, with its failures named in
 the macro and checked against the Plainly header when PlainCompiler builds the program?", the owner chose: "yea".
+
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
 
 ## D111. A panic in an `extern.rust` procedure stops the program as an internal error, with status 7
 
@@ -3482,6 +3496,8 @@ keeps the list short, while the message still says exactly where the bug is.
 status 7, naming the procedure, showing the Plainly call, and giving Rust's panic message as the `what:`?", the owner
 chose: "yea".
 
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
+
 ## D112. A Rust panic's `why:` says where in the Rust it happened, and to fix it there or report it
 
 2026-11-20.
@@ -3505,6 +3521,8 @@ knows to tell whoever made it.
 
 **Tankun's words.** "Whyb Doesn't say what to do, though.", then, asked "Should D111's `why:` say where in the Rust it
 went wrong, and to fix it there or report it to whoever wrote it?", the owner chose: "yea".
+
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
 
 ## D113. PlainGC's pacer is ZGC's: it starts each collection just early enough to finish before the heap's limit
 
@@ -3672,6 +3690,8 @@ as soon as their Plainly code calls the procedure, which is refused as unknown.
 **Tankun's words.** Asked "Should a `rust` folder be ignored, not built, when no `extern.rust` procedure uses it?", the
 owner chose: "yea".
 
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
+
 ## D119. The wording of the seventh batch: `extern.rust`'s refusals and its macro's messages
 
 2026-11-20.
@@ -3702,6 +3722,8 @@ The macro's own messages, shown by Rust while it builds the `rust` folder:
 - `.plainly` without backticks, as drafted. It's text typed in a file's name, like other code in messages.
 
 **Tankun's words.** Asked "Do all of these read right, with my two changes?", the owner chose: "yea".
+
+(Replaced by D131: PlainCompiler is C++ on LLVM, and `extern.rust` becomes `extern.cpp`, whose details are open again.)
 
 ## D120. A call whose value isn't used is refused
 
@@ -3867,6 +3889,9 @@ make a Fortran shit, and soAW({fuhy'ieqg;qAOfg" (the design claude built and tim
 against 2.62 s unoptimized); shown six, "Any more? Maybe look at LLVM's premade passes"; shown eleven, "C'mon 🥺";
 shown fourteen, "Look at GCC's premade too"; shown twenty, "What's Graphite? 🥺". Then, asked "Should `final` make
 twenty-one: the twenty plus Graphite-style polyhedral loop optimization, built last?", the owner chose: "Pwease 🥺".
+
+(Changed by D131: the first optimization is LLVM's full optimizing, in place of Cranelift's; and by D130: the fourth,
+load barriers, has nothing to work on.)
 
 ## D125. Variable names start with `$` again
 
@@ -4069,3 +4094,40 @@ save that. No copy no share words shit."; added "Memory model: Hylo" to the READ
 So, you're fucking telling me we're getting mini Rust with the tradeoff being just slow copies hidden sometimes? All
 along sitting there?", then, asked "Should Plainly's memory be Hylo-style values, with automatic copies and no `copy`
 or `share` words?", the owner chose: "Bless Hylo, yes".
+
+## D131. PlainCompiler is written in C++, on LLVM for both modes, with `extern.cpp`
+
+2026-11-21.
+
+**Chosen.**
+- **PlainCompiler and its runtime are written in C++,** calling LLVM directly, replacing D45's Rust and Cranelift.
+- **LLVM does both modes:** `working` with LLVM's optimizing off, `final` with it fully on, plus Plainly's own
+  optimizations on Plainly IR (D124). One backend and one path, so D62 holds, with LLVM IR in place of Cranelift IR:
+  source → syntax tree → typed tree → Plainly IR → LLVM IR → native code.
+- **`extern.cpp` replaces `extern.rust`** (D36): a procedure's body can be written in C++. Where that code lives, how
+  it's built and linked, how values cross, how it fails and what happens when it crashes are open again, replacing
+  D107 to D112, D118 and D119, which were made for Rust. Their thinking is the starting point.
+- PlainOracle stays OCaml and Rocq (D129), now in a different language from the compiler.
+
+**Weighed.**
+- Rust and Cranelift (D45), as built in the first build. The least upkeep and the fastest `working` compiles, but most
+  of D124 would be ours to build, and it isn't the part Tankun is excited about.
+- Rust and LLVM through Lyftar, as Cyborg does. Ties Plainly to Cyborg's stack, so a missing piece in Lyftar means
+  switching projects; Tankun works on one language at a time.
+- Cranelift for `working` and LLVM for `final`, as Rust is moving towards. Two backends and two paths.
+- A TypeScript front with a C++ back. Four languages with the oracle, and TypeScript is slow for compilers; it stays
+  for the VS Code extension.
+- A GCC fork, Plainly as a GCC front end. GPLv3, a fork to keep merging, and huge builds.
+
+**Why this won.** With D130 there's no garbage collector, which was behind both objections to C++: no moving collector
+for C++ code to trip over, and no Rust-only handles forcing a second language. Most of D124 comes free from LLVM, the
+Rocq oracle checks the compiler from a different language, and LLVM and C++ are new ground Tankun is excited to build
+on. The costs: C++ can crash in ways Rust can't, so it needs strict rules; LLVM's C++ interface changes each year, so
+one version is pinned and upgraded yearly; and `working` compiles slower than with Cranelift, which D65's cache and
+incremental compiling soften.
+
+**Tankun's words.** On the evening of 2026-11-20: "What if the compiler is TypeScript + C++ + LLVM?", "LLVM + C++ is
+very exciting for me, there's practically nothing on that by me, aswell as Swift style memory", "We could just make it
+`extern.cpp`?", "But it's less effort than with Lyftar, though", "But i don't do pararell, lol. I can't juggle two
+fucking langs at the same time". Then, asked "Should PlainCompiler be written in C++, on LLVM for both modes, with
+`extern.cpp`?", the owner chose: "yea. What about the C++ rules?"

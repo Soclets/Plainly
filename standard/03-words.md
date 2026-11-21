@@ -25,7 +25,7 @@ message".
 | `instead` | | D40 |
 | `labels`, `as` | | D25 |
 | `.fmt` | format | D2, D29 |
-| `extern`, `.rust` | external | D2, D36 |
+| `extern`, `.cpp` | external | D2, D36, D131 |
 | `returns` | | D37 |
 | `return` | | D57 |
 | `fam` | family | D2, D41 |
