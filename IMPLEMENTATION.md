@@ -1,9 +1,53 @@
 # Plainly: rules
 
-The rules for every session in this repository, for the decision log, the code, building and prompting. A hook prints
-this file into every session at startup, after a compaction and after a clear, but not on a resume, when it's already
-there. CLAUDE.md holds the rest: who's who, how to talk with Tankun, git and bedtime. A changed rule is changed here,
-with Tankun's OK.
+The rules for every session in this repository. A hook prints this file into every session at startup, after a
+compaction and after a clear, but not on a resume, when it's already there; there's no CLAUDE.md, so nothing is
+repeated. A subagent doesn't get it from the hook, so its prompt carries these rules (Prompting). A changed rule is
+changed here, with Tankun's OK.
+
+These rules are for every Claude session in this repository. The **design
+session** (the design claude) designs Plainly with Tankun: it proposes,
+explains, and keeps the record in DECISIONS.md and `standard/`. **Building
+sessions**, such as PlainCompiler's, build from the standard; they follow their
+prompt in `design/` as well as these rules, and they never decide anything
+about the language. Tankun designs languages but isn't a programmer, so every
+session explains in plain words. The design choices are Tankun's.
+
+Plainly v1 lives at `Soclets/Plainly-lang-legacy` (101+ decisions, an OCaml
+oracle). v2 is a fresh start that keeps much of v1's thinking: nothing from v1
+counts as decided for v2 until Tankun confirms it here and it's logged.
+
+## Working with Tankun
+
+- Design choices are Tankun's. Propose with one clear recommendation and the
+  reason for it, never a menu with no opinion.
+- Ask one question at a time, in plain chat text. No question popups, buttons
+  or pre-made answers, including in any end-of-turn summary box.
+- Explain plainly, but keep the real technical words and explain them, as in
+  "`i32` (a 32-bit signed integer)". A tiny code example usually beats a
+  paragraph.
+- A remark or a question from Tankun isn't a yes. When an answer is unclear,
+  like "yea" to an either-or question, check which they meant before logging.
+- Weigh Tankun's hints on their merits. A mentioned option is a prompt to
+  compare it, not to agree with it: earlier sessions went wrong by finding
+  reasons for whatever Tankun seemed to lean towards. Equally, don't invent
+  problems: if an idea is fine, say so.
+- Before proposing anything, search DECISIONS.md and the design so far for
+  what's already decided, and build on it. Don't clash with a decision or
+  reinvent a feature that already exists.
+- Use the language's own words. Don't invent a new word in a name when the
+  language already has one for that thing.
+- When you got something wrong, say so plainly and fix it.
+- Refer to Tankun as they/them. Swearing is fine.
+- Never use the visualize widget. If a picture helps, draw it as a real file.
+- Building started on 2026-11-20, when Tankun asked for PlainCompiler's prompt
+  (`design/compiler-prompt.md`). Nothing else gets built until Tankun says so.
+- On the evening of 2026-11-20, Tankun chose to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21
+  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to Plainly. The first build
+  (about 10,000 lines of Rust) stays in git history for reference; the decisions, the standard and the tests carry over
+  unchanged.
+- Sketches from other chats (e.g. multifinity's) are leanings, not decisions,
+  until Tankun confirms them here.
 
 ## Decision log (DECISIONS.md)
 
@@ -132,8 +176,8 @@ It can come later for one small, critical piece if a bug there ever gets through
     is silent; if both are silent, it's a question for Tankun. Findings about PlainCompiler go to the compiler session
     without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
     source, can write a second, independent generator. (From Cyborg's rule 3.)
-13. **Where.** Only the design session edits DECISIONS.md, `standard/`, `tests/`, `design/`, CLAUDE.md and
-    IMPLEMENTATION.md, the last two only with Tankun's OK. Each building session edits only its own folders: the
+13. **Where.** Only the design session edits DECISIONS.md, `standard/`, `tests/`, `design/` and
+    IMPLEMENTATION.md, the last only with Tankun's OK. Each building session edits only its own folders: the
     compiler session `compiler/` and `tools/`, the oracle session `oracle/` and `check/`. With several sessions in one
     folder, each commits only its own files by name, never `git add -A` or `git add .`. (From Cyborg's rule 2.)
 
@@ -146,5 +190,27 @@ and reads the file itself, in full, and again after every compaction. Never thro
 drop parts. Delete the downloaded guide once you've read it, so a stale copy is never read in its place. Prompts for
 other sessions are written in `design/` as one copiable block, checked against the guide before they're handed over,
 including how a long-running session keeps going and when it stops. A prompt that's already been pasted is never the
-fix: changes go to that session as a message. Messaging another session isn't prompting, and is written like one
-colleague talking to another.
+fix: changes go to that session as a message. A subagent's prompt includes this file's rules, since the hook doesn't
+reach a subagent. Messaging another session isn't prompting, and is written like one colleague talking to another.
+
+## Git
+
+- Branch `main`; remote `Soclets/Plainly` (public).
+- Commit and push automatically, without asking each time.
+- Repo-local author: `Tankun Sriket <tankunsriket63741ecff056.invalid>`.
+- Subjects are `kind.folder.narrowing: sentence`. Kinds: `decision`,
+  `design`, `feature`, `fix`, `test`, `house`. The second word is the folder,
+  or the topic for `decision`, `design` and `house`. The third word is
+  optional; there's never a fourth.
+- A decision's commit credits who chose it and its number, as in
+  `(owner: "yea"; D2)`.
+- Every commit ends with its own session's trailer, so `git log` shows which
+  session made each change: `Co-Authored-By: design claude <noreply@anthropic.com>`
+  for the design session, and `compiler claude` or
+  `oracle claude` in the same form for building sessions.
+
+## Bedtime
+
+Stop everything after 8:30 PM local time and suggest Tankun stops too: going
+past bedtime has made them abandon languages before. Check the time with
+`date` when a conversation runs into the evening.
