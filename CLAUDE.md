@@ -37,9 +37,10 @@ counts as decided for v2 until Tankun confirms it here and it's logged.
 - Never use the visualize widget. If a picture helps, draw it as a real file.
 - Building started on 2026-11-20, when Tankun asked for PlainCompiler's prompt
   (`design/compiler-prompt.md`). Nothing else gets built until Tankun says so.
-- On the evening of 2026-11-20, Tankun chose to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21,
-  once Cyborg's implementation rules have been brought over to Plainly. The first build (about 10,000 lines of Rust)
-  stays in git history for reference; the decisions, the standard and the tests carry over unchanged.
+- On the evening of 2026-11-20, Tankun chose to rewrite PlainCompiler and PlainGC from a clean start on 2026-11-21
+  (PlainGC is gone since D130), once Cyborg's implementation rules have been brought over to Plainly. The first build
+  (about 10,000 lines of Rust) stays in git history for reference; the decisions, the standard and the tests carry over
+  unchanged.
 - Sketches from other chats (e.g. multifinity's) are leanings, not decisions,
   until Tankun confirms them here.
 
@@ -98,7 +99,7 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 
 ## Building
 
-Rules for building PlainCompiler, PlainGC and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
+Rules for building PlainCompiler and PlainOracle, brought over from Cyborg's IMPLEMENTATION.md (owner,
 2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Plainly is a
 learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
 It can come later for one small, critical piece if a bug there ever gets through.
@@ -118,7 +119,7 @@ It can come later for one small, critical piece if a bug there ever gets through
    `clippy::indexing_slicing`, `clippy::todo`, `clippy::unimplemented`, `clippy::unreachable`,
    `clippy::undocumented_unsafe_blocks` and `clippy::dbg_macro`, so no hidden panic is left and every `unsafe` block's
    `// SAFETY:` comment is checked. `clippy::nursery` stays off, for its false alarms. Every crate
-   also has `#![forbid(unsafe_code)]`, except the runtime, PlainGC and the `plainly` crate's glue (D108), where each
+   also has `#![forbid(unsafe_code)]`, except the runtime and the `plainly` crate's glue (D108), where each
    `unsafe` block has a comment saying why it's safe. A bad program never crashes PlainCompiler: if PlainCompiler
    itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle's OCaml builds with every
    warning as an error, and its Rocq core has no unproven `Admitted` (D129). (From Cyborg's rules 6 and 7.)
@@ -142,7 +143,7 @@ It can come later for one small, critical piece if a bug there ever gets through
 8. **Downloads are free.** A dependency or tool is chosen on maturity, safety, maintenance and speed. A less mature or
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
-9. **Language.** PlainCompiler, PlainGC, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
+9. **Language.** PlainCompiler, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
    test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is OCaml and Rocq
    (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
    one-line commands in config; and scratch work that's never committed. (From Cyborg's rule 1.)
@@ -150,10 +151,10 @@ It can come later for one small, critical piece if a bug there ever gets through
     or marks **Not decided**, stops with `NotDesignedYet` (D56), and the question goes to Tankun through the design
     session. Something decided but not built yet stops with `NotBuiltYet`, never `NotDesignedYet`. (From Cyborg's
     rule 4.)
-11. **Tests.** A building session never pushes while a test that passed before now fails, in either mode or in
-    collect-often mode. A new test from the design session may fail until what it tests is built. Output matches the
-    expected files byte for byte, and a building session never edits an expected file: a test that looks wrong goes to
-    the design session (D12). (From Cyborg's rule 5.)
+11. **Tests.** A building session never pushes while a test that passed before now fails, in either mode. A new test
+    from the design session may fail until what it tests is built. Output matches the expected files byte for byte, and
+    a building session never edits an expected file: a test that looks wrong goes to the design session (D12). (From
+    Cyborg's rule 5.)
 12. **The oracle stays apart.** The compiler session reads the tests, never PlainOracle's source, and the oracle session
     never reads PlainCompiler's. If one copied the other, their bugs would agree, and comparing them would prove
     nothing.
@@ -161,7 +162,7 @@ It can come later for one small, critical piece if a bug there ever gets through
     so what counts as a valid program comes from the standard, not from one implementation's reading of it. It builds
     programs from a syntax tree with one printer, and tracks what it doesn't generate, since all passing doesn't mean
     covered. A live comparison runs PlainOracle and PlainCompiler as black boxes on every generated program and every
-    test, in every build mode and in collect-often mode, and shrinks any difference to the smallest program that still
+    test, in every build mode, and shrinks any difference to the smallest program that still
     shows it. A difference is a bug in one of them, and the standard decides which, or DECISIONS.md where the standard
     is silent; if both are silent, it's a question for Tankun. Findings about PlainCompiler go to the compiler session
     without fixes. The oracle session builds `check/` for now; a later check session, reading neither implementation's
@@ -196,7 +197,7 @@ colleague talking to another.
   `(owner: "yea"; D2)`.
 - Every commit ends with its own session's trailer, so `git log` shows which
   session made each change: `Co-Authored-By: design claude <noreply@anthropic.com>`
-  for the design session, and `compiler claude` (which builds PlainGC too) or
+  for the design session, and `compiler claude` or
   `oracle claude` in the same form for building sessions.
 
 ## Bedtime

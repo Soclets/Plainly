@@ -112,8 +112,8 @@ A Plainly program can run several parts of itself at once (D66), in two ways (D6
 Real threads are **workers** (D68):
 - **Each worker has its own variables;** nothing changeable is shared between two workers.
 - **Workers talk by sending values,** which arrive as copies.
-- **`share` can't cross from one worker to another,** and trying is refused at compile time, so data races are
-  impossible.
+- **Nothing is ever shared between workers,** since every variable owns its own value, so data races are impossible
+  (D130).
 - **Values that can never change, like a `let`, may be read by every worker** without copying.
 
 Messages from several workers can still arrive in different orders between runs, and two workers each waiting on the

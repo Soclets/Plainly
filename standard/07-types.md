@@ -73,10 +73,9 @@ So `2 + 3 * 4` is 14. Where maths doesn't say, brackets are required: `&` next t
 Dividing by zero is a failed check that stops the program (D46, D72).
 
 `??` belongs to the call right before it and takes a single value after it, so `$score + be.Whole($t) ?? 0` means
-`$score + (be.Whole($t) ?? 0)` (D81). Two comparisons in a row, as in `1 < $x < 10`, are refused, with `1 < $x and $x < 10`
-as the fix; and an operator after a slide's last step, as in `$x |> f |> g |> h + 1`, is refused, with
-`($x |> f |> g |> h) + 1` as the fix (D81). A shorter one, like `$x |> f + 1`, is written as a call, `f($x) + 1`
-(D128).
+`$score + (be.Whole($t) ?? 0)` (D81). Two comparisons in a row, as in `1 < $x < 10`, are refused, with `1 < $x and $x <
+10` as the fix; and an operator after a slide's last step, as in `$x |> f |> g |> h + 1`, is refused, with `($x |> f |>
+g |> h) + 1` as the fix (D81). A shorter one, like `$x |> f + 1`, is written as a call, `f($x) + 1` (D128).
 
 **Not decided:** going past the range; how whole numbers are written; other
 number types.

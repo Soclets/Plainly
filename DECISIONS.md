@@ -1512,6 +1512,8 @@ Tankun brought back here ("What about RC with `share` and `copy` when needed?").
 
 **Tankun's words.** Decided with D48, in the same answer (quoted there).
 
+(Replaced by D130: Hylo-style values.)
+
 ## D50. The command is `plainly`, with `run`, `build`, `check` and `oracle`
 
 2026-11-20.
@@ -2166,6 +2168,8 @@ threads. The cost lands on PlainCompiler's load barriers and on Rust code holdin
 **Tankun's words.** "Does ZGC-style GC help?" and "ZGC-style GC + A seems very fun" (D67), then, asked "ZGC-style
 PlainGC, replacing D48's Go-style?", the owner chose: "yea".
 
+(Replaced by D130: Hylo-style values.)
+
 ## D70. `/` divides exactly; `div.floor` and `div.trunc` round
 
 2026-11-20.
@@ -2465,6 +2469,8 @@ reachable through it might change. It's what lets every worker read a `let` with
 
 **Tankun's words.** "yea. Btw, `let` is deep" (in D77's answer); then, asked "`let` is deep, with `share` refused
 between a `let` and a `var`?", the owner chose: "yea".
+
+(Replaced by D130: Hylo-style values.)
 
 ## D79. A fact about a value is read with no `()`: a list's length is `.len`
 
@@ -3298,6 +3304,8 @@ by Rust's own compiler before the program runs, rather than turning up as garbag
 from crossing a collection, plus kept handles for values Rust stores beyond a call?", the owner chose: "yea. Is there a
 rule about including optimizations from the start?" (the question is answered in chat, not a decision).
 
+(Replaced by D130: Hylo-style values.)
+
 ## D106. After `ask`, the line counts as ended when the answer was typed at a terminal
 
 2026-11-20.
@@ -3525,6 +3533,8 @@ of making PlainGC real (D69). It also keeps memory use bounded, rather than lett
 collection just early enough to finish before the heap's limit?", the owner chose: "yea. What's the setting?" (the
 question about settings is the next one).
 
+(Replaced by D130: Hylo-style values.)
+
 ## D114. The heap's hard limit is the machine's memory less a reserve; the pacer aims at a soft target; no settings yet
 
 2026-11-20.
@@ -3560,6 +3570,8 @@ and nothing needs setting.
 Tankun said: "So, what about optional settings later, and default to utilize the current hardware entirely, but leave a
 little". Then, asked "Should the heap's hard limit be the machine's memory minus a reserve, with the pacer aiming at a
 soft target of about twice what's in use, and no settings until one is needed?", the owner chose: "yea".
+
+(Replaced by D130: Hylo-style values.)
 
 ## D115. Running out of memory stops the program as a failed check, status 4
 
@@ -4009,3 +4021,51 @@ wonder if oracle should be [Rust + some Verus], [OCaml + SPARK], or [OCaml], or 
 work?", "CompCert ahh situation, C Logic Pro Max garunteed", "Wait, what? Cock is related to OCaml?", "So... Can we use
 that?", "How is Rocq harder than SPARK?", "Is it harder than SPARK Plat?", "So, what parts would be Cock?", "So, the
 options now", then the owner chose: "Oracle is 3, decided. I can change tmr, dw. And months? You sure?"
+
+## D130. Memory is Hylo-style: every variable owns its own value
+
+2026-11-21.
+
+**Chosen.** Plainly has mutable value semantics, as in Hylo (github.com/hylo-lang/hylo), borrowing the idea, not the
+language:
+- **Every variable owns its own value.** Nothing can be shared between two names, so after `var $b: List<Whole> =
+  $a;`, changing `$b` never touches `$a`.
+- **There are no `copy` or `share` words.** The compiler copies where needed, and skips a copy wherever it can prove no
+  one would notice, as Swift's copy-on-write does: a big value is only really copied when one of two holders changes it.
+- **References can't be stored.** A procedure can be handed a variable to change for the length of a call, but nothing
+  keeps a reference afterwards, so there are no lifetimes to track and nothing can dangle or leak.
+- **Something that's really one thing,** like the player every monster targets, is referred to by an ID, like a list
+  position, and looked up.
+- **No garbage collector:** a value is freed when its owner ends. There are no pauses, no stack maps and no load
+  barriers, so any backend works.
+- **Workers (D68) never share anything,** so data races are impossible with nothing extra.
+- Running out of memory still stops the program as D115 and D122 say.
+
+(The words a parameter uses to say how it's used, Hylo's read, change the caller's value, and take it over, aren't
+decided yet, nor how a `Text` or a list crosses into `extern` code.)
+
+This replaces D49 (`copy` and `share`), D69 and D113 to D114 (PlainGC, its pacer and its heap's limits), D105
+(handles, made for a moving collector), D78's rule on `share`, and D68's rule that `share` can't cross between
+workers. D78's deep `let` stays, and so does D124, but for its 4th optimization (load barriers), which has nothing to
+work on.
+
+**Weighed.**
+- Swift-style reference counting (ARC). Freed at once with no pauses, but cycles leak unless one side is `weak`, a
+  concept learners would meet, and every reference copy updates a count.
+- A Go-style garbage collector (D48). Invisible to learners and collects cycles, but needs a collector and the
+  backend's stack maps.
+- ZGC-style PlainGC (D69), built in the first build. Everything Go-style needs, plus moving and load barriers.
+- Hylo's mutable value semantics, in D48's own list, called "the purest, but a research design". The design claude
+  undersold it: Plainly borrows the idea, so Hylo being experimental hardly matters.
+
+**Why this won.** "Every variable has its own value" is the simplest model to teach, and Python's classic trap, two names
+for one list, can't happen. It gives Rust's safety, nothing dangling, nothing leaking and no data races, with none of
+Rust's lifetimes, since references can't be stored. Its costs are IDs for shared things, which games use anyway, three
+parameter words, and copies that can occasionally hide a slow spot. With no collector, the backend question is open.
+The clever work moves to the compiler proving when copies can be skipped.
+
+**Tankun's words.** In multifinity's chat, relayed, as a leaning: "Motherfucker? Hylo? Yeah, please let your Claude
+save that. No copy no share words shit."; added "Memory model: Hylo" to the README's ideas. Here: "Wait, what the fuck?
+So, you're fucking telling me we're getting mini Rust with the tradeoff being just slow copies hidden sometimes? All
+along sitting there?", then, asked "Should Plainly's memory be Hylo-style values, with automatic copies and no `copy`
+or `share` words?", the owner chose: "Bless Hylo, yes".

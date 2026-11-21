@@ -65,22 +65,22 @@ end proc beep
 Callers can't tell it apart from any other procedure. `extern` is short for external (D2, D36).
 
 Its Rust code lives in a folder named `rust` in the program's folder, holding an ordinary Cargo project, which
-PlainCompiler builds and links into the program (D107), only when an `extern.rust` procedure uses it (D118). Each procedure's Rust function is marked with a macro naming
-it exactly, which writes the glue that links it, and holds Plainly values through handles (D105, D108):
+PlainCompiler builds and links into the program (D107), only when an `extern.rust` procedure uses it (D118). Each
+procedure's Rust function is marked with a macro naming it exactly, which writes the glue that links it, (D108):
 
 ```rust
 #[plainly::procedure("show_msg.same_line")]
 fn show_msg_same_line(call: &mut Call, text: Handle<Text>) { ... }
 ```
 
-A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned directly; a `Text` crosses as a handle
-(D105, D109).
+A `Whole` crosses into Rust as `i64` and a `Bool` as `bool`, passed and returned directly; how a `Text` or a list
+crosses isn't decided yet (D109, D130).
 
 An `extern.rust` procedure that can fail lists its failures in its header as any procedure does; its Rust function
-returns Rust's `Result`, with the failures named in the macro, as in `fails = "not_found, unreadable"`, and PlainCompiler
-refuses a program whose macro and header disagree (D110). If its Rust code panics, going wrong rather than failing on purpose, the program stops with an
-`internal error:` naming the procedure, with status 7, and a `why:` naming the Rust file and line, to fix it there or
-report it to whoever wrote it (D111, D112).
+returns Rust's `Result`, with the failures named in the macro, as in `fails = "not_found, unreadable"`, and
+PlainCompiler refuses a program whose macro and header disagree (D110). If its Rust code panics, going wrong rather than
+failing on purpose, the program stops with an `internal error:` naming the procedure, with status 7, and a `why:` naming
+the Rust file and line, to fix it there or report it to whoever wrote it (D111, D112).
 
 ## Families
 
@@ -159,8 +159,8 @@ proc random($low: Whole, $high: Whole) returns Whole:
 end proc random
 ```
 
-where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:` and
-`to:` (D25).
+where `...` stands for the rest of the body. Inside, the procedure uses `$low` and `$high`, and callers write `from:`
+and `to:` (D25).
 
 **Not decided:** defaults; label order.
 
@@ -204,7 +204,8 @@ So `$n |> be.Text |> show_msg` is refused, with `show_msg(be.Text($n))` as the f
 A step isn't a whole call, so it doesn't write `()` as a call does: the step names the procedure, and the slide calls
 it (D4, D5).
 
-`|>` comes last in the order of operators, so a slide takes everything on its left, as in `$a + 1 |> double |> be.Text |> show_msg` (D73).
+`|>` comes last in the order of operators, so a slide takes everything on its left, as in `$a + 1 |> double |> be.Text
+|> show_msg` (D73).
 
 **Not decided:** `clamp`, which the example uses.
 

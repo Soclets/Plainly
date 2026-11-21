@@ -35,7 +35,6 @@ message".
 | `handler` | | D42 |
 | `include` | | D43 |
 | `comment` | | D74 |
-| `copy`, `share` | | D49 |
 | `fails`, `or` | | D39 |
 
 **Not decided:** every other keyword.

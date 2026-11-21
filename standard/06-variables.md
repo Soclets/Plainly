@@ -9,8 +9,8 @@ let $name: Type = value;
 var $name: Type = value;
 ```
 
-where `$name` is the variable's name, starting with `$` (D125), `Type` its type, and `value` its first value. `let` or `var`, the `:`, the
-`=` and the `;` are written as they are.
+where `$name` is the variable's name, starting with `$` (D125), `Type` its type, and `value` its first value. `let` or
+`var`, the `:`, the `=` and the `;` are written as they are.
 
 ```
 let $secret: Whole = 42;
@@ -48,20 +48,20 @@ $tries = $tries + 1;
 - **`=` on a `let` is refused,** since a `let` never changes (D13, D14).
 - **`=` never appears inside a condition,** so `if tries = 3:` is refused (D14).
 
-## `copy` and `share`
+## Values
 
-When a list or a record is given to a new name, the line says `copy` or `share`, with no default (D49):
+Every variable owns its own value (D130). Giving a list or a record to a new name makes the new name's own value:
 
 ```
-var $b: List<Whole> = copy $a;
-var $c: List<Whole> = share $a;
+var $b: List<Whole> = $a;
 ```
 
-Changing `$b` leaves `$a` alone; changing `$c` changes `$a`. A plain value like a `Whole` needs neither word (D49).
+Changing `$b` never changes `$a`. There are no words for copying or sharing: the compiler copies only where it's
+needed, and skips a copy wherever no one would notice (D130). Something that's really one thing, like the player every
+monster targets, is referred to by an ID, like a list position, and looked up (D130).
 
-`let` is deep: nothing reachable through a `let` can ever change, not its items nor the items inside them. So `share`
-is refused between a `let` and a `var`, either way, with `copy` as the fix; it's allowed between two `let`s or two
-`var`s (D78).
+`let` is deep: nothing reachable through a `let` can ever change, not its items nor the items inside them (D78).
 
-**Not decided:** whether arguments and changes with `=` need a word; shorthand like `+=`; constants known at compile time, like `const`; the types themselves; declaring
-a variable without a first value.
+**Not decided:** the words a parameter uses to say whether it reads, changes or takes over its argument (D130);
+shorthand like `+=`; constants known at compile time, like `const`; the types themselves; declaring a variable without a
+first value.
