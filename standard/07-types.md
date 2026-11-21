@@ -246,8 +246,9 @@ number of items is `.len` (D79):
 let $count: Whole = $students.len;
 ```
 
-**Not decided:** which other methods and facts lists and text have; how a type's methods are declared;
-going through a list.
+A list or an array is gone through with `for each` (chapter 5, D171).
+
+**Not decided:** which other methods and facts lists and text have; how a type's methods are declared.
 
 ## Converting
 

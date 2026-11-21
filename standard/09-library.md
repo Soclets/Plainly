@@ -16,7 +16,6 @@ range[from: 0, before: 10]
 - **`from:`** is the first number.
 - **Exactly one of `to:` or `before:`** says where it ends: `to: 3` includes 3, giving 1, 2, 3, and `before: 10` stops
   short of 10, giving 0 to 9, as for going through every `offset:` (D170).
-
 - **`step_by:`** is optional, counting by 1 when it's left out. A negative step counts down, and the range goes as far
   as it can without passing its end: `range[from: 0, to: 9, step_by: 2]` is 0, 2, 4, 6, 8 (D172).
 

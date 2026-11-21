@@ -1,0 +1,1 @@
+A list with len.max fails .add with full once it holds its most, handled in otherwise: with break. D23, D40, D167, D168, D171; standard ch. 7.

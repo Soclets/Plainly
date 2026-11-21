@@ -1,0 +1,1 @@
+An Array starts with every item the same from [all: value], its items can change, and .len reads its length. D167, D169, D171; standard ch. 7.

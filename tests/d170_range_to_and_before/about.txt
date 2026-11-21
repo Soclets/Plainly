@@ -1,0 +1,1 @@
+range[from:, to:] includes its top, and range[from:, before:] stops short of it. D170, D171; standard ch. 9.
