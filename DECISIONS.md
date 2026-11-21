@@ -4772,3 +4772,33 @@ beginner can read it; the docs can explain it. Ralph, building the oracle, asked
 **Tankun's words.** "Is it out of mem?", then ""every call that's waiting for another uses memory; a procedure that
 keeps calling itself without stopping runs out." What runs out", then, asked "Should calls nesting too deep stop as
 `check failed:`, status 4, with "calls went too deep" and this `why:`?", the owner chose: "yea".
+
+## D155. Binary float types need `~` on inexact literals and show it on inexact values
+
+2026-11-21.
+
+**Chosen.** For a binary float type, whenever Unio has one:
+- a decimal literal that can't be stored exactly needs `~`: `~0.1` is accepted, `0.1` is refused with `~0.1` as the
+  fix, and a literal stored exactly, like `0.5`, takes no `~`;
+- printing gives the shortest text that reads back as the same number, as Python, JavaScript, Rust and Java do, with
+  `~` in front when the stored value isn't exactly that: `~0.1 + ~0.2` shows `~0.30000000000000004`, and `0.5 + 0.25`
+  shows `0.75`.
+
+An exact decimal type never needs `~`, since its `0.1` is 0.1. Which decimal types Unio has, and a rounded, `~`-free
+way to show a decimal to a player, aren't decided yet.
+
+**Weighed.**
+- Printing the exact stored value, as in `0.1000000000000000055511151231257827021181583404541015625`. True, but
+  unreadable.
+- The shortest round-tripping text with no mark, as most languages print. `0.1 + 0.2` then surprises every beginner,
+  with nothing on the page to warn them.
+- A fixed number of digits, as C's `%f` or `%.17g`. Hides or exaggerates, depending on the count.
+- Tying `~` to decimals in general. Tankun: it depends on the type, since an exact decimal type has no inexact values.
+
+**Why this won.** It makes binary floats honest: the `~` tells a learner a number is approximate before `0.1 + 0.2`
+bites, in code and in output, and whether a literal is exact is known at compile time, so the refusal has a clear fix.
+
+**Tankun's words.** "What does `show_msg` print? Stored or useful", "No, stored means stored in hardware. `0.1` in
+Float isn't that", "We should print `~0.1` because Floats would require `~` when inexact", "no, it depends on the
+type", then, asked "Should binary float types require `~` on inexact literals and show it on inexact printed values,
+with exact decimal types never needing it?", the owner chose: "yea".
