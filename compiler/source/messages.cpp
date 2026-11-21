@@ -66,8 +66,11 @@ std::string render(const Message& message, const Sources& sources) {
     const LineColumn where = sources.line_column(message.place);
     // trace: D54
     layout::append_heading(out, kind, sources.file(message.place.file).name, where.line, where.column);
-    layout::append_source(out, where.line, sources.line_text(message.place.file, where.line), where.column,
-                          message.place.length);
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> parts{{where.column, message.place.length}};
+    for (const Place& more : message.more_places) {
+        parts.emplace_back(sources.line_column(more).column, more.length);
+    }
+    layout::append_source_parts(out, where.line, sources.line_text(message.place.file, where.line), parts);
     if (message.fix) {
         layout::append_label(out, "fix", "`" + *message.fix + "`");
     } else if (message.what) {

@@ -9,6 +9,7 @@
 #include "messages.h"
 #include "optimize.h"
 #include "parser.h"
+#include "spacing.h"
 
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -151,6 +152,7 @@ std::pair<Program, Messages> check_program(const Sources& sources) {
     for (std::uint32_t file = 0; file < sources.size(); ++file) {
         const Lexed lexed = lex(sources, file, messages);
         parse(sources, file, lexed, program, messages);
+        check_spacing(sources, file, lexed, messages);
     }
     check(sources, program, messages);
     std::ranges::stable_sort(messages.list(), [](const Message& left, const Message& right) {

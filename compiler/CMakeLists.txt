@@ -63,6 +63,7 @@ add_library(unlo STATIC
   source/messages.cpp
   source/lexer.cpp
   source/parser.cpp
+  source/spacing.cpp
   source/checker.cpp
   source/ir.cpp
   source/lower.cpp

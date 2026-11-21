@@ -26,8 +26,8 @@ struct Message {
     std::optional<std::string> what;
     std::optional<Because> because;
     std::optional<std::string> why;
-    // A message that knock-on sorting (D55, D83) may hide when an earlier fix makes it disappear.
-    bool from_recovery = false;
+    // More `^` on the same line, as under each gap of a line's spacing mistakes (D100).
+    std::vector<Place> more_places;
 };
 
 class Messages {
