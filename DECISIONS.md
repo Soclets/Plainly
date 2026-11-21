@@ -4716,3 +4716,25 @@ name is the one thing needed to fix it. The compiler session refused `?? crash` 
 
 **Tankun's words.** Asked "Should `?? crash` stop with a `failed:` message like that, status 5?", the owner chose:
 "yea".
+
+## D153. `be.Text` turns a `Bool` into `"true"` or `"false"`
+
+2026-11-21.
+
+**Chosen.** `be.Text` converts a `Bool` to text, giving `"true"` or `"false"`, the words Unio writes them with:
+
+```
+show_msg("Won: " & be.Text($won));
+```
+
+shows `Won: true`.
+
+**Weighed.**
+- Leaving it out, so a `Bool` is shown only through an `if`. D89's message for a `Bool` joined with `&` already says
+  "anything else becomes text only where `be.Text` says so", pointing at `be.Text` as the way.
+
+**Why this won.** It's handy in games, for showing a flag while testing, as Python's `str(True)` is, and with Unio's
+own spelling what's shown is what's typed. Ralph stopped with `NotDesignedYet` here, and `Unlo\n` crashed, which is how
+it surfaced.
+
+**Tankun's words.** Asked "Should `be.Text` turn a `Bool` into `"true"` or `"false"`?", the owner chose: "yea".
