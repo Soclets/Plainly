@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# Building rule 3's checks, as errors. Each check turned off says why:
+# - modernize-use-trailing-return-type: a style, not a fix; the code follows the standard library's style instead.
+# - cppcoreguidelines-avoid-magic-numbers: duplicates readability-magic-numbers, which isn't one of rule 3's groups.
+# - cppcoreguidelines-pro-bounds-pointer-arithmetic, -pro-bounds-array-to-pointer-decay: argv and LLVM's C-style APIs,
+#   used only at those edges.
+# - cppcoreguidelines-pro-type-vararg: the runtime's one printf-style call, snprintf for decimal numbers.
+# - bugprone-easily-swappable-parameters: fires on every pair of same-typed parameters, like (line, column).
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  performance-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-type-vararg,
+  -bugprone-easily-swappable-parameters
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/(source|runtime|unit_tests|tools)/.*'

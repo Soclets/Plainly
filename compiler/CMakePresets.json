@@ -1,0 +1,59 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "dev",
+      "displayName": "sanitized debug build, used by the tests",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm@23/bin/clang++",
+        "CMAKE_OSX_SYSROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "UNIO_SANITIZE": "ON",
+        "UNIO_TIDY": "OFF"
+      }
+    },
+    {
+      "name": "tidy",
+      "inherits": "dev",
+      "displayName": "the dev build with clang-tidy's checks as errors",
+      "binaryDir": "${sourceDir}/build/tidy",
+      "cacheVariables": { "UNIO_TIDY": "ON" }
+    },
+    {
+      "name": "release",
+      "inherits": "dev",
+      "displayName": "optimized, for timing",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "UNIO_SANITIZE": "OFF" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev", "jobs": 3 },
+    { "name": "tidy", "configurePreset": "tidy", "jobs": 3 },
+    { "name": "release", "configurePreset": "release", "jobs": 3 }
+  ],
+  "testPresets": [
+    { "name": "dev", "configurePreset": "dev", "output": { "outputOnFailure": true }, "execution": { "jobs": 1 } },
+    { "name": "tidy", "configurePreset": "tidy", "output": { "outputOnFailure": true }, "execution": { "jobs": 1 } }
+  ],
+  "workflowPresets": [
+    {
+      "name": "check",
+      "steps": [
+        { "type": "configure", "name": "tidy" },
+        { "type": "build", "name": "tidy" },
+        { "type": "test", "name": "tidy" }
+      ]
+    },
+    {
+      "name": "fast",
+      "steps": [
+        { "type": "configure", "name": "dev" },
+        { "type": "build", "name": "dev" },
+        { "type": "test", "name": "dev" }
+      ]
+    }
+  ]
+}
