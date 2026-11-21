@@ -89,7 +89,8 @@ A blank line may separate parts of a procedure, or procedures, anywhere; two or 
 
 ## Files
 
-A Unio file's name ends in `.unio`, as in `game.unio` (D35, D135, D136).
+A Unio file's name ends in `.unio`, as in `game.unio` (D35, D135, D136). A Windows line ending, `\r\n`, counts as one
+line break, the same as `\n` (D144).
 
 A program is every `.unio` file in its folder, with exactly one `proc.main` across them. There are no imports: a
 procedure in one file calls one in another directly, in any order (D64).

@@ -4497,3 +4497,23 @@ are ignored, as Python's `int(" \t42 ")` gives 42.
 D10's ban on tabs is about indentation in source code, not about input. Ralph, building the oracle, asked.
 
 **Tankun's words.** Asked "Should `be.Whole` ignore tabs around the number as well as spaces?", the owner chose: "yea".
+
+## D144. `\r\n` counts as one line break, in `ask` and in source files
+
+2026-11-21.
+
+**Chosen.** A Windows line ending, `\r\n`, counts as one line break everywhere: `ask` drops a `\r` right before the
+line break, so a player on Windows typing `42` gives back `42`, and a `.unio` file with `\r\n` endings reads exactly
+like one with `\n`.
+
+**Weighed.**
+- Keeping the `\r` in `ask`'s answer, as Ralph did meanwhile. `be.Whole("42\r")` would fail on exactly what the player
+  typed.
+- Refusing `\r\n` in source files, as D98 refuses wrong spacing. The `\r` is invisible, Windows editors add it by
+  default, and git can add it on checkout, so a learner would be refused for something they can't see and didn't type.
+
+**Why this won.** It's how Python's, Go's and Rust's line readers treat it, and nobody using Unio on Windows has to know
+`\r` exists. Ralph, building the oracle, asked.
+
+**Tankun's words.** Asked "Should `\r\n` count as one line break, in `ask` and in source files?", the owner chose:
+"yea".

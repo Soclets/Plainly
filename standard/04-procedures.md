@@ -208,7 +208,8 @@ show_msg.same_line("Your guess: ");
 ## Asking
 
 `ask` shows a question, leaves the cursor on its line, waits until the player presses Enter, and gives back what they
-typed, without the Enter (D20):
+typed, without the Enter (D20). A Windows line ending, `\r\n`, counts as the Enter, so the `\r` isn't part of the
+answer (D144):
 
 ```
 ask(question)
