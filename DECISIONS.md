@@ -5198,3 +5198,26 @@ var $seen: Array<Bool>[len: 100] = [all: false];
 once, in the type, where it can't disagree with a count written elsewhere.
 
 **Tankun's words.** "With `:` or not?", then, asked "Should it be `[all: 0]`, with the `:`?", the owner chose: "yea".
+
+## D170. `range[from: …, to: …]` includes its top, and `range[from: …, before: …]` leaves it out
+
+2026-11-21.
+
+**Chosen.** A range of whole numbers is written `range[…]`, in `[ ]` since it describes values and nothing runs
+(D165). It takes `from:`, the first number, and exactly one of:
+- `to:`, which includes the top: `range[from: 1, to: 3]` is 1, 2, 3;
+- `before:`, which stops short of it: `range[from: 0, before: 10]` is 0 to 9, as for going through every `offset:`.
+
+**Weighed.**
+- Another name, as the design claude suggested, `numbers` or `count`, since Python's `range` leaves out its top and
+  Unio's `to:` includes it. Tankun: the labels already say which; `to:` and `before:` spell out in plain English what
+  Python's `range(0, 10)` leaves to memory, so nobody misreads either, and `range` keeps the word programmers know.
+- Only `to:`. Counting from 0 to just short of a length is common enough to deserve its own word.
+
+**Why this won.** The labels carry the meaning, so there's no off-by-one to remember, and "a range from 1 to 3" is
+everyday English. Tankun proposed `range` in `[ ]` and `before:`.
+
+**Tankun's words.** "Oh wait, now we could do `for $i in range[from: 1, to: 3]` with `step_by` needed when needed",
+"Another name for `range`? Or just use `range`?", "Doesn't `to:` already say it? And the alt is `before:`", "Why is it
+named range?", then, asked "Should it be `range`, taking `from:` plus exactly one of `to:` (top included) or `before:`
+(top left out)?", the owner chose: "yea".

@@ -4,6 +4,21 @@ Procedures that come with Unio. The library targets the terminal: showing text, 
 colours, drawing at a position and clearing the screen, on Windows, macOS and Linux. A GUI, if ever, is a
 separate package (D63). What the terminal part is built on isn't decided since D131 moved the runtime to C++.
 
+## `range`
+
+A range describes a run of whole numbers, written in `[ ]` since nothing runs (D165, D170):
+
+```
+range[from: 1, to: 3]
+range[from: 0, before: 10]
+```
+
+- **`from:`** is the first number.
+- **Exactly one of `to:` or `before:`** says where it ends: `to: 3` includes 3, giving 1, 2, 3, and `before: 10` stops
+  short of 10, giving 0 to 9, as for going through every `offset:` (D170).
+
+**Not decided:** what a range is used in, a `for` loop being the likely one; a step, as `step_by:`; counting down.
+
 ## `random`
 
 ```
