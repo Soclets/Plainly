@@ -2,9 +2,9 @@
 
 ## The compiler
 
-Unio's compiler, `Unlo\n` (D51, D135, D136, D137), is written in C++. It compiles a whole program ahead of time to one native
-executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it to a temporary file
-and starts it (D45, D131).
+Unio's compiler, `Unlo\n` (D51, D135, D136, D137), is written in C++. It compiles a whole program ahead of time to one
+native executable, through LLVM in both modes, with no bytecode and no JIT. Running a program compiles it to a temporary
+file and starts it (D45, D131).
 
 The web playground runs the oracle compiled to WebAssembly (D45).
 
@@ -18,7 +18,7 @@ Refusals happen at the typed tree, so `unio check` stops there. Unio IR is the o
 own, where every check, allocation, label, default and handler case is written out, and where `final` mode's own
 optimizations run. Both modes take the same path (D62).
 
-PlainOracle, the reference implementation, is an OCaml shell around a checker and an evaluator written and proven in
+`oracle`, the reference implementation, is an OCaml shell around a checker and an evaluator written and proven in
 Rocq, then extracted to OCaml, as CompCert is built (D129).
 
 **Not decided:** what is proven, and in what order.
@@ -35,7 +35,7 @@ unio oracle game.unio
 - **`run`** compiles to a temporary file and runs it; **`compile`** makes the file to ship. Both need a mode (D46, D50,
   D91, D135, D136).
 - **`check`** reports what's refused without building, and needs no mode (D50).
-- **`oracle`** runs the file on PlainOracle (D51), the separate reference implementation, printing exactly what the
+- **`oracle`** runs the file on `oracle` (D51), the separate reference implementation, printing exactly what the
   compiled program would. `unio` forwards to the oracle's own program (D50).
 
 ## Compiling

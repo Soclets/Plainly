@@ -1580,6 +1580,8 @@ tools. Tankun named them, writing `_` for "Plain".
 
 **Tankun's words.** In their answer to D50, quoted whole there.
 
+(Changed by D139: the oracle is named `oracle`, not PlainOracle.)
+
 ## D52. PlainOracle is written in C
 
 2026-11-20.
@@ -4380,3 +4382,18 @@ though?", "How about Apache 2.0 WITH LLVM exception for impl, MIT0 for examples 
 you even use it like that?", "What's the legal way to do that? The codeblock thingy", then, asked "should the licences
 be Apache-2.0 WITH LLVM-exception for the implementation, MIT-0 for examples and demos, including code blocks in the
 docs, and CC BY 4.0 for the prose, with a notice in the README saying which is which?", the owner chose: "yes".
+
+## D139. The oracle is named `oracle`
+
+2026-11-21.
+
+**Chosen.** The reference implementation is called **`oracle`**, replacing the working name PlainOracle (D51). It runs
+as `unio oracle game.unio` (D50, D136), as before.
+
+**Weighed.**
+- PlainOracle, the working name from Plainly's naming, which D136 and D137 left behind: the language is Unio and the
+  compiler `Unlo\n`.
+
+**Why this won.** It says what it is, and it's already the word in the command.
+
+**Tankun's words.** "It's actually just `oracle`".
