@@ -52,7 +52,19 @@ unio oracle game.unio
 ## Memory
 
 Every variable owns its own value, and a value is freed when its owner ends: there's no garbage collector, so no pauses
-(D130). A program may hold at most 30% of the machine's memory, with no settings (D134). Running out stops the program
+(D130).
+
+Setting one variable from another doesn't copy a big value like a `Text` or a list straight away: the two share it until
+one of them changes, and only then does that one get its own copy, which is copy-on-write (D130). A program can't tell
+the difference, since it behaves exactly as if each variable had its own copy all along:
+
+```
+var $a: List<Whole> = [1, 2, 3];
+var $b: List<Whole> = $a;   // shared, nothing copied yet
+$b.add(4);                  // $b gets its own copy first; $a is still [1, 2, 3]
+```
+
+A program may hold at most 30% of the machine's memory, with no settings (D134). Running out stops the program
 with `check failed:` and status 4, at the line that needed the memory, with what was needed, what was in use and the cap
 in `when:` (D115, D122).
 
