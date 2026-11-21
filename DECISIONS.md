@@ -4928,3 +4928,45 @@ runtime otherwise, with both values to spot the mix-up. Both implementations sto
 **Tankun's words.** "yea?", "I meant to ask what you're asking", "Stop when? Comp?", "So, boh ties?", then, asked
 "Should it work that way, refused at compile time when both are plain numbers, and stopping at runtime otherwise?", the
 owner chose: "yea".
+
+## D161. The ninth batch: lines outside procedures, unknown types, `not`/`and`/`or`, value-only lines, other files, `unio oracle` and usage
+
+2026-11-21.
+
+**Chosen.** A line that only works out a value, like `$score + 1;` or `$score;`, is refused, as D120 refuses a call
+whose value is thrown away. With these wordings, in D54's layout with D86's column and D89's "but":
+
+| When | `what:` | `why:` |
+|---|---|---|
+| a line outside any procedure | this line isn't inside a procedure | a program is made of procedures, and every statement goes inside one. |
+| an unknown type | ``there's no type named `Number` `` | a type is one Unio has, like `Whole`, `Float`, `Bool` or `Text`. |
+| `not` on something that isn't a `Bool` | ``` `not` works on a `Bool`, but this is a `Whole` ``` | `` `not`, `and` and `or` work on `Bool`s. `` |
+| `and` or `or` on something that isn't a `Bool` | ``` `and` joins two `Bool`s, but this is a `Whole` ``` | the same |
+| a line that only works out a value | ``` `$score + 1` works out a `Whole`, but nothing uses it ``` | `` a line that only works out a value does nothing; keep the value with `let` or `var`, or give it to a variable with `=`. `` |
+
+- **A `because:` pointing into another file** (D54) names it: ``because: the first is here, in `board.unio` ``.
+- **`unio oracle` with Ralph not built:** ``unio: `oracle` needs Ralph, the oracle, which isn't built here``, status 3.
+- **The usage text** after a command mistake:
+
+```
+usage:
+  unio run game.unio --working       compile it and run it
+  unio compile game.unio --final     make the program to ship
+  unio check game.unio               only check it
+  unio oracle game.unio              run it on Ralph, the oracle
+```
+
+**Weighed.**
+- Allowing a value-only line. It does nothing, and is almost always a slip for `$score = $score + 1;`.
+- "true-or-false values" in the `why:` for `not`, `and` and `or`. Tankun: just say `Bool`, as the `what:` does.
+- "`$score + 1` works out a `Whole` with nowhere to go", from Tankun's "has no place to be in". Kept D120's "but
+  nothing uses it", so both throw-away mistakes read alike.
+- Status 6 for `unio oracle` without Ralph, as the compiler session drafted. Status 6 means the command was written
+  wrong; here the tool just can't run it, which is status 3's meaning.
+
+**Why this won.** Each names what's wrong in the reader's terms, and the value-only line joins D120 in catching a line
+that looks like it does something and does nothing. The compiler session drafted most of these.
+
+**Tankun's words.** "?", "Just say bool?", "What is the 5th err msg about", ""`$score + 1` works out a `Whole`, but
+nothing uses it" What about "`$score + 1` has no place to be in"? Or something", "Nah, it's fine. I was just asking",
+then, asked "Do they all read right, including refusing a value-only line?", the owner chose: "approved".
