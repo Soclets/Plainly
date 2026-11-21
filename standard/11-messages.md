@@ -41,13 +41,13 @@ refused: game.plainly:5:5, line 5 column 5
 ## Wording
 
 Each message's wording is decided in batches, recorded in the decisions: D85 for lines, blocks and variables, D87 for
-declarations, comparing, converting, unhandled failures, joining text and keywords used as names, D88 for
-procedures, calls and `return`, D89 for types, labels lines, narrowing order, parameter forms and `&` beside
-maths, D92 for `.fmt`, a program's shape, names, unreadable code, overflow and the tools' own messages, D102 for
-parameters, narrowings, `else:`, D81's refusals, names in use, knock-on errors, names, blank lines and spacing, 
-D103 for the command's own messages, words with no more narrowings, and `NotBuiltYet` and `NotDesignedYet`, D132 for five brought up to date, and D119
-for `extern.rust`'s refusals and its macro's messages, since replaced by D131. Where a
-`what:` sets what's expected against what was found, it says "but" (D89).
+declarations, comparing, converting, unhandled failures, joining text and keywords used as names, D88 for procedures,
+calls and `return`, D89 for types, labels lines, narrowing order, parameter forms and `&` beside maths, D92 for `.fmt`,
+a program's shape, names, unreadable code, overflow and the tools' own messages, D102 for parameters, narrowings,
+`else:`, D81's refusals, names in use, knock-on errors, names, blank lines and spacing, D103 for the command's own
+messages, words with no more narrowings, and `NotBuiltYet` and `NotDesignedYet`, D132 for five brought up to date, and
+D119 for `extern.rust`'s refusals and its macro's messages, since replaced by D131. Where a `what:` sets what's expected
+against what was found, it says "but" (D89).
 
 The text after every label starts at the same column, one space after the longest label, `because:`, in every message
 (D86).
