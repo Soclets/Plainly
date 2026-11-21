@@ -5114,7 +5114,8 @@ refused: game.unio:1:9, line 1 column 9
 **Why this won.** Anyone used to Python, or to Unio before D165, writes `( )` out of habit, and the message hands them
 the corrected line and the reason in one sentence. The compiler session drafted it.
 
-**Tankun's words.** "": should be here, not (" Motherfucker, isn't that a bug?", then, asked "Should old-style headers
+**Tankun's words.** "": should be here, not (”
+Motherfucker, isn't that a bug?", then, asked "Should old-style headers
 be refused with that `fix:` and `why:`, in both implementations?", the owner chose: "yea".
 
 ## D167. `Array<Type>[len: n]` holds exactly `n`; a list's limit is `List<Type>[len.max: n]`
@@ -5257,8 +5258,7 @@ the item aren't decided yet.
 **Why this won.** "For each name in students, show the name" is exactly what the loop does, read aloud; the words are
 Visual Basic's and C#'s, and how teachers describe Python's loop anyway.
 
-**Tankun's words.** The code block with "Personally, I kinda feel like it doesn't communicate the logic so good." (has
-code), then a code block with "Now I know first. But what does ... mean" (has code), then, asked "Should the loop be
+**Tankun's words.** A message with a code block (has code), then another (has code), then, asked "Should the loop be
 `for each $x in …:`, closed by `end for`?", the owner chose: "yea. Lol, I though `i` was for integer".
 
 ## D172. `range` takes an optional `step_by:`, counting by 1, negative to count down

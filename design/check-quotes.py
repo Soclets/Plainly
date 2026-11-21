@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+"""Checks the quotes in a decision's "Tankun's words" against the design session's transcript.
+
+Every quote must be one of Tankun's messages, whole and exact, or, after "asked", a stretch of one of the design
+session's own messages. Line breaks and runs of spaces count as one space, since DECISIONS.md wraps its lines.
+
+    python3 -I design/check-quotes.py TRANSCRIPT.jsonl [DECISION_NUMBER]
+
+With no number, it checks the newest decision. It exits with status 0 when every quote matches, 1 otherwise.
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+
+def squash(text):
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def read_transcript(path):
+    owner, design = [], []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        content = row.get("message", {}).get("content")
+        if row.get("type") == "user" and isinstance(content, str):
+            # Tankun's own messages are plain strings; tool results, notices and summaries aren't, or start with a tag.
+            if not content.startswith("<") and not content.startswith("This session is being continued"):
+                owner.append(squash(content))
+        elif row.get("type") == "assistant" and isinstance(content, list):
+            design.extend(squash(part["text"]) for part in content if part.get("type") == "text")
+    return owner, design
+
+
+def words_of(decisions, number):
+    sections = re.split(r"(?m)^## (?=D\d+\. )", decisions)
+    wanted = [s for s in sections if number is None or s.startswith(f"D{number}. ")]
+    if not wanted:
+        sys.exit(f"no decision D{number}")
+    section = wanted[-1]
+    start = section.find("**Tankun's words.**")
+    if start < 0:
+        sys.exit(f"{section.split(chr(10))[0]}: no Tankun's words")
+    return section.split("\n")[0], squash(section[start + len("**Tankun's words.**"):])
+
+
+def main():
+    if len(sys.argv) not in (2, 3):
+        sys.exit(__doc__)
+    owner, design = read_transcript(sys.argv[1])
+    number = int(sys.argv[2]) if len(sys.argv) == 3 else None
+    decisions = (Path(__file__).resolve().parent.parent / "DECISIONS.md").read_text(encoding="utf-8")
+    title, words = words_of(decisions, number)
+
+    # Take out Tankun's whole messages first, longest first, so a quote holding quote marks of its own still matches.
+    rest = words
+    for message in sorted(set(owner), key=len, reverse=True):
+        rest = rest.replace(f'"{message}"', " ")
+    # Whatever is still quoted must be the design session's question, right after "asked".
+    problems = []
+    for found in re.finditer(r'"([^"]*)"', rest):
+        quote = found.group(1)
+        asked = rest[: found.start()].rstrip().lower().endswith("asked")
+        if not (asked and quote and any(quote in text for text in design)):
+            problems.append(quote)
+
+    print(title)
+    if problems:
+        for quote in problems:
+            print(f'  not a whole message of Tankun\'s, nor the design session\'s words: "{quote}"')
+        sys.exit(1)
+    print("  every quote matches")
+
+
+if __name__ == "__main__":
+    main()
