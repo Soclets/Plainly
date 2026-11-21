@@ -4688,3 +4688,31 @@ breaks nothing: `unio` compiles everything again next time. The compiler session
 D65 left the place open.
 
 **Tankun's words.** Asked "Should the cache live in each system's standard cache folder?", the owner chose: "yea".
+
+## D152. `?? crash` stops with a `failed:` message, status 5
+
+2026-11-21.
+
+**Chosen.** When the call before `?? crash` fails (D23), the program stops with status 5 and a message in D54's layout
+whose kind is `failed:`:
+
+```
+failed: game.unio:7:43, line 7 column 43
+ 7 |     let $level: Level = load_level($name) ?? crash;
+   |                                           ^^^^^^^^
+ what:    `load_level` failed with `not_found`
+ why:     `?? crash` stops the program when the call before it fails.
+```
+
+The `what:` names the procedure and its failure. What a failure leaving `proc.main` unhandled shows isn't decided yet;
+`failed:` would suit it too.
+
+**Weighed.**
+- `check failed:`, the runtime kind. A failed check is something the language caught; this is the program choosing to
+  stop, and the first word should tell them apart.
+
+**Why this won.** A distinct kind says at once which kind of stop it is, and matches status 5's meaning; the failure's
+name is the one thing needed to fix it. The compiler session refused `?? crash` with `NotDesignedYet` meanwhile.
+
+**Tankun's words.** Asked "Should `?? crash` stop with a `failed:` message like that, status 5?", the owner chose:
+"yea".

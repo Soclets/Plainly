@@ -11,7 +11,8 @@ refused: game.unio:5:5, line 5 column 5
  why:     only a `var` can be given a new value.
 ```
 
-- **The first word is the kind:** `refused:` at compile time, `check failed:` at runtime (D54).
+- **The first word is the kind:** `refused:` at compile time, `check failed:` at runtime (D54), and `failed:` when
+  `?? crash` stops the program on a failure (D152).
 - **The place is written twice:** `file:line:column` for tools, then `line N column M` for people (D54).
 - **The source line is shown,** with `^` under exactly the part in question (D54).
 - **Then labelled lines, each only when known, in this order** (D54):
