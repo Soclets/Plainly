@@ -16,12 +16,13 @@ enum class Mode : std::uint8_t { working, final };
 
 struct BuildSettings {
     Mode mode = Mode::working;
-    std::string output;
+    std::string output;   // empty: the linked program is kept in the cache, and run from there
     unsigned threads = 0; // 0: every core (D65)
 };
 
-// Gives the problem, for an internal error (D82), when something below the program went wrong.
-std::expected<void, std::string> build(const ir::Module& module, const BuildSettings& settings);
+// Gives the linked program's path, or the problem, for an internal error (D82), when something below the program
+// went wrong.
+std::expected<std::string, std::string> build(const ir::Module& module, const BuildSettings& settings);
 
 // The folder the runtime library and the compiler live in.
 std::string executable_folder();

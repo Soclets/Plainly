@@ -4,11 +4,16 @@
 // change what a program does (D46, D124).
 
 #include "checker.h"
+#include "codegen.h"
 #include "ir.h"
 #include "lexer.h"
 #include "lower.h"
 #include "optimize.h"
 #include "parser.h"
+
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <algorithm>
 #include <array>
@@ -401,6 +406,38 @@ void test_recursion_into_loops() {
     expect(self_calls(*depth, module) == 1, "`depth` adds 1 after its call, so the call stays", print(*depth, module));
 }
 
+// D124 #13: a check's failure path is marked unlikely and its stop cold, so LLVM moves it out of the way; a procedure
+// with nothing that can fail has no such path.
+void test_cold_check_failures() {
+    const auto module = compile("proc add_one($n: Whole) returns Whole:\n"
+                                "    return $n + 1;\n"
+                                "end proc add_one\n"
+                                "\n"
+                                "proc same($n: Whole) returns Whole:\n"
+                                "    return $n;\n"
+                                "end proc same\n"
+                                "\n"
+                                "proc.main:\n"
+                                "    1 |> add_one |> same |> be.Text |> show_msg;\n"
+                                "end proc.main\n");
+    for (std::uint32_t index = 0; index < module.functions.size(); ++index) {
+        llvm::LLVMContext context;
+        const auto generated = unio::generate(module, index, context);
+        std::string text;
+        llvm::raw_string_ostream stream(text);
+        generated->print(stream, nullptr);
+        const std::string& name = module.functions.at(index).name;
+        if (name == "add_one") {
+            expect(text.find("!prof") != std::string::npos, "the overflow branch has branch weights", text);
+            const llvm::Function* stop = generated->getFunction("unio_overflow");
+            expect(stop != nullptr && stop->hasFnAttribute(llvm::Attribute::Cold) && stop->doesNotReturn(),
+                   "the stop is cold and never returns", text);
+        } else if (name == "same") {
+            expect(generated->getFunction("unio_overflow") == nullptr, "`same` has no check to fail", text);
+        }
+    }
+}
+
 // `unit_tests --print FILE [--final]` prints a program's Unio IR, for working on the compiler.
 int print_file(const char* path, bool final) {
     std::ifstream file(path, std::ios::binary);
@@ -430,6 +467,7 @@ int main(int argc, char** argv) {
         test_lowering_writes_out_checks, test_folding,          test_removing_checks,
         test_finding_side_effects,       test_inlining,         test_inlining_into_itself,
         test_merging_repeated,           test_constants_across, test_recursion_into_loops,
+        test_cold_check_failures,
     };
     for (const auto& test : tests) {
         test();

@@ -65,10 +65,9 @@ std::string executable_path() {
     return {resolved.data()};
 }
 
-// What changes whenever the compiler does: its own file's size and time, so a rebuilt compiler never reuses objects
-// an older one cached (D65).
-std::string compiler_identity() {
-    const std::string path = executable_path();
+// What changes whenever a file does: its size and time. The compiler's own file is part of every fingerprint, so a
+// rebuilt compiler never reuses objects an older one cached, and the runtime's is part of a linked program's (D65).
+std::string file_identity(const std::string& path) {
     struct stat info{};
     if (stat(path.c_str(), &info) != 0) {
         return "unknown";
@@ -77,15 +76,19 @@ std::string compiler_identity() {
            std::to_string(info.st_mtimespec.tv_nsec);
 }
 
+std::string compiler_identity() {
+    return file_identity(executable_path());
+}
+
 // The system's cache folder, shared by every project (D65).
-std::string cache_folder() {
+std::string cache_folder(const char* part) {
     const char* home = std::getenv("HOME");
     llvm::SmallString<256> folder(home != nullptr ? home : "/tmp");
-    llvm::sys::path::append(folder, "Library", "Caches", "unio", "objects");
+    llvm::sys::path::append(folder, "Library", "Caches", "unio", part);
     if (llvm::sys::fs::create_directories(folder)) {
         llvm::SmallString<256> fallback;
         llvm::sys::path::system_temp_directory(true, fallback);
-        llvm::sys::path::append(fallback, "unio-objects");
+        llvm::sys::path::append(fallback, std::string("unio-") + part);
         // If even this fails, writing an object says so with its own error.
         [[maybe_unused]] const std::error_code ignored = llvm::sys::fs::create_directories(fallback);
         return std::string(fallback);
@@ -261,10 +264,10 @@ std::string executable_folder() {
     return std::string(llvm::sys::path::parent_path(path));
 }
 
-std::expected<void, std::string> build(const ir::Module& module, const BuildSettings& settings) {
+std::expected<std::string, std::string> build(const ir::Module& module, const BuildSettings& settings) {
     initialize_targets();
     const std::string identity = compiler_identity();
-    const std::string folder = cache_folder();
+    const std::string folder = cache_folder("objects");
     const auto count = static_cast<std::uint32_t>(module.functions.size());
     std::vector<Compiled> compiled(count);
     unsigned threads = settings.threads != 0 ? settings.threads : std::max(1U, std::thread::hardware_concurrency());
@@ -289,7 +292,33 @@ std::expected<void, std::string> build(const ir::Module& module, const BuildSett
         }
         objects.push_back(piece.object_path);
     }
-    return link(objects, settings.output);
+    if (!settings.output.empty()) {
+        if (auto linked = link(objects, settings.output); !linked) {
+            return std::unexpected(linked.error());
+        }
+        return settings.output;
+    }
+    // A program is linked once and kept under a fingerprint of its objects and the runtime, so running it again
+    // skips linking, and macOS's check of a new program's first launch (D65).
+    std::string identity_of_parts =
+        compiler_identity() + "\n" + file_identity(executable_folder() + "/libunio_runtime.a");
+    for (const std::string& object : objects) {
+        identity_of_parts += "\n" + object;
+    }
+    const std::string key = hex(llvm::xxh3_128bits(llvm::arrayRefFromStringRef(identity_of_parts)));
+    llvm::SmallString<256> program(cache_folder("programs"));
+    llvm::sys::path::append(program, key);
+    if (llvm::sys::fs::can_execute(program)) {
+        return std::string(program);
+    }
+    const std::string temporary = std::string(program) + "." + std::to_string(getpid()) + ".tmp";
+    if (auto linked = link(objects, temporary); !linked) {
+        return std::unexpected(linked.error());
+    }
+    if (const std::error_code code = llvm::sys::fs::rename(temporary, program)) {
+        return std::unexpected("can't keep the linked program: " + code.message());
+    }
+    return std::string(program);
 }
 
 } // namespace unio

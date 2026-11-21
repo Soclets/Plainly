@@ -252,19 +252,11 @@ int drive(std::span<char*> arguments) {
         }
         return 0;
     }
-    llvm::SmallString<256> temporary;
-    if (const std::error_code error = llvm::sys::fs::createTemporaryFile("unio-program", "", temporary)) {
-        return internal_error("can't make a temporary file: " + error.message());
-    }
-    settings.output = std::string(temporary);
-    if (const auto built = build(module, settings); !built) {
-        // A leftover temporary file is harmless, so failing to remove it isn't reported.
-        [[maybe_unused]] const std::error_code ignored = llvm::sys::fs::remove(temporary);
+    const auto built = build(module, settings);
+    if (!built) {
         return internal_error(built.error());
     }
-    const int status = run_program(settings.output);
-    [[maybe_unused]] const std::error_code left_over = llvm::sys::fs::remove(temporary);
-    return status;
+    return run_program(*built);
 }
 
 } // namespace unio
