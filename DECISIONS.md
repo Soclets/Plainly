@@ -5747,3 +5747,31 @@ disagreement between Ralph, which read in name order, and `Unlo\n`.
 
 **Tankun's words.** Asked "Should a program's files be read in the byte order of their names, whichever file is named
 on the command line?", the owner chose: "yea".
+
+## D189. Ralph proves floats with Flocq, accepting its four standard axioms
+
+2026-11-21.
+
+**Chosen.** Ralph proves Unio's `Float` with Flocq, Rocq's standard IEEE 754 library, as CompCert does, so a theorem
+can say in plain terms "`+` gives the nearest `Float` to the true sum". Flocq 4.2.2 is installed in the `ralph` switch,
+from Rocq's own opam repository, added to that switch only. Its theorems rest on four axioms, which go on Ralph's list
+of believed axioms (rule 14), each with its reason:
+- **`classic`,** excluded middle: every statement is true or false.
+- **`functional_extensionality_dep`:** functions giving the same output for every input are equal.
+- **`sig_not_dec` and `sig_forall_dec`,** from Rocq's real numbers, which let reals be compared as school maths does.
+
+They're independent of Rocq's own logic, so Rocq can neither prove nor disprove them, and Rocq with them is known to
+be consistent if ordinary set theory (ZFC) is. They appear only in proofs: Ralph's running code does plain arithmetic
+on the bits.
+
+**Weighed.**
+- Proving floats directly on their bits, with no real numbers and no axioms. Far more work, and no theorem could speak
+  of the true sum, which is a real number.
+- Trusting OCaml's own floats, unproven. Breaks the promise that Ralph's meaning is proven.
+
+**Why this won.** It keeps Ralph's trusted base small, standard and written down: these four, Rocq's kernel, extraction
+and OCaml. MetaRocq has proven Rocq's logic sound, given its consistency, which no logic can prove of itself.
+
+**Tankun's words.** "install", then, after asking whether the axioms were proved, whether Rocq is proved, and calling
+an unproven tester "so unresponsible", asked "Should Ralph accept these four standard axioms, listed in its axioms
+file, for proving floats?", the owner chose: "yea".

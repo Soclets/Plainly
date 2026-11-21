@@ -188,7 +188,8 @@ It can come later for one small, critical piece if a bug there ever gets through
     plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for Ralph's core: one pinned Rocq version.
     No `Admitted` and no `Axiom`, except a short list in one file, each with a comment saying why it's believed, such as
     how Rocq's integers become OCaml's `Int64` on extraction. `Print Assumptions` runs on every main theorem in each
-    test run and shows nothing beyond that list. Every theorem's statement has a comment saying in plain words what it
+    test run and shows nothing beyond that list. Floats are proven with Flocq (`coq-flocq` 4.2.2, from Rocq's own opam
+    repository), whose four standard axioms are on that list (D189). Every theorem's statement has a comment saying in plain words what it
     promises, and a new or changed statement goes to the design session before anything relies on it, since the
     statement is the part Rocq can't check. (D129, carried over from the C++ rules in rule 3.)
 
