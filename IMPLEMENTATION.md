@@ -88,6 +88,11 @@ backticks). Pick by a check, never by feel: write the whole message to a file
 python3 -c 'import sys; m=open(sys.argv[1]).read().strip(); print("log:", "has code" if "```" in m else "too long" if len(m)>300 else "quote", "| commit:", "has code" if "`" in m else "too long" if len(m)>60 else "quote")' message.txt
 ```
 
+Before committing a decision, run `python3 -I design/check-quotes.py TRANSCRIPT.jsonl`, with this session's transcript
+from `~/.claude/projects/`. It passes only when every quote in the newest entry's "Tankun's words", and every quote
+right after "Tankun:" elsewhere in it, is one of Tankun's messages whole and exact, or the design session's own
+question right after "asked" (owner, 2026-11-21).
+
 ## Code
 
 Rules for the code of `Unlo\n` and Ralph (owner, 2026-11-20):

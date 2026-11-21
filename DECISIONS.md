@@ -5529,7 +5529,7 @@ let $lives: Whole = 3;            // 3.0 is refused, fix: 3
 - Every literal without a point taking the type its place needs, `Whole` by default, as Swift has it. `$speed * 2`
   has only one reading under D162, but `7 / 2` would be 3.5 in `let $half: Float = 7 / 2` and `Whole` maths in
   `be.Text(7 / 2)`, so its meaning would depend on what's around it. Tankun: "Ah, so the problem is defaulting to
-  Whole when there's no type".
+  Whole when there's no type. So, `.0` does look okay after all".
 
 **Why this won.** A reader can tell a number's type by looking at it, `7 / 2` means the same everywhere, and D162's
 "no quiet mixing" has no exception. The cost is typing `.0` on float literals, and each refusal gives the fix. Rust

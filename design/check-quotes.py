@@ -2,7 +2,8 @@
 """Checks the quotes in a decision's "Tankun's words" against the design session's transcript.
 
 Every quote must be one of Tankun's messages, whole and exact, or, after "asked", a stretch of one of the design
-session's own messages. Line breaks and runs of spaces count as one space, since DECISIONS.md wraps its lines.
+session's own messages. Elsewhere in the entry, a quote right after "Tankun:" must be one of his whole messages.
+Line breaks and runs of spaces count as one space, since DECISIONS.md wraps its lines.
 
     python3 -I design/check-quotes.py TRANSCRIPT.jsonl [DECISION_NUMBER]
 
@@ -42,7 +43,7 @@ def words_of(decisions, number):
     start = section.find("**Tankun's words.**")
     if start < 0:
         sys.exit(f"{section.split(chr(10))[0]}: no Tankun's words")
-    return section.split("\n")[0], squash(section[start + len("**Tankun's words.**"):])
+    return section.split("\n")[0], squash(section[:start]), squash(section[start + len("**Tankun's words.**"):])
 
 
 def main():
@@ -51,7 +52,7 @@ def main():
     owner, design = read_transcript(sys.argv[1])
     number = int(sys.argv[2]) if len(sys.argv) == 3 else None
     decisions = (Path(__file__).resolve().parent.parent / "DECISIONS.md").read_text(encoding="utf-8")
-    title, words = words_of(decisions, number)
+    title, body, words = words_of(decisions, number)
 
     # Take out Tankun's whole messages first, longest first, so a quote holding quote marks of its own still matches.
     rest = words
@@ -64,6 +65,11 @@ def main():
         asked = rest[: found.start()].rstrip().lower().endswith("asked")
         if not (asked and quote and any(quote in text for text in design)):
             problems.append(quote)
+
+    # Elsewhere in the entry, a quote right after "Tankun:" must be one of Tankun's whole messages too.
+    for found in re.finditer(r'Tankun: "', body):
+        if not any(body.startswith(f'"{message}"', found.end() - 1) for message in owner):
+            problems.append(body[found.end() : found.end() + 60] + "…")
 
     print(title)
     if problems:
