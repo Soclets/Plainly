@@ -290,9 +290,9 @@ Definition check_target (s : setting) (procedure : string) (target : target) (gi
   | Library (Convert_to_text true) => make_call (Gives_value Text) false (check_format s given at_)
   | Library (Convert_to_text false) =>
       match check_single procedure given at_ with
-      | (Some (Whole, _), d) => make_call (Gives_value Text) false d
+      (* trace: D22, D153 *)
+      | (Some (Whole, _), d) | (Some (Bool, _), d) => make_call (Gives_value Text) false d
       | (Some (Text, value_at), d) => unknown_call (d ++ [Refused (Convert_to_same Text value_at)])
-      | (Some (Bool, value_at), d) => unknown_call (d ++ [Not_designed_yet Converting value_at])
       | (None, d) => unknown_call d
       end
   | Library Convert_to_whole =>
@@ -340,7 +340,7 @@ Definition check_step_target (s : setting) (procedure : string) (target : target
   | Library (Convert_to_text false) =>
       match slid with
       | Some Text => unknown_call (values_diagnostics given ++ [Refused (Convert_to_same Text at_)])
-      | Some Bool => unknown_call (values_diagnostics given ++ [Not_designed_yet Converting at_])
+      | Some Bool => one_more [(Bool, None)] (Gives_value Text) false
       | _ => one_more [(Whole, None)] (Gives_value Text) false
       end
   | Library Convert_to_whole =>

@@ -102,6 +102,10 @@ OCaml works out a function's arguments first, so the evaluator built both ways o
 function, called only when taken. Question sent: what Unio says when calls nest too deep for the machine (Ralph gives
 status 7 for now). Six recursion tests suggested to the design session.
 
+D153 (`be.Text` of a `Bool`) is built; the six recursion tests and d153's test pass, 34 of 34. D152 (`?? crash`) is
+outside the milestone's subset and stays `NotBuiltYet`; for `be.Whole` its `what:` also needs the failure's name,
+which isn't decided.
+
 Reading 8 (`while` and D57) became D149, which Ralph already follows. Its example breaks D9; sent to the design
 session on 2026-11-21.
 

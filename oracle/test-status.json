@@ -1,5 +1,5 @@
 {
-  "passed": 27,
+  "passed": 34,
   "failed": 0,
   "assumptions": { "status": "pass" },
   "tests": {
@@ -16,6 +16,7 @@
     "d13_variables": { "status": "pass" },
     "d14_equals_in_condition": { "status": "pass" },
     "d14_let_cannot_change": { "status": "pass" },
+    "d153_bool_to_text": { "status": "pass" },
     "d16_if": { "status": "pass" },
     "d19_while": { "status": "pass" },
     "d20_ask": { "status": "pass" },
@@ -27,6 +28,12 @@
     "d30_escapes": { "status": "pass" },
     "d32_break_outside_loop": { "status": "pass" },
     "d34_logic": { "status": "pass" },
+    "d34_skipped_side_never_runs": { "status": "pass" },
+    "d64_deep_recursion": { "status": "pass" },
+    "d64_mutual_recursion": { "status": "pass" },
+    "d64_recursion_not_taken": { "status": "pass" },
+    "d64_recursion_print_order": { "status": "pass" },
+    "d64_recursion_sum": { "status": "pass" },
     "d94_name_in_use": { "status": "pass" },
     "d97_extra_blank_lines": { "status": "pass" },
     "d99_bad_name": { "status": "pass" }

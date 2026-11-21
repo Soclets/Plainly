@@ -148,6 +148,8 @@ Definition apply_library (env : environment) (which : library) (values : list va
       | None => Stop Stuck
       end
   | Convert_to_text false, [Whole_value n] => Done (Gave (Text_value (text_of_whole n)))
+  (* trace: D153 *)
+  | Convert_to_text false, [Bool_value b] => Done (Gave (Text_value (if b then "true" else "false")%string))
   | Convert_to_text true, _ =>
       match format_text env given with
       | Some t => Done (Gave (Text_value t))

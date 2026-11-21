@@ -332,7 +332,7 @@ Definition target_ready (s : setting) (t : target) (values : list value) (given 
   | Library (Show_message true _) | Library (Convert_to_text true) => format_ready s given
   | Library (Show_message false _) | Library Ask_for_line | Library Convert_to_whole =>
       map type_of_value values = [Text]
-  | Library (Convert_to_text false) => map type_of_value values = [Whole]
+  | Library (Convert_to_text false) => map type_of_value values = [Whole] \/ map type_of_value values = [Bool]
   | Library Random_number => map type_of_value values = [Whole; Whole]
   | User d => map type_of_value values = map parameter_type (definition_parameters d)
   end.
@@ -399,7 +399,9 @@ Ltac single_case :=
       repeat split; unfold check_single in Sg;
       destruct (check_arguments s given) as [| a [| ? ?]]; try discriminate;
       destruct (argument_label a) as [[? ?]|]; try discriminate;
-      destruct (argument_type a) eqn:Ta; inversion Sg; subst; eapply typed_one; eauto
+      destruct (argument_type a) eqn:Ta; inversion Sg; subst;
+      first [solve [eapply typed_one; eauto] | solve [left; eapply typed_one; eauto]
+            | solve [right; eapply typed_one; eauto]]
   end.
 
 Lemma call_ready : forall s name given at_ values,
@@ -461,7 +463,8 @@ Proof.
   - destruct (One Text [] Gives_nothing false C) as [A B]. simpl in *. repeat split; simpl; congruence.
   - nonempty.
   - destruct (type_of_value v) eqn:Tv; simpl in *; try nonempty.
-    try (apply app_nil in C as [_ C]). erewrite check_against_typed by eauto. simpl. repeat split; congruence.
+    all: try (apply app_nil in C as [_ C]); erewrite check_against_typed by eauto; simpl;
+      repeat split; first [congruence | left; congruence | right; congruence].
   - destruct (type_of_value v) eqn:Tv; simpl in *; try nonempty.
     try (apply app_nil in C as [_ C]). erewrite check_against_typed by eauto. simpl. repeat split; congruence.
   - destruct (One Text [] Gives_nothing false C) as [A B]. simpl in *. repeat split; simpl; congruence.
@@ -501,7 +504,7 @@ Proof.
   - destruct values as [| [] [|]]; simpl in R; try discriminate. simpl. repeat constructor.
   - destruct R as [v [pieces [p [G F]]]]. subst given. destruct (fill_ok _ _ _ M F) as [t Ft].
     simpl. unfold format_text. rewrite Ft. repeat constructor.
-  - destruct values as [| [] [|]]; simpl in R; try discriminate. simpl. repeat constructor.
+  - destruct values as [| [] [|]]; simpl in R; destruct R as [R|R]; try discriminate; simpl; repeat constructor.
   - destruct values as [| [] [|]]; simpl in R; try discriminate. simpl.
     destruct (whole_of_text _); repeat constructor.
   - destruct values as [| [] [|]]; simpl in R; try discriminate. simpl.
