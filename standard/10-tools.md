@@ -44,8 +44,10 @@ unio oracle game.unio
 - **While you edit,** `Unlo\n` compiles after every save on one background thread, inside the editor support,
   filling the cache (D65).
 - **`unio run` and `unio compile`** compile whatever isn't cached on every CPU core (D65).
-- **The cache** keeps each compiled piece under a fingerprint of everything that affects it, in the system's cache
-  folder, shared by every project, so only what changed is recompiled, and a build never differs because of it (D65).
+- **The cache** keeps each compiled piece under a fingerprint of everything that affects it, in the system's own cache
+  folder (`~/Library/Caches/unio` on macOS, `~/.cache/unio` or `$XDG_CACHE_HOME/unio` on Linux,
+  `%LOCALAPPDATA%\unio\cache` on Windows, D151), shared by every project, so only what changed is recompiled, and a
+  build never differs because of it (D65).
 
 ## Memory
 

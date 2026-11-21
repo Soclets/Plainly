@@ -4672,3 +4672,19 @@ session built it this way meanwhile, since D91 didn't say.
 
 **Tankun's words.** "Why is Unio named Unio?", then, asked "Should `unio compile` write the program beside the source
 file, named after it without `.unio`?", the owner chose: "yea".
+
+## D151. The compile cache lives in each system's standard cache folder
+
+2026-11-21.
+
+**Chosen.** D65's shared cache lives in the system's own cache folder: `~/Library/Caches/unio` on macOS,
+`$XDG_CACHE_HOME/unio` on Linux (`~/.cache/unio` when that isn't set), and `%LOCALAPPDATA%\unio\cache` on Windows.
+
+**Weighed.**
+- A `.unio` folder in the home directory. Clutter that cleanup tools don't know is safe to delete.
+
+**Why this won.** Those folders are where each system and its cleanup tools expect disposable data, and emptying one
+breaks nothing: `unio` compiles everything again next time. The compiler session built the macOS one meanwhile, since
+D65 left the place open.
+
+**Tankun's words.** Asked "Should the cache live in each system's standard cache folder?", the owner chose: "yea".
