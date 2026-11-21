@@ -538,6 +538,13 @@ private:
         if (name == "be.Text.fmt") {
             return lower_format(*format);
         }
+        if (name == "be.Text" && function_->values.at(arguments.front().value).kind == Kind::boolean) {
+            // trace: D153
+            // Unio's own words for the two values, as constants: nothing is made, so nothing needs freeing.
+            const ValueId yes = text_constant("true");
+            const ValueId no = text_constant("false");
+            return {.value = emit(Op::choose, Kind::text, {arguments.front().value, yes, no}), .owned = false};
+        }
         if (name == "be.Text") {
             return {.value = emit(Op::whole_to_text, Kind::text, {arguments.front().value}, 0,
                                   site(ir::SiteKind::memory, place)),

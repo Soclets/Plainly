@@ -89,6 +89,8 @@ const char* op_name(Op op) {
         return "not";
     case Op::call:
         return "call";
+    case Op::choose:
+        return "choose";
     case Op::show:
         return "show";
     case Op::ask:

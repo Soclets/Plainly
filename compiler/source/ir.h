@@ -53,6 +53,7 @@ enum class Op : std::uint8_t {
     value_of,      // whole_or_failure -> whole
     retain,        // a second owner for a text (D130)
     release,       // an owner of a text ends (D130)
+    choose,        // bool, a, b -> a when true, b when false
 };
 
 // What a check reports when it fails at runtime: its place, shown as D54 lays out.

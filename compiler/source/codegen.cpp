@@ -284,6 +284,8 @@ private:
             return builder_.CreateICmpSLE(operand(0), operand(1));
         case Op::logical_not:
             return builder_.CreateNot(operand(0));
+        case Op::choose:
+            return builder_.CreateSelect(operand(0), operand(1), operand(2));
         case Op::call: {
             llvm::Function* callee = declare(unio_.functions.at(value.callee));
             std::vector<llvm::Value*> arguments;

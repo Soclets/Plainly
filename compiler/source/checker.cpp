@@ -730,8 +730,11 @@ private:
             return;
         }
         if (expression.fallback == Fallback::crash) {
-            messages_.not_designed_yet(expression.op_place,
-                                       "what `?? crash` shows when it stops the program isn't decided yet");
+            // trace: D152
+            // D152's `what:` names the failure, and what a failed conversion's failure is called isn't decided.
+            messages_.not_designed_yet(expression.op_place, "what `" + call.builtin +
+                                                                "`'s failure is called, for `?? crash`'s message "
+                                                                "(D152), isn't decided yet");
             return;
         }
         check_value(*expression.right);
@@ -947,7 +950,7 @@ private:
         return fine;
     }
 
-    // trace: D22, D87
+    // trace: D22, D87, D153
     void check_conversion(const Signature& signature, const Expression& value, std::string& builtin) {
         if (signature.name == "be.Text" && value.type == Type::text) {
             refuse(value.place, "this value is already a `Text`, so `be.Text` does nothing",
@@ -955,8 +958,6 @@ private:
         } else if (signature.name == "be.Whole" && value.type == Type::whole) {
             refuse(value.place, "this value is already a `Whole`, so `be.Whole` does nothing",
                    "converting a value to the type it already is does nothing, so it's refused.");
-        } else if (signature.name == "be.Text" && value.type == Type::boolean) {
-            messages_.not_designed_yet(value.place, "converting a `Bool` to text isn't decided yet");
         }
         builtin = signature.name;
     }

@@ -26,6 +26,8 @@ pass d14_equals_in_condition working
 pass d14_equals_in_condition final
 pass d14_let_cannot_change working
 pass d14_let_cannot_change final
+pass d153_bool_to_text working
+pass d153_bool_to_text final
 pass d16_if working
 pass d16_if final
 pass d19_while working
@@ -49,10 +51,25 @@ pass d32_break_outside_loop working
 pass d32_break_outside_loop final
 pass d34_logic working
 pass d34_logic final
+pass d34_skipped_side_never_runs working
+pass d34_skipped_side_never_runs final
+pass d64_deep_recursion working
+pass d64_deep_recursion final
+pass d64_deep_recursion check.py
+pass d64_mutual_recursion working
+pass d64_mutual_recursion final
+pass d64_mutual_recursion check.py
+pass d64_recursion_not_taken working
+pass d64_recursion_not_taken final
+pass d64_recursion_print_order working
+pass d64_recursion_print_order final
+pass d64_recursion_sum working
+pass d64_recursion_sum final
+pass d64_recursion_sum check.py
 pass d94_name_in_use working
 pass d94_name_in_use final
 pass d97_extra_blank_lines working
 pass d97_extra_blank_lines final
 pass d99_bad_name working
 pass d99_bad_name final
-57 of 57 passed
+74 of 74 passed

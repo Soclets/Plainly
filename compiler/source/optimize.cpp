@@ -283,6 +283,7 @@ bool removable(Op op) {
     case Op::parse_whole:
     case Op::failed:
     case Op::value_of:
+    case Op::choose:
         return true;
     default:
         return false;
@@ -466,6 +467,11 @@ private:
             }
             return std::nullopt;
         }
+        case Op::choose:
+            if (const auto chosen = constant(0)) {
+                return operand(*chosen != 0 ? 1 : 2);
+            }
+            return std::nullopt;
         case Op::logical_not: {
             if (const auto inner = constant(0)) {
                 return boolean(*inner == 0);
