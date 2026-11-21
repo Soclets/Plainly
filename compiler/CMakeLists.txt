@@ -104,3 +104,7 @@ add_test(NAME unio_tests COMMAND test_runner
   --tests "${CMAKE_CURRENT_SOURCE_DIR}/../tests"
   --status "${CMAKE_CURRENT_SOURCE_DIR}/test-status.txt"
   --jobs 3)
+# `unio oracle` hands the file to Ralph (D50, D141), when Ralph is built.
+add_test(NAME oracle_forwarding COMMAND unio oracle program.unio
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../tests/d04_hello_world")
+set_tests_properties(oracle_forwarding PROPERTIES PASS_REGULAR_EXPRESSION "^Hello, World!\n$")

@@ -227,8 +227,9 @@ int run_oracle(const std::string& file) {
             execv(path.c_str(), argv.data());
             return internal_error("the oracle couldn't start: " + std::string(std::strerror(errno)));
         }
-        const llvm::StringRef parent = llvm::sys::path::parent_path(folder);
-        if (parent == folder.str()) {
+        // Copied first: the parent is a view into `folder` itself.
+        const std::string parent(llvm::sys::path::parent_path(folder));
+        if (parent.empty() || parent == folder.str()) {
             break;
         }
         folder = parent;

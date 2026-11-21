@@ -67,38 +67,48 @@ running total can change which check fails (`MAX + (1 + -1)` fits, `(MAX + 1) + 
 
 ## Timings
 
-`fib(44)` on Tankun's Mac, 2026-11-21, best of 5 (3 for the slow ones), the number read from standard input as the C
-version reads it from its arguments, so nothing's known at compile time:
+`fib(44)` on Tankun's Mac, 2026-11-21, best of several runs, the number read from standard input as the C version reads
+it from its arguments, so nothing's known at compile time:
 
 | | time |
 |---|---|
-| Unio `final` | 2.1 ms |
+| Unio `final` | 2.1 to 2.3 ms |
 | gfortran 16.2 `-O3` | 2.8 ms |
-| clang `-O3` (C) | 965 ms |
+| clang `-O3` (C) | 965 to 999 ms |
 | clang `-O0` (C) | 1757 ms |
-| Unio `working` | 1946 ms |
+| Unio `working` | 1946 to 2058 ms |
 | gfortran `-O0` | 2711 ms |
 
-Compiling hello world: 0.09 s in the sanitized debug build; a new program's first launch costs about 0.3 s more,
-macOS checking it.
+Compiling hello world: 0.09 s in the sanitized debug build. Running an unchanged program again: 0.10 s, since the linked
+program is cached (`~/Library/Caches/unio/programs`); a new program's first launch costs about 0.3 s more, macOS
+checking it.
 
 ## Status
 
-- 2026-11-21: every test passes in both modes (57 of 57 runs with `check.py`). The guessing game plays in both modes,
-  piped; not yet played by hand. `final`'s optimizations for the subset are in, with unit tests, except #13's.
-- Next: `clang-tidy` clean; #13's unit test; caching the linked program so `unio run` of an unchanged program skips
-  linking and macOS's first-launch check; the rest of the subset's decided refusals (spacing D98/D100, D9's and D57's
-  edge cases, knock-on errors D55/D83), compared against Ralph.
+The first milestone is reached (2026-11-21):
+
+1. `unio run`, `compile`, `check` and `oracle` work (D50, D91, D136, D150); `oracle` finds Ralph's built program.
+2. Every test passes in both modes: 33 tests, 74 runs with the `check.py` files.
+3. The guessing game plays in both modes, through a real terminal (a pty) and piped, matching Ralph when input runs
+   out. Tankun hasn't played it by hand yet.
+4. `final`'s optimizations for the subset are in, each from a general method, with unit tests (table above).
+5. Compiling is parallel across procedures and cached, objects and linked programs both.
+6. `fib` timed above.
+
+Also checked: `clang-tidy` clean; 66 of 69 small refusal programs and all 21 spacing cases give Ralph's messages byte for
+byte (the other 3 are refusals Ralph hasn't built, and Ralph's extra `NotDesignedYet` after `show_msg;`); 12 runtime
+programs match Ralph in both modes; 2,500 randomly broken programs never crash `unio check`.
+
+Not built, waiting on decisions: `?? crash` (D152 names the failure, and `be.Whole`'s failure has no name yet).
+
+What comes next is Tankun's call.
 
 ## Questions sent to the design session
 
-1. Ralph crashes on any procedure that calls itself (`Fatal error: exception Stack overflow`, status 2), even
-   `one(3)` recursing three levels. For the oracle session.
-2. Not decided, and built provisionally (each a guess to confirm or change):
-   - `unio compile game.unio` writes `game` beside `game.unio`.
-   - The cache is `~/Library/Caches/unio` (D65 leaves the place open).
-   - `?? crash` is `NotDesignedYet` at compile time, since what it shows isn't decided.
-   - `random` with `from:` above `to:` stops at runtime with `NotDesignedYet`, status 3.
+1. (Answered: Ralph's recursion crash is fixed; D150, D151, D152 and D153 decided.)
+2. Still provisional: `random` with `from:` above `to:` stops at runtime with `NotDesignedYet`, status 3.
+4. What `be.Whole`'s failure is called, for D152's `?? crash` message.
+5. Standard chapter 10 says `run` compiles to a temporary file; `Unlo\n` runs the linked program from the cache.
 3. Wordings drafted, not decided: "this line isn't inside a procedure"; "there's no type named `X`"; "`not` works on
    a `Bool`, but this is a `Whole`"; "`and` joins two `Bool`s, but this is a `Whole`"; "this value isn't used"; "a
    value should be here, not `x`"; the usage text; `unio oracle` without Ralph built (status 6); and D54's `because:`
