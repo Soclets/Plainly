@@ -50,18 +50,18 @@ To run a program by hand: `opam exec --switch=ralph -- dune exec --root oracle -
 Each step ends with something running. Proofs grow with the core rather than at the end.
 
 1. [x] Test runner, in OCaml, and every test failing.
-2. [ ] Hello world end to end: lexer and parser for `proc.main` and `show_msg`, the core's syntax tree, checker and
+2. [x] Hello world end to end: lexer and parser for `proc.main` and `show_msg`, the core's syntax tree, checker and
    evaluator, extraction, the shell printing. `d04_hello_world` passes.
-3. [ ] Values and `Whole` arithmetic in Rocq: `Whole` as Rocq's exact integers (`Z`), kept in range by D46's
+3. [x] Values and `Whole` arithmetic in Rocq: `Whole` as Rocq's exact integers (`Z`), kept in range by D46's
    overflow check; `be.Text` and `be.Whole` (D95). **Prove** that `+`, `-`, `*` and negation are exact when the result
    fits and stop with the overflow check otherwise. `d13_variables`, `d104_open_line`.
-4. [ ] Variables, `if`, `while`, `break`, conditions, `and`/`or`/`not` stopping early. `d16_if`, `d19_while`,
+4. [x] Variables, `if`, `while`, `break`, conditions, `and`/`or`/`not` stopping early. `d16_if`, `d19_while`,
    `d34_logic`, `d06_same_line`.
-5. [ ] Text: `&`, escapes, `.fmt`. `d28_join_text`, `d29_fmt`, `d30_escapes`.
-6. [ ] Procedures, `returns`, `return`, labels, slides; `ask`, `??`, `random`. `d05_slides`, `d24_procedures`,
+5. [x] Text: `&`, escapes, `.fmt`. `d28_join_text`, `d29_fmt`, `d30_escapes`.
+6. [x] Procedures, `returns`, `return`, labels, slides; `ask`, `??`, `random`. `d05_slides`, `d24_procedures`,
    `d20_ask`, and the guessing game played by hand.
 7. [ ] **Prove type safety** for the subset: a program the checker accepts never gets stuck.
-8. [ ] The refusals the tests check, in the shell and the core, with D54's layout and D86's column.
+8. [x] The refusals the tests check, in the shell and the core, with D54's layout and D86's column.
 9. [ ] Every other decided refusal in the subset, or `NotBuiltYet` where it isn't built, so Ralph never accepts a
    program the standard refuses.
 10. [ ] Review the theorems' statements with the design session; report to Tankun.
@@ -83,7 +83,14 @@ possible input.
 
 ## Status
 
-Not started yet: see the plan above.
+2026-11-21: all 27 tests pass, and the guessing game runs (`ralph examples/guessing_game.unio`). The exactness
+theorems for `Whole` (`whole_arithmetic_exact`, `whole_negate_exact` in `core/Whole.v`) are proven. Next: the
+type-safety proof (step 7), then the spacing refusals (D98, D100) and the rest of step 9.
+
+Known gaps, each to be built:
+- Spacing (D98, D100, D102): not checked yet, so a wrongly spaced program is accepted. Step 9.
+- Knock-on errors (D55 rule 4, D83): not sorted out yet; every error is shown as its own message without the
+  `because:` pointing back.
 
 ## Questions for the design session
 

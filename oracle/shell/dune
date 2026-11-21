@@ -1,4 +1,4 @@
 (executable
  (name ralph)
- (libraries unix)
- (flags (:standard -w +a-4-40-41-42-44-45-70 -warn-error +a)))
+ (libraries unix ralph_core)
+ (flags (:standard -open Ralph_core -w +a-4-40-41-42-44-45-70 -warn-error +a)))

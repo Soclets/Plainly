@@ -1,0 +1,151 @@
+(* `Whole`: whole numbers from -9223372036854775808 to 9223372036854775807 (D15).
+
+   Ralph keeps a `Whole` as one of Rocq's exact integers (`Z`), which have no size limit, and checks every result
+   against `Whole`'s range: a result outside it stops the program with D46's overflow check, "too big" or "too small"
+   (D92). Since nothing is ever cut down to 64 bits, there's nothing to get wrong about wrapping, and the theorems
+   below say so. *)
+
+From Stdlib Require Import ZArith String Ascii List Bool Lia.
+Import ListNotations.
+Open Scope Z_scope.
+
+Definition whole_minimum : Z := -9223372036854775808.
+Definition whole_maximum : Z := 9223372036854775807.
+
+(* Whether a number fits in a `Whole`. *)
+Definition fits (n : Z) : Prop := whole_minimum <= n <= whole_maximum.
+
+(* What D46's overflow check finds about a result. *)
+Inductive checked :=
+| Fits (n : Z)
+| Too_big
+| Too_small.
+
+(* trace: D46, D92 *)
+Definition check_range (n : Z) : checked :=
+  if n >? whole_maximum then Too_big
+  else if n <? whole_minimum then Too_small
+  else Fits n.
+
+(* The arithmetic the subset has (D27, D59). *)
+Inductive arithmetic := Plus | Minus | Times.
+
+Definition exact (operator : arithmetic) (a b : Z) : Z :=
+  match operator with
+  | Plus => a + b
+  | Minus => a - b
+  | Times => a * b
+  end.
+
+(* trace: D27, D59, D46 *)
+Definition whole_arithmetic (operator : arithmetic) (a b : Z) : checked :=
+  check_range (exact operator a b).
+
+(* trace: D27, D46 *)
+Definition whole_negate (a : Z) : checked := check_range (- a).
+
+(* `check_range` keeps a number exactly when it fits, and says which way it's out otherwise. *)
+Lemma check_range_spec : forall n,
+  (fits n -> check_range n = Fits n) /\
+  (n > whole_maximum -> check_range n = Too_big) /\
+  (n < whole_minimum -> check_range n = Too_small).
+Proof.
+  intro n; unfold check_range, fits, whole_minimum, whole_maximum.
+  repeat split; intros;
+    repeat match goal with
+    | |- context [if ?c then _ else _] => destruct c eqn:?
+    end;
+    rewrite ?Z.gtb_lt, ?Z.gtb_ltb, ?Z.ltb_lt, ?Z.ltb_ge in *;
+    try reflexivity; try lia.
+Qed.
+
+(* THEOREM: `Whole` arithmetic is exact.
+   In plain words: for any two whole numbers, `+`, `-` and `*` give the mathematically exact answer whenever it fits
+   in a `Whole`; when the exact answer is bigger than the largest `Whole`, they stop with D46's overflow check saying
+   "too big", and when it's smaller than the smallest, "too small". Nothing ever wraps around. *)
+Theorem whole_arithmetic_exact : forall operator a b,
+  (fits (exact operator a b) -> whole_arithmetic operator a b = Fits (exact operator a b)) /\
+  (exact operator a b > whole_maximum -> whole_arithmetic operator a b = Too_big) /\
+  (exact operator a b < whole_minimum -> whole_arithmetic operator a b = Too_small).
+Proof. intros; apply check_range_spec. Qed.
+
+(* THEOREM: negation is exact.
+   In plain words: making a whole number negative with `-` gives exactly its negative whenever that fits in a
+   `Whole`; the one that doesn't, `-` of -9223372036854775808, stops with D46's overflow check saying "too big". *)
+Theorem whole_negate_exact : forall a,
+  (fits (- a) -> whole_negate a = Fits (- a)) /\
+  (- a > whole_maximum -> whole_negate a = Too_big) /\
+  (- a < whole_minimum -> whole_negate a = Too_small).
+Proof. intros; apply check_range_spec. Qed.
+
+(* ---------------------------------------------------------------------------------------------------------------- *)
+(* Writing a whole number as text, for `be.Text` (D22) and `.fmt` (D29). *)
+
+Definition digit_character (d : Z) : ascii := ascii_of_nat (48 + Z.to_nat d).
+
+(* The decimal digits of [n], in front of [rest]. [steps] bounds the work so Rocq sees it finish: a number with
+   [steps] binary digits has at most [steps] decimal ones. *)
+Fixpoint decimal_digits (steps : nat) (n : Z) (rest : list ascii) : list ascii :=
+  match steps with
+  | O => rest
+  | S steps' =>
+      let digits := digit_character (n mod 10) :: rest in
+      if n / 10 =? 0 then digits else decimal_digits steps' (n / 10) digits
+  end.
+
+(* trace: D22 *)
+Definition text_of_whole (n : Z) : string :=
+  match n with
+  | Z0 => "0"%string
+  | Zpos p => string_of_list_ascii (decimal_digits (Pos.size_nat p) (Zpos p) [])
+  | Zneg p => string_of_list_ascii ("-"%char :: decimal_digits (Pos.size_nat p) (Zpos p) [])
+  end.
+
+(* ---------------------------------------------------------------------------------------------------------------- *)
+(* Reading a whole number from text. *)
+
+Definition digit_value (c : ascii) : option Z :=
+  let code := nat_of_ascii c in
+  if (48 <=? code)%nat && (code <=? 57)%nat then Some (Z.of_nat (code - 48)) else None.
+
+(* The number some digits spell, if they're all digits and there's at least one. *)
+Fixpoint digits_value (so_far : Z) (characters : list ascii) : option Z :=
+  match characters with
+  | [] => Some so_far
+  | c :: rest =>
+      match digit_value c with
+      | Some d => digits_value (so_far * 10 + d) rest
+      | None => None
+      end
+  end.
+
+Definition number_of_digits (characters : list ascii) : option Z :=
+  match characters with
+  | [] => None
+  | _ => digits_value 0 characters
+  end.
+
+(* A whole number literal in a program, as its digits (D15). Whether it fits is the checker's question. *)
+Definition whole_of_literal (digits : string) : option Z := number_of_digits (list_ascii_of_string digits).
+
+Fixpoint drop_spaces (characters : list ascii) : list ascii :=
+  match characters with
+  | " "%char :: rest => drop_spaces rest
+  | _ => characters
+  end.
+
+(* trace: D95
+   `be.Whole`: spaces around the number are ignored, a `+` or `-` in front and leading zeros are fine, and
+   anything else fails, as does a number that doesn't fit in a `Whole`. *)
+Definition whole_of_text (text : string) : option Z :=
+  let trimmed := rev (drop_spaces (rev (drop_spaces (list_ascii_of_string text)))) in
+  let signed :=
+    match trimmed with
+    | "-"%char :: digits => option_map Z.opp (number_of_digits digits)
+    | "+"%char :: digits => number_of_digits digits
+    | digits => number_of_digits digits
+    end in
+  match signed with
+  | Some n => if (whole_minimum <=? n) && (n <=? whole_maximum) then Some n else None
+  | None => None
+  end.

@@ -1,0 +1,290 @@
+(* The wording of the core's refusals and stops, as the decisions give it (D85, D87, D88, D89, D92, D102, D103, D117,
+   D120, D121, D132, D133), in D54's layout. Names and types are filled in from the program; a variable's name gets its
+   `$` back (D125). *)
+
+module M = Messages
+
+let type_name = function Core.Whole -> "Whole" | Core.Bool -> "Bool" | Core.Text -> "Text"
+
+let operator_name = function
+  | Core.Add -> "+"
+  | Core.Subtract -> "-"
+  | Core.Multiply -> "*"
+  | Core.Join -> "&"
+  | Core.Equal -> "=="
+  | Core.Not_equal -> "!="
+  | Core.Less -> "<"
+  | Core.Greater -> ">"
+  | Core.At_least -> "at_least"
+  | Core.At_most -> "at_most"
+  | Core.And -> "and"
+  | Core.Or -> "or"
+
+let at (p : Core.place) = M.point p.place_line p.place_column p.place_width
+let quoted s = "`" ^ s ^ "`"
+let variable name = quoted ("$" ^ name)
+let a_type t = quoted (type_name t)
+
+(* "`.a`", "`.a` and `.b`", "`.a`, `.b` and `.c`" *)
+let listed narrowings =
+  let names = List.map (fun n -> quoted ("." ^ n)) narrowings in
+  match List.rev names with
+  | [] -> ""
+  | [ only ] -> only
+  | last :: rest -> String.concat ", " (List.rev rest) ^ " and " ^ last
+
+let refused ?fix ?what ?because ?why p = M.message M.Refused (at p) ?fix ?what ?because ?why
+
+let line_of source (p : Core.place) =
+  if p.place_line >= 1 && p.place_line <= Array.length source then source.(p.place_line - 1) else ""
+
+let same_type_why = "a value's type has to match where it's used."
+
+let refusal source (r : Core.refusal) : M.message =
+  match r with
+  | Core.Unknown_variable (name, p, ended) ->
+      refused p
+        ~what:(Printf.sprintf "there's no variable named %s here" (variable name))
+        ?because:
+          (Option.map
+             (fun e -> (Printf.sprintf "%s is declared inside a block that has ended" (variable name), Some (at e)))
+             ended)
+        ~why:"a variable is declared with `let` or `var` before it's used."
+  | Core.Name_in_use (name, p, first) ->
+      refused p
+        ~what:(Printf.sprintf "%s is already in use here" (variable name))
+        ~because:(Printf.sprintf "%s is declared here" (variable name), Some (at first))
+        ~why:"a name in use can't be declared again; two things get two names."
+  | Core.Let_cannot_change (name, p, keyword) ->
+      refused p
+        ~what:(Printf.sprintf "%s can't be given a new value" (variable name))
+        ~because:(Printf.sprintf "line %d declares it with `let`" keyword.place_line, Some (at keyword))
+        ~why:"only a `var` can be given a new value."
+  | Core.Two_parameters_one_name (name, p) ->
+      refused p ~what:(Printf.sprintf "two parameters are named %s" (variable name)) ~why:"each parameter needs its own name."
+  | Core.Wrong_value_type (name, expected, found, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s is a %s, but this value is a %s" (variable name) (a_type expected) (a_type found))
+        ~why:same_type_why
+  | Core.Argument_type (procedure, expected, found, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s takes a %s here, but this is a %s" (quoted procedure) (a_type expected) (a_type found))
+        ~why:same_type_why
+  | Core.Slid_value_type (procedure, expected, found, p) ->
+      refused p
+        ~what:
+          (Printf.sprintf "%s takes a %s first, but the slid value is a %s" (quoted procedure) (a_type expected)
+             (a_type found))
+        ~why:"a slide passes the value on its left in as the step's first argument."
+  | Core.Fallback_type (expected, found, p) ->
+      refused p
+        ~what:
+          (Printf.sprintf "the call gives a %s, so the value after `??` must be one too, not a %s" (a_type expected)
+             (a_type found))
+        ~why:same_type_why
+  | Core.Compare_types (operator, left, right, p) ->
+      refused p
+        ~what:
+          (Printf.sprintf "%s compares two values of one type, but this is a %s and a %s"
+             (quoted (operator_name operator)) (a_type left) (a_type right))
+        ~why:"a comparison is between two values of the same type."
+  | Core.Arithmetic_types (operator, left, right, p) ->
+      refused p
+        ~what:
+          (Printf.sprintf "%s works on two `Whole`s, but this is a %s and a %s" (quoted (operator_name operator))
+             (a_type left) (a_type right))
+        ~why:"`+`, `-` and `*` are only for numbers."
+  | Core.Plus_on_text p ->
+      refused p
+        ~fix:(M.replace_at (line_of source p) p.place_column p.place_width "&")
+        ~why:"`+` is only for numbers, and `&` joins text."
+  | Core.Join_number places -> (
+      match places with
+      | [] -> refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~why:""
+      | first :: _ ->
+          (* Wraps each number in `be.Text(...)`, the last first so the earlier columns still hold. *)
+          let fixed =
+            List.fold_left
+              (fun text (p : Core.place) ->
+                let inside = String.sub text (p.place_column - 1) p.place_width in
+                M.replace_at text p.place_column p.place_width ("be.Text(" ^ inside ^ ")"))
+              (line_of source first)
+              (List.rev places)
+          in
+          refused first ~fix:fixed
+            ~why:"`&` joins two pieces of text, and a number becomes text only where `be.Text` says so.")
+  | Core.Join_non_text (found, p) ->
+      refused p
+        ~what:(Printf.sprintf "`&` joins text, but this is a %s" (a_type found))
+        ~why:"`&` joins two pieces of text, and anything else becomes text only where `be.Text` says so."
+  | Core.Join_beside_maths (join, maths) ->
+      refused join ~what:"`&` is next to maths without brackets, so it isn't clear which goes first"
+        ~because:("the maths is here", Some (at maths))
+        ~why:"where maths doesn't say which goes first, `( )` shows it."
+  | Core.Negate_non_number (found, p) ->
+      refused p
+        ~what:(Printf.sprintf "`-` makes a number negative, but this is a %s" (a_type found))
+        ~why:"a `-` with no space after it makes a number negative."
+  | Core.Convert_to_same (target, p) ->
+      refused p
+        ~what:(Printf.sprintf "this value is already a %s, so %s does nothing" (a_type target) (quoted ("be." ^ type_name target)))
+        ~why:"converting a value to the type it already is does nothing, so it's refused."
+  | Core.Be_without_type p ->
+      refused p ~what:"`be` needs the type the value becomes, as in `be.Text`"
+        ~why:"a value is converted with `be` narrowed by the type it becomes."
+  | Core.Unknown_narrowing (word, narrowing, p, narrowings) ->
+      refused p
+        ~what:(Printf.sprintf "%s has no narrowing %s" (quoted word) (quoted ("." ^ narrowing)))
+        ~why:
+          (match narrowings with
+          | [] -> Printf.sprintf "%s has no narrowings." (quoted word)
+          | [ only ] -> Printf.sprintf "%s's only narrowing is %s." (quoted word) (quoted ("." ^ only))
+          | _ -> Printf.sprintf "%s's narrowings are %s." (quoted word) (listed narrowings))
+  | Core.Narrowing_on_narrowed (word, narrowing, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s has no narrowing %s" (quoted word) (quoted ("." ^ narrowing)))
+        ~why:(Printf.sprintf "%s can't be narrowed further." (quoted word))
+  | Core.Narrowing_twice (narrowing, p) ->
+      refused p ~what:(Printf.sprintf "%s is written twice" (quoted ("." ^ narrowing))) ~why:"each narrowing is written once."
+  | Core.Narrowing_order p ->
+      refused p
+        ~fix:(M.replace_at (line_of source p) p.place_column p.place_width "show_msg.fmt.same_line")
+        ~why:"narrowings go strongest first: `.fmt` changes what's shown, `.same_line` only where it ends."
+  | Core.Unknown_procedure (name, p) ->
+      refused p
+        ~what:(Printf.sprintf "there's no procedure named %s" (quoted name))
+        ~why:"a call names a procedure the program or the library has."
+  | Core.Procedure_without_brackets (name, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s is a procedure, so using it writes `( )` with its arguments" (quoted name))
+        ~why:"a call writes the procedure's name and `( )`."
+  | Core.Gives_nothing_used p ->
+      refused p ~what:"this call gives nothing back, so it can't be used as a value"
+        ~why:"a procedure with no `returns` gives nothing back."
+  | Core.Value_unused (procedure, given, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s gives back a %s, but nothing uses it" (quoted procedure) (a_type given))
+        ~why:"a call that gives back a value is used: kept in a variable, passed on, or compared."
+  | Core.Failure_unhandled p ->
+      refused p ~what:"this call can fail, and nothing here deals with the failure"
+        ~why:"every call that can fail deals with its failure, with `?`, `??` or `otherwise:`."
+  | Core.Fallback_without_failing_call p ->
+      refused p ~what:"`??` here doesn't follow a call that can fail"
+        ~why:"`??` deals with the failure of the call right before it."
+  | Core.Missing_label (label, value) ->
+      refused value
+        ~fix:(M.insert_at (line_of source value) value.place_column (label ^ ": "))
+        ~why:"every call writes the labels its procedure chose."
+  | Core.Label_where_none (label, value) ->
+      refused label
+        ~fix:(M.replace_at (line_of source label) label.place_column (value.place_column - label.place_column) "")
+        ~why:"a call writes only the labels its procedure chose."
+  | Core.Wrong_label (expected, found, p) ->
+      refused p
+        ~what:(Printf.sprintf "this argument's label is %s, not %s" (quoted expected) (quoted found))
+        ~why:"every call writes the labels its procedure chose."
+  | Core.Argument_count (procedure, expected, given, p, declared) ->
+      let values n = if n = 1 then "1 value" else Printf.sprintf "%d values" n in
+      refused p
+        ~what:(Printf.sprintf "%s takes %s, but this call gives %s" (quoted procedure) (values expected) (values given))
+        ?because:(Option.map (fun d -> (Printf.sprintf "%s is declared here" (quoted procedure), Some (at d))) declared)
+        ~why:"a call gives every parameter a value, with its label if it has one."
+  | Core.Brace_not_variable (name, p) ->
+      refused p
+        ~what:(Printf.sprintf "there's no variable named %s here" (variable name))
+        ~why:"braces in `.fmt` text hold a variable's name, checked at compile time."
+  | Core.Brace_without_dollar p ->
+      refused p
+        ~fix:(M.insert_at (line_of source p) p.place_column "$")
+        ~why:"braces in `.fmt` text hold a variable's name, with its `$`."
+  | Core.Brace_calculation p ->
+      refused p ~what:"braces in `.fmt` text hold only a variable's name"
+        ~why:"text never hides a calculation or a call; work it out into a variable first."
+  | Core.Format_without_text p ->
+      refused p ~what:"`.fmt` takes one piece of text" ~why:"`.fmt` fills in the braces of the text it's given."
+  | Core.Format_text_label p ->
+      refused p ~what:"`.fmt`'s text has no label" ~why:"`.fmt` fills in the braces of the text it's given."
+  | Core.Return_value_without_returns (procedure, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s has no `returns`, so it gives nothing back" (quoted procedure))
+        ~why:"only a procedure with `returns` gives back a value."
+  | Core.Bare_return_with_returns (procedure, t, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s gives back a %s, so `return` needs one" (quoted procedure) (a_type t))
+        ~why:"in a procedure with `returns`, `return` gives back a value of that type."
+  | Core.Missing_return (procedure, t, p) ->
+      refused p
+        ~what:
+          (Printf.sprintf "some way through %s reaches its end without `return` giving back a %s" (quoted procedure)
+             (a_type t))
+        ~why:"every way through a procedure with `returns` ends in `return` and a value."
+  | Core.After_leaving (by_return, p, leave) ->
+      let word = if by_return then "`return`" else "`break`" in
+      refused p
+        ~what:(Printf.sprintf "this line comes after a %s in the same block, so it can never run" word)
+        ~because:(Printf.sprintf "the %s is here" word, Some (at leave))
+        ~why:(Printf.sprintf "nothing may follow %s in the same block." word)
+  | Core.Bare_return_last p ->
+      refused p ~what:"a bare `return;` as a procedure's last line does nothing"
+        ~why:"a procedure ends there anyway; `return;` is for leaving early."
+  | Core.After_if_that_leaves (p, if_at) ->
+      refused p ~what:"this line follows an `if` that can leave"
+        ~because:(Printf.sprintf "the `if` on line %d can leave" if_at.place_line, Some (at if_at))
+        ~why:
+          "when any way through an `if` leaves, nothing may follow its `end if`; code that should run afterwards \
+           goes in the ways that don't leave."
+  | Core.Break_outside_loop p ->
+      refused p ~what:"this `break` isn't inside a loop" ~why:"`break` leaves the innermost loop it's in."
+  | Core.Labels_not_first p ->
+      refused p ~what:"a `labels` line can only be the first line of a procedure's body"
+        ~why:"a procedure declares its labels on the first line of its body."
+  | Core.Label_for_missing_parameter (procedure, name, p) ->
+      refused p
+        ~what:(Printf.sprintf "%s has no parameter named %s" (quoted procedure) (variable name))
+        ~why:"a `labels` line gives labels to the procedure's own parameters."
+  | Core.Two_labels_one_parameter (name, p) ->
+      refused p ~what:(Printf.sprintf "%s already has a label" (variable name)) ~why:"each parameter has at most one label."
+  | Core.One_label_two_parameters (label, p) ->
+      refused p
+        ~what:(Printf.sprintf "two parameters have the label %s" (quoted label))
+        ~why:"each label names one parameter, so a call can say which value is which."
+  | Core.Two_mains (p, first) ->
+      refused p ~what:"this program has two `proc.main`s" ~because:("the first is here", Some (at first))
+        ~why:"a program has exactly one `proc.main`, where it starts."
+  | Core.Two_procedures_one_name (name, p, first) ->
+      refused p
+        ~what:(Printf.sprintf "there's already a procedure named %s" (quoted name))
+        ~because:("the first is here", Some (at first))
+        ~why:"every procedure in a program needs its own name, since a call has to know which one it means."
+  | Core.No_main ->
+      refused { Core.place_line = 1; place_column = 1; place_width = 1 } ~what:"this program has no `proc.main`"
+        ~why:"a program starts with `proc.main`."
+
+let not_designed (what : Core.not_designed) =
+  match what with
+  | Core.Whole_literal_out_of_range -> "writing a whole number too big or too small for a `Whole`"
+  | Core.Comparing_text -> "comparing two pieces of text"
+  | Core.Ordering_bools -> "comparing `Bool`s with `<`, `>`, `at_least` or `at_most`"
+  | Core.Condition_not_bool -> "whether a condition must be a `Bool`"
+  | Core.Converting -> "what may be converted to what"
+  | Core.Format_bool -> "how a `Bool` fills in `.fmt` braces"
+  | Core.Format_unclosed -> "a `{` that's never closed in `.fmt` text"
+  | Core.Format_not_literal -> "`.fmt` given anything but text written in quotes"
+  | Core.Short_slide_wording -> "the message for a slide of fewer than three calls"
+  | Core.Long_chain_wording -> "the message for three or more calls nested in one another"
+  | Core.Mixed_chain_wording -> "the message for a chain written partly as calls and partly as a slide"
+  | Core.Bare_word_not_procedure -> "a word with no `( )` that isn't a procedure"
+  | Core.Statement_not_call -> "a value standing alone as a statement"
+  | Core.Library_name_taken -> "a procedure with the name of one of the library's"
+  | Core.Label_order -> "writing labels in a different order from the parameters"
+  | Core.Return_type_wording -> "the message for `return` with a value of the wrong type"
+  | Core.Changing_parameter -> "giving a parameter a new value"
+  | Core.Main_returns -> "`proc.main` with `returns`"
+
+(* Every core diagnostic as a message; [None] for a part the parser has already refused. *)
+let diagnostic source (d : Core.diagnostic) : M.message option =
+  match d with
+  | Core.Refused r -> Some (refusal source r)
+  | Core.Not_designed_yet (what, p) ->
+      Some (M.message M.Not_designed_yet (at p) ~what:(not_designed what ^ " isn't decided yet"))
+  | Core.Already_refused _ -> None

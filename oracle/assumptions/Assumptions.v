@@ -1,2 +1,3 @@
-From Ralph Require Import Start.
-Print Assumptions nothing_yet.
+From Ralph Require Import Whole.
+Print Assumptions whole_arithmetic_exact.
+Print Assumptions whole_negate_exact.
