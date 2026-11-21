@@ -81,6 +81,7 @@ std::string compiler_identity() {
 }
 
 // The system's cache folder, shared by every project (D65).
+// trace: D151
 std::string cache_folder(const char* part) {
     const char* home = std::getenv("HOME");
     llvm::SmallString<256> folder(home != nullptr ? home : "/tmp");

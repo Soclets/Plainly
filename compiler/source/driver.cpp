@@ -290,6 +290,7 @@ int drive(std::span<char*> arguments) {
     settings.mode = mode;
     settings.threads = thread_count();
     if (command->name == "compile") {
+        // trace: D150
         llvm::SmallString<256> output(command->file);
         llvm::sys::path::replace_extension(output, "");
         settings.output = std::string(output);
