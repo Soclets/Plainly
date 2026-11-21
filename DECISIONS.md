@@ -5477,3 +5477,29 @@ at school, and the rare need for even ties is one word away. Tankun asked whethe
 **Tankun's words.** "What does `.round` do?", "Is it accurate? The name", "You said `.nearest` needed decidied anoter
 thihG?", "Make them choose?", "Wait, we're CLI game focused, right? So, we could have that opt, and default to
 school?", then, asked "Should I log it like that?", the owner chose: "yea".
+
+## D179. `/` on two `Float`s divides and rounds to the nearest `Float`
+
+2026-11-21.
+
+**Chosen.** On two `Float`s, `/` divides and rounds to the nearest `Float`, as `+`, `-` and `*` do:
+
+```
+let $share: Float = 10.0 / 3.0;   // ~3.3333333333333335
+let $half: Float = $speed / 2.0;
+```
+
+- **Dividing by zero still stops** the program, by D46, so `/` never gives infinity or NaN (D177).
+- **`div.floor` and `div.trunc` stay for `Whole`.** On a `Float`, dividing and then `be.Whole.floor` (D178) says the
+  same in two steps.
+- D70's exact `/`, where a remainder stops the program, stays as it is for `Whole`.
+
+**Weighed.**
+- D70's rule carried over, stopping when the result isn't exact. Most float divisions, even `1.0 / 3.0`, aren't, so
+  it would stop nearly every one.
+
+**Why this won.** A `Float` is approximate by design (D155), and every other operation on it already rounds to the
+nearest; `/` is no different. Cyborg's D164 chose the same for its floats.
+
+**Tankun's words.** Asked "Should `/` on two `Float`s divide and round to the nearest `Float`, like `+`, `-` and `*`?",
+the owner chose: "yea".

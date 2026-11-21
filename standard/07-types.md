@@ -190,6 +190,13 @@ while true:
 end while
 ```
 
+On two `Float`s, `/` divides and rounds to the nearest `Float`, as `+`, `-` and `*` do, since most divisions don't
+come out exact; D70's exact `/` and `div.floor` and `div.trunc` are for `Whole` (D179):
+
+```
+let $share: Float = 10.0 / 3.0;   // ~3.3333333333333335
+```
+
 `Whole` and `Float` don't mix in one calculation: `$lives * $speed` is refused, and `be.Float($lives) * $speed` says
 so (D162).
 
