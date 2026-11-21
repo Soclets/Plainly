@@ -115,8 +115,9 @@ let $total: Whole = add(1, 2);
 show_score();
 ```
 
-A call that gives back a value has its value used: kept in a variable, passed on, or compared. One standing alone,
-its value thrown away, is refused; a call that gives nothing stands alone (D120).
+A call that gives back a value has its value used: kept in a variable, passed on, or compared. One standing alone, its
+value thrown away, is refused; a call that gives nothing stands alone (D120). A line that only works out a value, like
+`$score + 1;`, is refused too (D161).
 
 ### Labels
 
