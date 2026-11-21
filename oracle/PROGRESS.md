@@ -92,10 +92,56 @@ Known gaps, each to be built:
 - Knock-on errors (D55 rule 4, D83): not sorted out yet; every error is shown as its own message without the
   `because:` pointing back.
 
+## Theorem statements sent to the design session
+
+- `whole_arithmetic_exact` (core/Whole.v): for any two whole numbers, `+`, `-` and `*` give the mathematically exact
+  answer whenever it fits in a `Whole`; when the exact answer is bigger than the largest `Whole` they stop with D46's
+  overflow check saying "too big", and when smaller than the smallest, "too small". Sent 2026-11-21.
+- `whole_negate_exact` (core/Whole.v): `-` in front of a whole number gives exactly its negative when that fits; the
+  one that doesn't, `-` of -9223372036854775808, stops with the overflow check, "too big". Sent 2026-11-21.
+
 ## Questions for the design session
 
-None yet.
+Each stops with `NotDesignedYet` in Ralph until it's answered. Sent 2026-11-21 unless marked otherwise.
+
+1. **Negation overflowing:** D92's `when:` shows the values, as in `9223372036854775807 + 1`. What does it show for
+   `-$x` when `$x` is -9223372036854775808? (Draft: `-(-9223372036854775808)`.)
+2. **D99's other bad names:** D102 gives "`` `Score` has a capital letter, but names have none ``" and says "likewise"
+   for a name starting with a digit or `_`, ending with `_`, or with two `_` in a row. The exact wordings? (Drafts:
+   "`` `$2x` starts with a digit, but names start with a letter ``", "`` `$_x` starts with `_`, but names start with a
+   letter ``", "`` `$x_` ends with `_`, but `_` only goes between words ``", "`` `$a__b` has two `_` in a row, but `_`
+   only goes between words ``".)
+3. **D128's three refusals** (a slide of one or two calls, three calls nested, a chain mixing both): their wording
+   "comes with a later batch".
+4. **`be.Whole` and spaces (D95):** only the space character, or tabs too?
+5. **`ask` and Windows:** is a `\r` before the line break part of the answer? (Ralph keeps it for now; only `\n` ends
+   a line.)
+6. **A file with `\r\n` line endings:** Ralph stops with `NotDesignedYet`.
+7. **A comment on a line of its own:** how is it indented? Ralph accepts the indentation of the line after it (or one
+   level in, when that line is a closer or `else`), and stops with `NotDesignedYet` otherwise.
+8. **Two statements on one line**, as in `a(); b();`: Ralph stops with `NotDesignedYet`.
+9. **Giving a parameter a new value:** D130 leaves a parameter's words undecided, so Ralph stops with
+   `NotDesignedYet`.
 
 ## Readings taken where the standard is quiet
 
-None yet.
+To confirm with the design session; each is what Ralph does now. Sent 2026-11-21.
+
+1. **Where refusals live:** the prompt puts "every refusal" in Rocq. Ralph's parser (OCaml) refuses what's about how
+   text is written (`;`, `:`, closers, indentation, blank lines, quotes, names' spelling, `=` in a condition, chained
+   comparisons), since those are found before there's a syntax tree; the Rocq checker refuses everything about
+   meaning. The type-safety theorem covers what the checker accepts.
+2. **Status with both kinds:** a program with refusals and a `NotBuiltYet` or `NotDesignedYet` exits with 3.
+3. **The parser's messages,** generalised from D92's three: "`` `)` should be here, not `x` ``", "a value should be
+   here, not `` `x` ``", "the line ends where `` `"` `` should be", with no `why:`.
+4. **Carets** where the decisions don't say: a type mismatch in `==` or `+` points at the operator; a missing `return`
+   (D88) at the procedure's name; no `proc.main` at line 1 column 1; the file ending inside a block just after the
+   last line's text; a line after `return` or `break` at that whole line.
+5. **One extra blank line** reads "1 extra blank line, after the one on line 3", singular.
+6. **Bad names** (D99) are refused where they're declared; using an undeclared one gives D92's unknown variable.
+7. **After `return` or `break`,** only the first line that follows is refused.
+8. **`while`** always counts as a way through that can reach the end, for D57's "every way through ends in
+   `return`", even `while true:`.
+9. **`random`** is seeded differently on every run (seeding isn't decided).
+10. **Names in messages** keep their `$`: "there's no variable named `$nme` here", also for `{nme}` with no `$`.
+11. **The line-number column** in a message is as wide as its widest line number, and at least 2.
