@@ -426,11 +426,20 @@ bool unio_parse_whole(const Text* text, std::int64_t* value) {
 // trace: D26, D56
 std::int64_t unio_random(std::int64_t low, std::int64_t high, const Site* site) {
     if (low > high) {
+        // trace: D160
         static Buffer message;
-        heading(message, "NotDesignedYet", site);
-        unio::layout::append_label(message, "what", "`random` with `from:` above `to:` isn't decided yet");
+        heading(message, "check failed", site);
+        unio::layout::append_label(message, "what", "`random`'s `from:` is above its `to:`");
+        Buffer when;
+        when.append("from: ");
+        unio::layout::append_number(when, low);
+        when.append(", to: ");
+        unio::layout::append_number(when, high);
+        unio::layout::append_label(message, "when", std::string_view(when.data(), when.size()));
+        unio::layout::append_label(
+            message, "why", "`random` gives a whole number from `from:` up to `to:`, so `from:` can't be above `to:`.");
         write_message(message);
-        std::_Exit(3);
+        std::_Exit(4);
     }
     const std::uint64_t span = static_cast<std::uint64_t>(high) - static_cast<std::uint64_t>(low) + 1;
     std::uint64_t drawn = 0;

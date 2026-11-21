@@ -31,11 +31,12 @@ namespace unio {
 
 namespace {
 
+// trace: D161
 constexpr const char* usage = "usage:\n"
-                              "  unio run game.unio --working\n"
-                              "  unio compile game.unio --final\n"
-                              "  unio check game.unio\n"
-                              "  unio oracle game.unio\n";
+                              "  unio run game.unio --working       compile it and run it\n"
+                              "  unio compile game.unio --final     make the program to ship\n"
+                              "  unio check game.unio               only check it\n"
+                              "  unio oracle game.unio              run it on Ralph, the oracle\n";
 
 void write_error(const std::string& text) {
     std::fwrite(text.data(), 1, text.size(), stderr);
@@ -234,9 +235,9 @@ int run_oracle(const std::string& file) {
         }
         folder = parent;
     }
-    write_error("unio: the oracle, Ralph, isn't built here; build it with "
-                "`opam exec --switch=ralph -- dune build --root oracle`\n");
-    return 6;
+    // trace: D161
+    write_error("unio: `oracle` needs Ralph, the oracle, which isn't built here\n");
+    return 3;
 }
 
 unsigned thread_count() {

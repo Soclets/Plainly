@@ -109,7 +109,10 @@ Also checked: `clang-tidy` clean; 66 of 69 small refusal programs and all 21 spa
 byte (the other 3 are refusals Ralph hasn't built, and Ralph's extra `NotDesignedYet` after `show_msg;`); 12 runtime
 programs match Ralph in both modes; 2,500 randomly broken programs never crash `unio check`.
 
-Since the milestone: `?? crash` (D152, D156) and calls going too deep (D154) are built, both matching in both modes.
+Since the milestone: `?? crash` (D152, D156) and calls going too deep (D154, D158) are built, both matching in both
+modes; D165's `[ ]` parameters, D160's backwards `random` (refused when plain, a runtime check otherwise) and D161's
+value-only lines and ninth batch of wordings are built too. 37 tests, 82 runs, all pass. `Float` (D157, D162, D163) is
+`NotBuiltYet`.
 
 What comes next is Tankun's call.
 
@@ -118,8 +121,10 @@ What comes next is Tankun's call.
 1. (Answered: Ralph's recursion crash is fixed; D150, D151, D152 and D153 decided.)
 2. Still provisional: `random` with `from:` above `to:` stops at runtime with `NotDesignedYet`, status 3.
 4. (Answered by D156.)
-6. D154's depth is 1,000,000 calls here, the same in both modes; a test with a runaway recursion needs Ralph to stop at
-   the same number, since `when:` shows it.
+6. (Answered by D158.)
+7. Drafted: `proc add($a: Whole)`, parameters in D165's old `( )`, gives a `fix:` with `[ ]` and the `why:` "a
+   definition writes its parameters in `[ ]`; `( )` calls a procedure." Ralph refuses it as "`:` should be here, not
+   `(`".
 5. Standard chapter 10 says `run` compiles to a temporary file; `Unlo\n` runs the linked program from the cache.
 3. Wordings drafted, not decided: "this line isn't inside a procedure"; "there's no type named `X`"; "`not` works on
    a `Bool`, but this is a `Whole`"; "`and` joins two `Bool`s, but this is a `Whole`"; "this value isn't used"; "a
@@ -127,6 +132,10 @@ What comes next is Tankun's call.
    in another file, which should name the file.
 
 ## Notes for the design session
+
+- Ralph reads only the file it's given, not every `.unio` file in its folder (D64): two files each with a `proc.main`
+  run on Ralph, and are refused here.
+- Ralph writes "`Float` (D157, D162, D163) aren't built yet"; D103's pattern has "isn't" for one thing.
 
 - The prompt's way to run Ralph, `dune exec --root oracle -- ralph`, says "Program 'ralph' not found"; the built
   program is `oracle/_build/default/shell/ralph.exe` (found from file names only, nothing in `oracle/` read).

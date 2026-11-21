@@ -81,7 +81,7 @@ std::size_t count(const unio::ir::Function& function, unio::ir::Op op) {
 }
 
 void test_lowering_writes_out_checks() {
-    const auto module = compile("proc add_one($n: Whole) returns Whole:\n"
+    const auto module = compile("proc add_one[$n: Whole] returns Whole:\n"
                                 "    return $n + 1;\n"
                                 "end proc add_one\n"
                                 "\n"
@@ -112,7 +112,7 @@ void test_folding() {
 
 // D124 #2, #8: a check goes where ranges and what an `if` proved show it can't fail, and stays where it can.
 void test_removing_checks() {
-    auto module = compile("proc down($n: Whole) returns Whole:\n"
+    auto module = compile("proc down[$n: Whole] returns Whole:\n"
                           "    if $n < 2:\n"
                           "        return $n;\n"
                           "    else:\n"
@@ -120,7 +120,7 @@ void test_removing_checks() {
                           "    end if\n"
                           "end proc down\n"
                           "\n"
-                          "proc up($n: Whole) returns Whole:\n"
+                          "proc up[$n: Whole] returns Whole:\n"
                           "    return $n + 1;\n"
                           "end proc up\n"
                           "\n"
@@ -152,16 +152,16 @@ void test_removing_checks() {
 
 // D124 #6: which procedures have no side effects, through the calls they make.
 void test_finding_side_effects() {
-    auto module = compile("proc twice($n: Whole) returns Whole:\n"
+    auto module = compile("proc twice[$n: Whole] returns Whole:\n"
                           "    return $n * 2;\n"
                           "end proc twice\n"
                           "\n"
-                          "proc noisy($n: Whole) returns Whole:\n"
+                          "proc noisy[$n: Whole] returns Whole:\n"
                           "    show_msg(\"ran\");\n"
                           "    return $n;\n"
                           "end proc noisy\n"
                           "\n"
-                          "proc calls_noisy($n: Whole) returns Whole:\n"
+                          "proc calls_noisy[$n: Whole] returns Whole:\n"
                           "    return noisy($n) + 1;\n"
                           "end proc calls_noisy\n"
                           "\n"
@@ -176,11 +176,11 @@ void test_finding_side_effects() {
 
 // D124 #3: small procedures are inlined, and what they do still happens, once and in order; a recursive one isn't.
 void test_inlining() {
-    auto module = compile("proc greet($name: Text):\n"
+    auto module = compile("proc greet[$name: Text]:\n"
                           "    show_msg(\"Hi, \" & $name);\n"
                           "end proc greet\n"
                           "\n"
-                          "proc count_down($n: Whole) returns Whole:\n"
+                          "proc count_down[$n: Whole] returns Whole:\n"
                           "    if $n < 1:\n"
                           "        return 0;\n"
                           "    else:\n"
@@ -249,7 +249,7 @@ std::size_t most_self_calls_in_a_block(const unio::ir::Function& function, const
 void test_inlining_into_itself() {
     // Inlined at `three($n - 1)`, the copy calls `three` with `$n - 2`, `$n - 3` and `$n - 4`, and the first two
     // repeat calls already there, so the deepest way makes 3 calls rather than 5.
-    auto module = compile("proc three($n: Whole) returns Whole:\n"
+    auto module = compile("proc three[$n: Whole] returns Whole:\n"
                           "    if $n < 3:\n"
                           "        return 1;\n"
                           "    else:\n"
@@ -267,7 +267,7 @@ void test_inlining_into_itself() {
            print(*three, module));
 
     // Inlined at either call, `steps($n - 1) + steps($n - 3)` repeats nothing, so it's left alone.
-    auto plain = compile("proc steps($n: Whole) returns Whole:\n"
+    auto plain = compile("proc steps[$n: Whole] returns Whole:\n"
                          "    if $n < 3:\n"
                          "        return 1;\n"
                          "    else:\n"
@@ -283,7 +283,7 @@ void test_inlining_into_itself() {
     expect(self_calls(*steps, plain) == 2, "with nothing to merge, `steps` isn't inlined into itself",
            print(*steps, plain));
 
-    auto noisy = compile("proc three($n: Whole) returns Whole:\n"
+    auto noisy = compile("proc three[$n: Whole] returns Whole:\n"
                          "    show_msg(\"step\");\n"
                          "    if $n < 3:\n"
                          "        return 1;\n"
@@ -304,11 +304,11 @@ void test_inlining_into_itself() {
 // D124 #6, #18: a repeated call with no side effects is merged where the first is sure to have run; a call with side
 // effects, or one that isn't sure to have run, is kept.
 void test_merging_repeated() {
-    auto module = compile("proc square($n: Whole) returns Whole:\n"
+    auto module = compile("proc square[$n: Whole] returns Whole:\n"
                           "    return $n * $n;\n"
                           "end proc square\n"
                           "\n"
-                          "proc shout($n: Whole) returns Whole:\n"
+                          "proc shout[$n: Whole] returns Whole:\n"
                           "    show_msg(\"!\");\n"
                           "    return $n;\n"
                           "end proc shout\n"
@@ -347,11 +347,11 @@ void test_merging_repeated() {
 
 // D124 #9: a parameter every call gives the same constant has it built in; one given different values doesn't.
 void test_constants_across() {
-    auto module = compile("proc scale($n: Whole, $by: Whole) returns Whole:\n"
+    auto module = compile("proc scale[$n: Whole, $by: Whole] returns Whole:\n"
                           "    return $n * $by;\n"
                           "end proc scale\n"
                           "\n"
-                          "proc shift($n: Whole, $by: Whole) returns Whole:\n"
+                          "proc shift[$n: Whole, $by: Whole] returns Whole:\n"
                           "    return $n + $by;\n"
                           "end proc shift\n"
                           "\n"
@@ -377,7 +377,7 @@ void test_constants_across() {
 
 // D124 #7: a procedure that calls itself as its last act becomes a loop; one that does more after the call doesn't.
 void test_recursion_into_loops() {
-    auto module = compile("proc total($n: Whole, $sum: Whole) returns Whole:\n"
+    auto module = compile("proc total[$n: Whole, $sum: Whole] returns Whole:\n"
                           "    if $n < 1:\n"
                           "        return $sum;\n"
                           "    else:\n"
@@ -385,7 +385,7 @@ void test_recursion_into_loops() {
                           "    end if\n"
                           "end proc total\n"
                           "\n"
-                          "proc depth($n: Whole) returns Whole:\n"
+                          "proc depth[$n: Whole] returns Whole:\n"
                           "    if $n < 1:\n"
                           "        return 0;\n"
                           "    else:\n"
@@ -409,11 +409,11 @@ void test_recursion_into_loops() {
 // D124 #13: a check's failure path is marked unlikely and its stop cold, so LLVM moves it out of the way; a procedure
 // with nothing that can fail has no such path.
 void test_cold_check_failures() {
-    const auto module = compile("proc add_one($n: Whole) returns Whole:\n"
+    const auto module = compile("proc add_one[$n: Whole] returns Whole:\n"
                                 "    return $n + 1;\n"
                                 "end proc add_one\n"
                                 "\n"
-                                "proc same($n: Whole) returns Whole:\n"
+                                "proc same[$n: Whole] returns Whole:\n"
                                 "    return $n;\n"
                                 "end proc same\n"
                                 "\n"
@@ -456,7 +456,7 @@ std::size_t calls_to(const unio::ir::Function& function, const unio::ir::Module&
 
 void test_merging_keeps_depth() {
     const auto program = [](const std::string& sum) {
-        return "proc count($n: Whole) returns Whole:\n"
+        return "proc count[$n: Whole] returns Whole:\n"
                "    if $n < 1:\n"
                "        return 0;\n"
                "    else:\n"
@@ -464,11 +464,11 @@ void test_merging_keeps_depth() {
                "    end if\n"
                "end proc count\n"
                "\n"
-               "proc wrap($n: Whole) returns Whole:\n"
+               "proc wrap[$n: Whole] returns Whole:\n"
                "    return count($n);\n"
                "end proc wrap\n"
                "\n"
-               "proc g($n: Whole) returns Whole:\n"
+               "proc g[$n: Whole] returns Whole:\n"
                "    return " +
                sum +
                ";\n"

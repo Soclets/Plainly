@@ -445,11 +445,15 @@ private:
         }
         // trace: D4
         Message message;
-        message.place = first.place;
+        const Place start = first.place;
+        skip_statement();
+        message.place = span(start, previous().place);
         message.what = "this line isn't inside a procedure";
-        message.why = "a program's statements go inside procedures, and it starts with `proc.main`.";
+        message.why = "a program is made of procedures, and every statement goes inside one."; // trace: D161
         messages_.add(std::move(message));
-        skip_line();
+        while (on_line()) {
+            advance();
+        }
     }
 
     void skip_to_closer(std::string_view word) {
@@ -491,25 +495,34 @@ private:
             return;
         }
 
-        if (is(TokenKind::open_round) && on_line()) {
+        // trace: D4, D88, D165
+        if ((is(TokenKind::open_square) || is(TokenKind::open_round)) && on_line()) {
             const Token& open = advance();
-            if (is(TokenKind::close_round)) {
+            const bool square = open.kind == TokenKind::open_square;
+            const TokenKind closer = square ? TokenKind::close_square : TokenKind::close_round;
+            if (is(closer)) {
                 const Token& close = advance();
-                // trace: D4, D88
                 const Place brackets = span(open.place, close.place);
                 if (procedure->is_main) {
                     messages_.refuse(brackets, "`proc.main` takes nothing",
                                      "only the program's start runs `proc.main`, so it's never given anything.");
                 } else {
                     messages_.fix(brackets, replaced_line(brackets, brackets.length, ""),
-                                  "a definition writes `( )` only when it has parameters.");
+                                  "a definition writes `[ ]` only when it has parameters.");
                 }
             } else {
-                parse_parameters(*procedure);
+                parse_parameters(*procedure, closer);
+                const Place brackets = span(open.place, previous().place);
                 if (procedure->is_main && !procedure->parameters.empty()) {
-                    messages_.refuse(span(open.place, previous().place), "`proc.main` takes nothing",
+                    messages_.refuse(brackets, "`proc.main` takes nothing",
                                      "only the program's start runs `proc.main`, so it's never given anything.");
                     procedure->parameters.clear();
+                } else if (!square && previous().kind == TokenKind::close_round) {
+                    std::string fixed = replaced_line(previous().place, 1, "]");
+                    const std::size_t at = open.place.offset - line_start(open.line);
+                    fixed.replace(at, 1, "[");
+                    messages_.fix(open.place, fixed,
+                                  "a definition writes its parameters in `[ ]`; `( )` calls a procedure.");
                 }
             }
         }
@@ -566,7 +579,7 @@ private:
     }
 
     // trace: D126
-    void parse_parameters(Procedure& procedure) {
+    void parse_parameters(Procedure& procedure, TokenKind closer) {
         while (true) {
             if (is(TokenKind::variable)) {
                 const Token& name = advance();
@@ -584,7 +597,7 @@ private:
             } else {
                 expected_here("a parameter");
                 failed_ = false;
-                while (on_line() && !is(TokenKind::close_round)) {
+                while (on_line() && !is(closer)) {
                     advance();
                 }
             }
@@ -594,10 +607,10 @@ private:
             }
             break;
         }
-        if (is(TokenKind::close_round) && on_line()) {
+        if (is(closer) && on_line()) {
             advance();
         } else {
-            expected_here("`)`");
+            expected_here(closer == TokenKind::close_square ? "`]`" : "`)`");
             failed_ = false;
             while (on_line() && !is(TokenKind::colon)) {
                 advance();
@@ -625,12 +638,15 @@ private:
         } else if (word.text == "List") {
             messages_.not_built_yet(word.place, "lists, `List` (D75), aren't built yet");
             while (on_line() && !is(TokenKind::equals) && !is(TokenKind::colon) && !is(TokenKind::comma) &&
-                   !is(TokenKind::close_round)) {
+                   !is(TokenKind::close_round) && !is(TokenKind::close_square)) {
                 advance();
             }
+        } else if (word.text == "Float") {
+            messages_.not_built_yet(word.place, "`Float` (D157, D162, D163) isn't built yet");
         } else {
+            // trace: D161
             messages_.refuse(word.place, "there's no type named `" + word.text + "`",
-                             "the types are `Whole`, `Bool` and `Text`.");
+                             "a type is one Unio has, like `Whole`, `Float`, `Bool` or `Text`.");
         }
         return type;
     }

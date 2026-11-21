@@ -5,6 +5,7 @@
 #include "parser.h"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <ranges>
 #include <set>
@@ -102,6 +103,15 @@ private:
         return start.line == end.line;
     }
 
+    // trace: D54, D161
+    // A `because:` pointing into another file names it.
+    [[nodiscard]] std::string first_is_here(Place place, Place first) const {
+        if (place.file == first.file) {
+            return "the first is here";
+        }
+        return "the first is here, in `" + sources_.file(first.file).name + "`";
+    }
+
     void refuse(Place place, std::string what, std::string why) {
         messages_.refuse(place, std::move(what), std::move(why));
     }
@@ -134,8 +144,9 @@ private:
             procedure->index = index++;
             if (procedure->is_main) {
                 if (main != nullptr) {
-                    refuse_because(procedure->place, "this program has two `proc.main`s", "the first is here",
-                                   main->place, "a program has exactly one `proc.main`, where it starts.");
+                    refuse_because(procedure->place, "this program has two `proc.main`s",
+                                   first_is_here(procedure->place, main->place), main->place,
+                                   "a program has exactly one `proc.main`, where it starts.");
                 } else {
                     main = procedure.get();
                 }
@@ -155,7 +166,7 @@ private:
             const auto [existing, added] = procedures_.try_emplace(procedure->name, procedure.get());
             if (!added) {
                 refuse_because(procedure->place, "there's already a procedure named `" + procedure->name + "`",
-                               "the first is here", existing->second->place,
+                               first_is_here(procedure->place, existing->second->place), existing->second->place,
                                "every procedure in a program needs its own name, since a call has to know which "
                                "one it means.");
             }
@@ -473,7 +484,12 @@ private:
                    "a call that gives back a value is used: kept in a variable, passed on, or compared.");
             return;
         }
-        messages_.not_designed_yet(value.place, "a value standing alone as a statement isn't decided yet");
+        // trace: D161
+        refuse(value.place,
+               "`" + std::string(sources_.text(value.place)) + "` works out a " + quoted_type(value.type) +
+                   ", but nothing uses it",
+               "a line that only works out a value does nothing; keep the value with `let` or `var`, or give it to a "
+               "variable with `=`.");
     }
 
     void check_condition(Expression& condition) {
@@ -538,7 +554,7 @@ private:
             if (expression.left->type != Type::boolean && expression.left->type != Type::unknown) {
                 refuse(expression.left->place,
                        "`not` works on a `Bool`, but this is a " + quoted_type(expression.left->type),
-                       "a value's type has to match where it's used.");
+                       "`not`, `and` and `or` work on `Bool`s."); // trace: D161
             }
             break;
         case ExpressionKind::binary:
@@ -629,7 +645,7 @@ private:
                     refuse(side->place,
                            std::string("`") + operator_spelling(expression.op) + "` joins two `Bool`s, but this is a " +
                                quoted_type(side->type),
-                           "a value's type has to match where it's used.");
+                           "`not`, `and` and `or` work on `Bool`s."); // trace: D161
                 }
             }
             return;
@@ -945,6 +961,35 @@ private:
         return fine;
     }
 
+    // A number written in the code, as `6` or `-6`.
+    static std::optional<std::int64_t> plain_number(const Expression& expression) {
+        if (expression.kind == ExpressionKind::whole) {
+            return expression.whole;
+        }
+        if (expression.kind == ExpressionKind::negate && expression.left->kind == ExpressionKind::whole &&
+            expression.left->whole != std::numeric_limits<std::int64_t>::min()) {
+            return -expression.left->whole;
+        }
+        return std::nullopt;
+    }
+
+    // trace: D26, D160
+    // `from:` above `to:` is refused when both are plain numbers, with the two swapped; otherwise the runtime checks.
+    void check_random_order(const Expression& call) {
+        const Expression& from = *call.arguments.at(0).value;
+        const Expression& to = *call.arguments.at(1).value;
+        const auto low = plain_number(from);
+        const auto high = plain_number(to);
+        if (!low || !high || *low <= *high || !one_line(call.place)) {
+            return;
+        }
+        std::string fixed = replaced_line(to.place, to.place.length, sources_.text(from.place));
+        const std::uint32_t line_start = sources_.file(call.place.file).line_starts.at(line_of(call.place) - 1);
+        fixed.replace(from.place.offset - line_start, from.place.length, sources_.text(to.place));
+        messages_.fix(call.place, fixed,
+                      "`random` gives a whole number from `from:` up to `to:`, so `from:` can't be above `to:`.");
+    }
+
     // trace: D22, D87, D153
     void check_conversion(const Signature& signature, const Expression& value, std::string& builtin) {
         if (signature.name == "be.Text" && value.type == Type::text) {
@@ -990,6 +1035,9 @@ private:
             return;
         }
         const bool fine = check_arguments(*signature, expression.arguments, expression.place, std::nullopt);
+        if (fine && signature->name == "random") {
+            check_random_order(expression);
+        }
         if (fine && signature->name.starts_with("be.") && !expression.arguments.empty()) {
             check_conversion(*signature, *expression.arguments.front().value, expression.builtin);
             if (signature->name == "be.Text" && expression.arguments.front().value->type == Type::unknown) {
