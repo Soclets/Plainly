@@ -64,6 +64,9 @@ them all (D100).
 ## Comments
 
 - **`//` comments to the end of the line** (D74).
+- **A comment on a line of its own is indented like the line after it,** or, right before a closer or `else:`, one
+  level in, like the lines in the block it ends. Any other indentation is refused, with the corrected line as the fix
+  (D10, D145).
 - **`///` is a doc comment** on the lines right before a declaration; one with no declaration after it is refused
   (D74).
 - **`comment name:` to `end comment name` is a block comment.** Everything between is ignored, and it ends only at its

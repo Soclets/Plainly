@@ -4517,3 +4517,35 @@ like one with `\n`.
 
 **Tankun's words.** Asked "Should `\r\n` count as one line break, in `ask` and in source files?", the owner chose:
 "yea".
+
+## D145. A comment on its own line is indented like the line after it, or one level in before a closer or `else:`
+
+2026-11-21.
+
+**Chosen.** A `//` comment on a line of its own (D74) is indented like the line after it. Right before a closer, like
+`end if`, or before `else:`, it's indented one level in, like the lines in the block it ends. Any other indentation is
+refused, with the corrected line as the fix, as D10 refuses wrong indentation.
+
+```
+proc.main:
+    // greet the player
+    show_msg("Hi");
+    if $won:
+        show_msg("You win");
+        // the end of the winning way
+    end if
+end proc.main
+```
+
+**Weighed.**
+- Comments at any indentation. Flexible, but the one exception to D10's fixed indentation, and a stray comment makes
+  the block structure harder to read.
+- Always like the line after, even before a closer. A comment about the block would line up with `end if` and look
+  like it's outside the block.
+
+**Why this won.** A comment usually describes what comes next, and one before a closer is almost always about the
+block it ends; either way it sits where the eye expects it, and indentation stays fixed. Ralph, building the oracle,
+read it this way and asked.
+
+**Tankun's words.** Asked "Should a comment on its own line be indented like the line after it, or one level in before
+a closer or `else:`?", the owner chose: "yea".
