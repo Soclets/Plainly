@@ -128,6 +128,19 @@ let $line: Text = be.Text.fmt("{$name}: {$score}");
 - **The text is checked at compile time:** a name in braces that isn't a variable is refused (D29).
 - **Without `.fmt`, text is plain,** so `show_msg("{$tries}")` shows exactly `{$tries}` (D29).
 
+A `Float` in braces can take a `places:` setting after a comma, rounding it to that many digits after the point, the
+decimal places, and showing it with no `~`, since the text is exactly the rounding asked for (D175):
+
+```
+let $speed: Float = ~0.1 + ~0.2;
+show_msg.fmt("Speed: {$speed, places: 2}");   // Speed: 0.30
+```
+
+- **It always shows that many places,** so `{$half, places: 3}` with `0.5` shows `0.500`, and `places: 0` shows no
+  point (D175).
+- **It rounds to the nearest,** and an exact tie goes to the even digit: `0.125` with `places: 2` shows `0.12` (D175).
+- **`places:` on anything but a `Float` is refused** at compile time (D175).
+
 `fmt` is short for format (D2). With `.same_line` as well, it's `show_msg.fmt.same_line`, the stronger narrowing first
 (D31).
 
@@ -168,8 +181,10 @@ so (D162).
 
 `Decimal` is kept for an exact decimal type, if Unio adds one; it would never need `~` (D155, D157).
 
-**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; a rounded, `~`-free
-way to show a `Float` to a player.
+A `Float` is shown to a player rounded, with `places:` in `.fmt` braces (D175).
+
+**Not decided:** `Float`'s maths and its other conversions; NaN and infinities beyond D46's check; how a negative
+`Float` that rounds to zero shows, as `-0.001` with `places: 2`.
 
 ## Lists
 

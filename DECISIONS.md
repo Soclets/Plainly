@@ -883,6 +883,8 @@ let $line: Text = be.Text.fmt("{$name}: {$score}");
 (A literal `{` inside `.fmt` text, settings in braces like `places: 2`, and the order of `.fmt` and `.same_line`
 together aren't decided yet.)
 
+(Settings in braces: `places:`, by D175.)
+
 **Weighed.**
 - `.format`, as in Plainly v1. D2's short form is `fmt`, known from Go and Rust.
 - Python's f-strings, `f"You got it in {tries} tries."`. Shorter, but one letter before the quote changes what the
@@ -5343,3 +5345,43 @@ back into the label of the same name.
 it's a bit weird. `$xs[offset: $x]` treats `$x` as starting from 0. Wait, idk, does that too?"). After hearing that it
 does, asked "Should `for each` allow both `at pos $i` and `at offset $i`, as D75 does for items?", the owner chose:
 "yea".
+
+## D175. `places:` in `.fmt` braces rounds a `Float` for showing, with no `~`
+
+2026-11-21.
+
+**Chosen.** In `.fmt` text, a `Float`'s name in braces can take `places:` after a comma, the setting D29 left open:
+
+```
+let $speed: Float = ~0.1 + ~0.2;
+show_msg.fmt("Speed: {$speed, places: 2}");   // Speed: 0.30
+let $line: Text = be.Text.fmt("{$speed, places: 2}");
+```
+
+- **It rounds to that many digits after the point,** the decimal places, and always shows that many: `0.5` with
+  `places: 3` shows `0.500`, and `places: 0` shows no point.
+- **It rounds to the nearest, and an exact tie goes to the even digit,** as C's `printf` and Python's format do:
+  `0.125` with `places: 2` shows `0.12`.
+- **No `~`:** the text is exactly the rounding asked for, so nothing is hidden. Plain `be.Text($speed)` and
+  `{$speed}` keep D155's honest `~0.30000000000000004`.
+- **Braces stay names-only** (D29): `places: 2` says how the name is shown, and holds no calculation or call.
+- **`places:` on anything but a `Float` is refused** at compile time, as the rest of `.fmt` text is checked.
+
+How a negative value that rounds to zero shows, as `-0.001` with `places: 2`, isn't decided yet.
+
+**Weighed.**
+- `be.Text($speed, places: 2)`, as the design claude first proposed. Tankun: `be` converts a value to another type,
+  and rounding for a player is formatting, which is `.fmt`'s job.
+- `{$speed[places: 2]}`. Reads like reaching an item, as `$list[pos: 2]` does (D75, D165).
+- `precision:`, as C and Python call it. Jargon, and in `%.2g` it counts all significant digits, not those after the
+  point.
+- `digits:`, which doesn't say which digits, and `decimals:`, read two ways next to the future `Decimal` type (D157).
+
+**Why this won.** A game can show a speed or a percentage cleanly, the `~` keeps its meaning wherever it appears, and
+`places` is the school word for exactly this, "round to 2 decimal places", from place value, where each position in a
+number is a place.
+
+**Tankun's words.** "Idk if `~0.30000000000000004` is correct. Is that exact or est", "Isn't `be` conversion? Rather
+than formatting", "Why is it called places?", "Why is it called places? Further down", then, asked "Should `.fmt`
+braces take a `places:` setting, as in `{$speed, places: 2}`, which rounds a `Float` and shows it without `~`?", the
+owner chose: "yea".

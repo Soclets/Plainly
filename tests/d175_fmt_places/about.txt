@@ -1,0 +1,1 @@
+places: in .fmt braces rounds a Float to that many digits, ties to even, with no ~, while be.Text keeps it. D29, D155, D175; standard ch. 7.
