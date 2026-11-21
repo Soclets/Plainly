@@ -2990,6 +2990,8 @@ count as "not a number". The compiler session found the gap (its Q13).
 **Tankun's words.** "Isn't `1,000` 1000?", "nvm then", "Why is `+` and `-` allowed?", then, asked "`be.Whole` accepting
 spaces around the number, a `+` or `-`, and leading zeros, with everything else failing?", the owner chose: "yea".
 
+(Changed by D143: tabs around the number are ignored too.)
+
 ## D96. When input runs out, `ask` ends the program quietly, with status 0
 
 2026-11-20.
@@ -4480,3 +4482,18 @@ rule reads the same whichever way it's broken. Ralph, building the oracle, found
 **Tankun's words.** "What's `-(-9223372036854775808)`", "What about no `()`", then, asked "Should the `when:` keep the
 brackets, `-(-9223372036854775808)`, as part of that batch?", the owner chose: "yea"; then, asked "Do those read right
 as proposed?" of the rest, the owner chose: "yea".
+
+## D143. `be.Whole` ignores tabs around the number too
+
+2026-11-21.
+
+**Chosen.** D95's "spaces around it are ignored" covers tabs as well: any spaces and tabs before and after the number
+are ignored, as Python's `int(" \t42 ")` gives 42.
+
+**Weighed.**
+- Spaces only. A stray tab in what a player types or pastes would turn "42" into a failure.
+
+**Why this won.** The text comes from players, not programmers, and D95 ignores spaces to forgive what people type;
+D10's ban on tabs is about indentation in source code, not about input. Ralph, building the oracle, asked.
+
+**Tankun's words.** Asked "Should `be.Whole` ignore tabs around the number as well as spaces?", the owner chose: "yea".

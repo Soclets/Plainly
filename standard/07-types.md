@@ -206,8 +206,8 @@ show_msg(be.Text($guess));
 - **Converting to the type a value already is, is refused,** since it does nothing (D22).
 - **A conversion can fail,** as `be.Whole("abc")` does (D22).
 
-`be.Whole` reads a whole number from text: spaces around it are ignored, and a `+` or `-` in front and leading zeros
-are fine, so ` 42`, `-7`, `+5` and `007` all work. Anything else fails, including `4.5`, `1,000` and a number too big
-or too small for a `Whole` (D95).
+`be.Whole` reads a whole number from text: spaces and tabs around it are ignored (D143), and a `+` or `-` in front and
+leading zeros are fine, so ` 42`, `-7`, `+5` and `007` all work. Anything else fails, including `4.5`, `1,000` and a
+number too big or too small for a `Whole` (D95).
 
 **Not decided:** what may be converted to what, and what a failed conversion's failure is called (chapter 8).
