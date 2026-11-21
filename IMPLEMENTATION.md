@@ -111,6 +111,10 @@ Rules for the code of `Unlo\n` and Ralph (owner, 2026-11-20):
 
 ## Building
 
+**Building is locked (owner, 2026-11-21).** No building session starts or carries on work on `Unlo\n` or Ralph, and
+no building prompt is handed over, until Tankun lifts the lock in chat; then this paragraph is removed. A building
+session that reads this stops, says so, and waits. Design work, tests and the standard carry on.
+
 Rules for building `Unlo\n` and Ralph, brought over from Cyborg's IMPLEMENTATION.md (owner,
 2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Unio is a
 learning language rather than one built on guarantees, and its checks are caught by testing both modes and by rule 12.
