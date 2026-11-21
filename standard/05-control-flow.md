@@ -101,7 +101,7 @@ end for
 - **It closes with `end for`,** and `break` leaves it, as it leaves a `while` (D8, D32, D171).
 
 - **The list it's going through can't change inside it.** Anything in the body that changes that variable, such as
-  `$players.add[…]`, setting an item or setting the whole variable, is refused at compile time (D173). To change a list
+  `$players.add(…)`, setting an item or setting the whole variable, is refused at compile time (D173). To change a list
   while looping, use `while` over its positions.
 
 ```
