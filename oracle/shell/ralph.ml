@@ -152,6 +152,62 @@ let read file =
         Error reason
     | contents -> if String.is_valid_utf_8 contents then Ok contents else Error "it isn't UTF-8 text"
 
+(* Everything said about a program before it runs: its lines, its definitions and its messages, in order. *)
+let examine contents =
+  let lines = Lexer.lines_of contents in
+  let source = Array.of_list (List.map (fun (l : Lexer.line) -> l.text) lines) in
+  let carriage_return =
+    List.find_map
+      (fun (l : Lexer.line) ->
+        Option.map
+          (fun i ->
+            M.message M.Not_designed_yet (M.point l.number (i + 1) 1)
+              ~what:"a `\\r` that isn't part of a line break isn't decided yet")
+          (String.index_opt l.text '\r'))
+      lines
+  in
+  let definitions, parse_problems, stopped, stop_line = Parser.parse lines in
+  let core_problems =
+    List.filter_map (Wording.diagnostic source) (Core.check_program definitions)
+    |> List.filter (fun (m : M.message) ->
+           (not stopped) || (m.at.line < stop_line && m.what <> Some "this program has no `proc.main`"))
+  in
+  let messages =
+    List.stable_sort
+      (fun a b -> compare (position a) (position b))
+      (outermost_chains (Option.to_list carriage_return @ parse_problems @ Spacing.check lines @ core_problems))
+  in
+  (source, definitions, messages)
+
+(* trace: D55, D83, D102. Knock-on errors: the first error's one fix is applied in memory and the program checked
+   again. Each later message that disappears follows from the first error, and says so in its `because:`. *)
+let knock_ons contents messages =
+  match messages with
+  | ({ M.fix = Some fix; _ } as first) :: later ->
+      let lines = String.split_on_char '\n' contents in
+      let fixed =
+        String.concat "\n" (List.mapi (fun i text -> if i + 1 = first.at.line then fix else text) lines)
+      in
+      let _, _, again = examine fixed in
+      (* A message on the fixed line may move along it, so there it's matched without its column. *)
+      let same (a : M.message) (b : M.message) =
+        a.kind = b.kind && a.what = b.what && a.why = b.why && a.at.line = b.at.line
+        && (a.at.line = first.at.line || M.first_column a.at = M.first_column b.at)
+      in
+      let column = M.first_column first.at in
+      first
+      :: List.map
+           (fun (m : M.message) ->
+             if List.exists (same m) again then m
+             else
+               { m with
+                 because =
+                   Some
+                     ( Printf.sprintf "it follows from the error at line %d column %d" first.at.line column,
+                       Some first.at ) })
+           later
+  | _ -> messages
+
 let () =
   Random.self_init ();
   match Sys.argv with
@@ -161,30 +217,8 @@ let () =
           prerr_string (M.cant_read file reason);
           finish 2
       | Ok contents ->
-          let lines = Lexer.lines_of contents in
-          let source = Array.of_list (List.map (fun (l : Lexer.line) -> l.text) lines) in
-          let carriage_return =
-            List.find_map
-              (fun (l : Lexer.line) ->
-                Option.map
-                  (fun i ->
-                    M.message M.Not_designed_yet (M.point l.number (i + 1) 1)
-                      ~what:"a `\\r` that isn't part of a line break isn't decided yet")
-                  (String.index_opt l.text '\r'))
-              lines
-          in
-          let definitions, parse_problems, stopped, stop_line = Parser.parse lines in
-          let core_problems =
-            List.filter_map (Wording.diagnostic source) (Core.check_program definitions)
-            |> List.filter (fun (m : M.message) ->
-                   (not stopped) || (m.at.line < stop_line && m.what <> Some "this program has no `proc.main`"))
-          in
-          let messages =
-            List.stable_sort
-              (fun a b -> compare (position a) (position b))
-              (outermost_chains
-                 (Option.to_list carriage_return @ parse_problems @ Spacing.check lines @ core_problems))
-          in
+          let source, definitions, messages = examine contents in
+          let messages = knock_ons contents messages in
           if messages <> [] then begin
             print_messages file source messages;
             (* trace: D56, D148. Any refusal gives status 1; only limits alone give 3. *)

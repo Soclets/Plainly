@@ -62,9 +62,9 @@ Each step ends with something running. Proofs grow with the core rather than at 
    `d20_ask`, and the guessing game played by hand.
 7. [x] **Prove type safety** for the subset: a program the checker accepts never gets stuck.
 8. [x] The refusals the tests check, in the shell and the core, with D54's layout and D86's column.
-9. [ ] Every other decided refusal in the subset, or `NotBuiltYet` where it isn't built, so Ralph never accepts a
+9. [x] Every other decided refusal in the subset, or `NotBuiltYet` where it isn't built, so Ralph never accepts a
    program the standard refuses.
-10. [ ] Review the theorems' statements with the design session; report to Tankun.
+10. [x] Review the theorems' statements with the design session; report to Tankun.
 
 ### Order of proofs
 
@@ -83,14 +83,21 @@ possible input.
 
 ## Status
 
-2026-11-21: all 27 tests pass, and the guessing game runs (`ralph examples/guessing_game.unio`). The exactness
-theorems for `Whole` (`whole_arithmetic_exact`, `whole_negate_exact` in `core/Whole.v`) are proven. Next: the
-type-safety proof (step 7), then the spacing refusals (D98, D100) and the rest of step 9.
+**2026-11-21: the first milestone is reached (D140).** All 27 tests pass byte for byte; the guessing game runs; and
+three theorems are proven in Rocq, each with `Print Assumptions` showing nothing:
+- `whole_arithmetic_exact` and `whole_negate_exact` (core/Whole.v), approved by the design session;
+- `type_safety` (core/Safety.v), approved by the design session.
 
-Known gaps, each to be built:
-- Spacing (D98, D100, D102): not checked yet, so a wrongly spaced program is accepted. Step 9.
-- Knock-on errors (D55 rule 4, D83): not sorted out yet; every error is shown as its own message without the
-  `because:` pointing back.
+Also built since: D142 to D148, spacing (D98, D100, D102, D132), and knock-on errors (D55 rule 4, D83). Ralph stops
+here, as the milestone says: the compiler starts next, and Tankun decides when.
+
+Still `NotBuiltYet` in Ralph (decided, not built), each saying so when a program uses it:
+- an operator after a slide's step, refused with brackets as the fix (D81, D128);
+- D61's shared type in front of parameters, refused with D126's form as the fix (D126, D132);
+- lists, dividing and remainders, `?`, `?? ignore`, `?? crash`, `otherwise:`, families, handlers, `extern.cpp`,
+  block and doc comments, packages, methods (outside the milestone's subset).
+
+Still with Tankun: reading 8 below, `while` and D57.
 
 ## Theorem statements sent to the design session
 
