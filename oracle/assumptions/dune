@@ -1,0 +1,10 @@
+; Captures `Print Assumptions` for every main theorem; the test runner checks the file.
+(rule
+ (targets assumptions.txt)
+ (deps
+  Assumptions.v
+  (glob_files ../core/*.vo))
+ (action
+  (with-stdout-to
+   assumptions.txt
+   (run rocq compile -R ../core Ralph Assumptions.v))))
