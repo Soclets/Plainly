@@ -5281,3 +5281,32 @@ get anywhere is caught as early as it can be known. Tankun suggested `step_by` "
 **Tankun's words.** "Oh wait, now we could do `for $i in range[from: 1, to: 3]` with `step_by` needed when needed"
 (quoted in D170), then, asked "Should `range` take an optional `step_by:` that counts by 1 when left out, can be
 negative to count down, and is refused when it's 0 or points the wrong way?", the owner chose: "yea".
+
+## D173. A `for each` can't change the list it's going through
+
+2026-11-21.
+
+**Chosen.**
+- **Inside a `for each`, the variable it's going through can't change.** Anything in the body that would change it,
+  such as `.add`, setting one of its items or setting the whole variable, is refused at compile time.
+- **To change a list while looping,** a `while` loop over its positions says so plainly.
+- The refusal's wording comes with a later batch (D54), and its test with it.
+
+```
+for each $name in $players:
+    $players.add("Bob")   // refused: $players is being gone through
+end for
+```
+
+**Weighed.**
+- Going through a copy, as Swift does: the loop sees the list as it was when it started, and the change still happens
+  to `$players`. Safe under D130's values, but a reader may expect the loop to reach "Bob" too, and nothing says it
+  won't.
+- Python's way, where the loop sees the change and may skip items or never end. A classic bug, and impossible under
+  D130 anyway.
+
+**Why this won.** Nearly every program that changes a list inside its own `for each` is a mistake, and a message says
+so at once, where a copy would be a silent surprise. A program that means it has `while`.
+
+**Tankun's words.** Asked "Should changing the list being gone through inside its own `for each` be refused at compile
+time?", the owner chose: "yea".
