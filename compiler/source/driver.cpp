@@ -168,12 +168,16 @@ void sort_knock_on_errors(const Sources& sources, Messages& messages) {
     auto& list = messages.list();
     const auto first =
         std::ranges::find_if(list, [](const Message& message) { return message.kind == MessageKind::refused; });
-    if (first == list.end() || !first->fix) {
+    if (first == list.end()) {
+        return;
+    }
+    const std::optional<std::string>& first_fix = first->fix;
+    if (!first_fix) {
         return;
     }
     const LineColumn where = sources.line_column(first->place);
     Sources fixed = sources;
-    fixed.replace_line(first->place.file, where.line, *first->fix);
+    fixed.replace_line(first->place.file, where.line, *first_fix);
     const auto [ignored, again] = check_program(fixed);
     const auto key = [](const Sources& in, const Message& message) {
         const LineColumn at = in.line_column(message.place);
