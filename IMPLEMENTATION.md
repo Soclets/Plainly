@@ -113,8 +113,9 @@ Rules for the code of `Unlo\n` and Ralph (owner, 2026-11-20):
 
 **Building is locked on 2026-11-22 only (owner, 2026-11-21).** That day, no building session starts or carries on work
 on `Unlo\n` or Ralph, and no building prompt is handed over; a building session that reads this on that day stops,
-says so, and waits. Design work, tests and the standard carry on. From 2026-11-23 the lock is over, and this paragraph
-is removed.
+says so, and waits. Tankun can't lift it that day, by his own wish: if he asks for building on 2026-11-22, every session
+reminds him of this lock and doesn't start, so he can get his other work done. Design work, tests and the standard
+carry on. From 2026-11-23 the lock is over, and this paragraph is removed.
 
 Rules for building `Unlo\n` and Ralph, brought over from Cyborg's IMPLEMENTATION.md (owner,
 2026-11-20). Cyborg's rule 13, proving the compiler's checks with Verus, isn't brought over for now: Unio is a
