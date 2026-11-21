@@ -15,6 +15,7 @@ Each test is a folder named after its main decision, as in `d16_if/`:
 | `expected.status` | the exit status (D56), as a number |
 | `input.txt` | optional: what's typed, fed to standard input |
 | `expected.err` | optional: exactly what's written to standard error, for messages |
+| `expected-final.err` | optional: standard error in `--final`, only where it differs from `expected.err`, as D46's float check does |
 | `check.py` | optional: the same calculation in Python, confirming `expected.out` (D12) |
 
 A test passes when, run as
@@ -26,7 +27,9 @@ unio run program.unio --working < input.txt
 
 from inside the test's own folder, so a message names the file as `program.unio` (with no input when there's no
 `input.txt`), its standard output, standard error and exit status match the expected
-files exactly. `Unlo\n`'s own messages go to standard error. Once Ralph exists, every test runs on
+files exactly. `Unlo\n`'s own messages go to standard error. The same test run with `--final` matches the same files, except that
+standard error matches `expected-final.err` where the test has one. Only D46's float check can need one: in `final` it
+names the procedure or loop, where `working` names the exact line. Everything else is the same in both modes. Once Ralph exists, every test runs on
 `unio oracle` too, with the same expected files (D50).
 
 A `check.py` runs with `python3 -I check.py` from the test's folder, and exits with status 0 when `expected.out`

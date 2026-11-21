@@ -36,7 +36,9 @@ Three decisions shape the whole compiler:
 - Both modes from the start (D46, Building rule 1): `--working` compiles fast with LLVM's optimizing off; `--final`
   makes D124's optimizations, each one arriving with the part of the language it applies to, never as a later pass
   over a plain compiler. Both modes behave identically except for speed: a program's output, messages and exit status
-  never depend on the mode, and a check is removed only where it's proved unable to fail.
+  never depend on the mode, and a check is removed only where it's proved unable to fail. The one exception is D46's
+  float check: in `final` it reads the CPU's sticky flags at points, so its message names the procedure or loop where
+  `working` names the exact line.
 - Compiling is fast from the start (D65, Building rule 1): parallel across procedures and cached, so only what changed
   is compiled again. Background compiling in an editor comes later, since the language server isn't designed yet.
 </context>
@@ -66,7 +68,7 @@ its reasons; a guess in the compiler would become the language without anyone de
 Done when all of these hold:
 1. `unio run`, `unio compile` and `unio check` work (D50, D91, D136), and `unio oracle` hands the file to Ralph.
 2. Every test in `tests/` passes in both `--working` and `--final`: standard output, standard error and exit status
-   byte for byte, run as `tests/README.md` describes.
+   byte for byte, run as `tests/README.md` describes, with `expected-final.err` in `final` where a test has one.
 3. `examples/guessing_game.unio` compiles and plays, typed by hand, in both modes.
 4. The `final` optimizations that apply to this subset are in (D124): LLVM's full optimizing; removing checks that
    can't fail, using what an `if` proved; inlining small procedures; the fib trick (procedures with no side effects
