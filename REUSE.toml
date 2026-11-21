@@ -1,0 +1,16 @@
+version = 1
+
+# Which licence covers which files (D138). `reuse lint` checks that every file has one.
+
+[[annotations]]
+path = ["compiler/**", "oracle/**", "check/**", "tools/**", ".claude/**"]
+SPDX-License-Identifier = "Apache-2.0 WITH LLVM-exception"
+
+[[annotations]]
+path = ["examples/**", "tests/**", "design/benchmarks/**"]
+precedence = "override"
+SPDX-License-Identifier = "MIT-0"
+
+[[annotations]]
+path = ["**/*.md", "LICENSE", "LICENSE-MIT-0", "LICENSE-CC-BY-4.0", "REUSE.toml"]
+SPDX-License-Identifier = "CC-BY-4.0"

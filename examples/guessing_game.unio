@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT-0
 proc.main:
     let $secret: Whole = random(from: 1, to: 100);
     var $tries: Whole = 0;

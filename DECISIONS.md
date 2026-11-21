@@ -48,6 +48,8 @@ unlicensed for five days; Plainly for a few minutes).
 
 **Tankun's words.** Asked "Go with that?", the owner chose: "yes".
 
+(Changed by D138: examples and demos, code samples in the docs included, are MIT-0.)
+
 ## D2. Every keyword has one spelling, the short one, and the docs teach the full word
 
 2026-11-20.
@@ -4340,3 +4342,41 @@ with any real tool, and learners only ever type `unio`.
 
 **Tankun's words.** "yea. What about the compiler? `Unlo\n`?" (in D136's answer), then, asked "Should the compiler be
 `Unlo\n`, typed `unio`?", the owner chose: "yea".
+
+## D138. Three licences: Apache-2.0 WITH LLVM-exception for the implementation, MIT-0 for examples, CC BY 4.0 for prose
+
+2026-11-21.
+
+**Chosen.**
+- **The implementation,** meaning the compiler, its runtime, PlainOracle, `check/` and the tools: Apache-2.0 WITH
+  LLVM-exception (`LICENSE`), as D1 had it for all code.
+- **Examples and demos:** MIT-0 (`LICENSE-MIT-0`), with no conditions at all, not even credit: everything in
+  `examples/`, the test programs in `tests/`, `design/benchmarks/`, and every code sample inside the Markdown files.
+- **Prose,** the text of the Markdown files apart from their code samples: CC BY 4.0 (`LICENSE-CC-BY-4.0`), as D1 had
+  it.
+- The README says which is which, as Google's, Mozilla's and Microsoft's docs do for their code samples, and
+  `REUSE.toml` maps each file to its licence for `reuse lint`. An example file starts with
+  `// SPDX-License-Identifier: MIT-0`, so the licence travels with a copy.
+
+Whether Unio takes code contributions isn't decided yet.
+
+**Weighed.**
+- D1 as it stood. Code samples in the docs and the examples counted as writing, under CC BY 4.0, so a kid copying one
+  would owe credit.
+- MIT-0 OR Apache-2.0 for all code. Kids would have nothing to worry about, but nobody would owe credit for the
+  compiler's source either, and Cyborg, CyborgPL and Lyftar all use D1's pair.
+- CC0. Gives up CC BY's protection for the prose: reusers must mark their changes and may not imply Tankun endorses
+  them. And for code, CC0 grants no patent rights, which is why the OSI never approved it and Fedora stopped accepting
+  it for code.
+
+**Why this won.** Each kind of material gets what it needs: a beginner or a kid remixing an example has no legal
+strings at all; the implementation keeps D1's three reasons, compiled programs owing nothing, GPLv2 compatibility and a
+patent promise, with credit on its source; and the prose keeps its protection against being passed off as Tankun's.
+
+**Tankun's words.** "What license is it?", "What about MIT0 OR Apache 2.0 for code?", "It's just because beginner or
+kids copying the shit to remix don't have to worry about legal stuff.", "I only chose CC BY 4.0 because of "pretend to
+be use" protection", "What is Apache 2.0 there for? What if we do MIT0 and CC0", "Would we accept contributions,
+though?", "How about Apache 2.0 WITH LLVM exception for impl, MIT0 for examples & demos, CC BY 4.0 for prose", "How do
+you even use it like that?", "What's the legal way to do that? The codeblock thingy", then, asked "should the licences
+be Apache-2.0 WITH LLVM-exception for the implementation, MIT-0 for examples and demos, including code blocks in the
+docs, and CC BY 4.0 for the prose, with a notice in the README saying which is which?", the owner chose: "yes".
