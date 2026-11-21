@@ -4570,3 +4570,30 @@ by D101 the message has a `what:`:
 for the code (D2's aim). Ralph, building the oracle, asked.
 
 **Tankun's words.** Asked "Should two statements on one line be refused, with that wording?", the owner chose: "yea".
+
+## D147. A plain parameter is read-only, like a `let`
+
+2026-11-21.
+
+**Chosen.** Giving a plain parameter a new value is refused, as D14 refuses `=` on a `let`:
+
+```
+ what:    `$n` can't be given a new value
+ because: `$n` is a parameter
+ 1 | proc count_down($n: Whole):
+   |                 ^^
+ why:     a parameter can't be given a new value; to change a copy, declare a `var` from it.
+```
+
+The way round it is a `var` copy: `var $left: Whole = $n;`. The words a parameter will use to say how it's used (D130:
+read, change the caller's value, or take it over) are still undecided; this is what a plain parameter means.
+
+**Weighed.**
+- Letting a parameter change, as a local copy, as Python and C do. Someone writing `$n = $n - 1` might expect the
+  caller's variable to change too, and it wouldn't.
+
+**Why this won.** It's Hylo's own default, a plain parameter only read, it avoids that trap, and it leaves room for a
+"change the caller's value" word to mean exactly that. Ralph, building the oracle, asked.
+
+**Tankun's words.** Asked "Should a plain parameter be read-only, refused like a `let`, with that wording?", the owner
+chose: "yea".

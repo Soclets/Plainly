@@ -41,8 +41,9 @@ Using what such a procedure gives as a value is refused (D38).
 
 ### Parameters
 
-Each parameter is written as its name, with its `$`, then `:` and its type, as a declaration is, even when several
-share a type (D125, D126). Writing a shared type once in front, as in `proc add(Whole a, b)`, is refused (D126):
+Each parameter is written as its name, with its `$`, then `:` and its type, as a declaration is, even when several share
+a type (D125, D126). Writing a shared type once in front, as in `proc add(Whole a, b)`, is refused (D126): A plain
+parameter is read-only, like a `let` (D147).
 
 ```
 proc add($a: Whole, $b: Whole) returns Whole:
