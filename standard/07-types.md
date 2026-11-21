@@ -138,7 +138,8 @@ show_msg.fmt("Speed: {$speed, places: 2}");   // Speed: 0.30
 
 - **It always shows that many places,** so `{$half, places: 3}` with `0.5` shows `0.500`, and `places: 0` shows no
   point (D175).
-- **It rounds to the nearest,** and an exact tie goes to the even digit: `0.125` with `places: 2` shows `0.12` (D175).
+- **It rounds to the nearest,** and an exact tie goes away from zero, as at school: `0.125` with `places: 2` shows
+  `0.13` (D175, D178).
 - **A value that rounds to zero shows no minus:** `-0.001` with `places: 2` shows `0.00`, while `-0.006` shows `-0.01`
   (D176).
 - **`places:` on anything but a `Float` is refused** at compile time (D175).
@@ -300,6 +301,22 @@ show_msg(be.Text($guess));
 `be.Whole` reads a whole number from text: spaces and tabs around it are ignored (D143), and a `+` or `-` in front and
 leading zeros are fine, so ` 42`, `-7`, `+5` and `007` all work. Anything else fails, including `4.5`, `1,000` and a
 number too big or too small for a `Whole` (D95), with the failure `not_a_whole` (D156).
+
+`be.Whole` on a `Float` says how the fraction goes, and a bare `be.Whole($distance)` is refused, with a fix listing
+the ways (D178):
+
+```
+let $steps: Whole = be.Whole.floor($distance);     // 2.7 → 2,  -2.7 → -3
+let $shown: Whole = be.Whole.trunc($distance);     // 2.7 → 2,  -2.7 → -2
+let $tiles: Whole = be.Whole.ceil($distance);      // 2.3 → 3,  -2.3 → -2
+let $score: Whole = be.Whole.nearest($distance);   // 2.5 → 3,  -2.5 → -3
+let $total: Whole = be.Whole.nearest.even($sum);   // 2.5 → 2,   3.5 → 4
+```
+
+- **`.floor`** goes down, **`.ceil`** up, and **`.trunc`** cuts the fraction off, toward zero (D178).
+- **`.nearest`** goes to the nearest whole number, and an exact tie goes away from zero, as at school; **`.nearest.even`**
+  sends a tie to the even one, for sums where always going up would add up (D178).
+- **A `Float` too big for a `Whole`** stops the program with a failed check, as overflow does (D46, D178).
 
 **Not decided:** what may be converted to what, beyond D153 and D156, and what other conversions' failures are
 called (chapter 8).

@@ -1,0 +1,1 @@
+be.Whole on a Float with .floor, .trunc, .ceil, .nearest (ties away from zero) and .nearest.even. D178; standard ch. 7.

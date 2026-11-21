@@ -5362,6 +5362,7 @@ let $line: Text = be.Text.fmt("{$speed, places: 2}");
   `places: 3` shows `0.500`, and `places: 0` shows no point.
 - **It rounds to the nearest, and an exact tie goes to the even digit,** as C's `printf` and Python's format do:
   `0.125` with `places: 2` shows `0.12`.
+  (Changed by D178: a tie goes away from zero, so `0.125` shows `0.13`.)
 - **No `~`:** the text is exactly the rounding asked for, so nothing is hidden. Plain `be.Text($speed)` and
   `{$speed}` keep D155's honest `~0.30000000000000004`.
 - **Braces stay names-only** (D29): `places: 2` says how the name is shown, and holds no calculation or call.
@@ -5435,3 +5436,44 @@ search from ∞; a game starts from the first item instead.
 
 **Tankun's words.** Asked "Should a `Float` that would become infinite stop the program with a failed check, as NaN
 already does, so a `Float` is always a real number?", the owner chose: "yea".
+
+## D178. `be.Whole` on a `Float` says how the fraction goes, and `.nearest` rounds as at school
+
+2026-11-21.
+
+**Chosen.**
+- **`be.Whole` on a `Float` names how the fraction goes:** `.floor` down, `.ceil` up, `.trunc` cutting it off toward
+  zero, or `.nearest`. A bare `be.Whole($distance)` on a `Float` is refused, with a fix listing them.
+- **`.nearest` sends an exact tie away from zero,** as at school: 2.5 gives 3 and -2.5 gives -3.
+- **`.nearest.even` is the option** that sends a tie to the even number, 2.5 to 2 and 3.5 to 4, for adding up many
+  rounded values, where always going away from zero would push the total off.
+- **`places:` (D175) sends ties away from zero too,** changing D175's ties-to-even, so `{$x, places: 0}` and
+  `be.Whole.nearest($x)` always agree.
+- **A `Float` too big for a `Whole`** stops the program with a failed check, as overflow does (D46).
+
+```
+let $steps: Whole = be.Whole.floor($distance);     // 2.7 → 2,  -2.7 → -3
+let $shown: Whole = be.Whole.trunc($distance);     // 2.7 → 2,  -2.7 → -2
+let $tiles: Whole = be.Whole.ceil($distance);      // 2.3 → 3,  -2.3 → -2
+let $score: Whole = be.Whole.nearest($distance);   // 2.5 → 3,  -2.5 → -3
+let $total: Whole = be.Whole.nearest.even($sum);   // 2.5 → 2,   3.5 → 4
+```
+
+**Weighed.**
+- A bare `be.Whole` that cuts the fraction off, as C and Rust do. Which way it goes is a real choice, and with
+  negatives `.floor` and `.trunc` differ, as D70 found for division.
+- `.round`, as C, Python, JavaScript and Rust call it. Floor, ceil and trunc are all rounding too, IEEE 754's
+  "rounding directions", so `.round` names the family, not the rule; `.nearest` says what it does.
+- Ties to even as the default, as IEEE 754 and Python 3's `round` have it. Python's `round(2.5)` giving 2 is a classic
+  beginner surprise, and a terminal game isn't summing millions of values.
+- Always choosing the tie rule, as Cyborg's `as.round.even` and `as.round.away` do (its D425). The two differ only on
+  exact halves, where one answer is what nearly everyone expects, so it's a default with an option, unlike D70's
+  division, where `.floor` and `.trunc` differ on every negative.
+
+**Why this won.** Every way of dropping a fraction is named for what it does, the common one gives what players learnt
+at school, and the rare need for even ties is one word away. Tankun asked whether `.round` was accurate, which led to
+`.nearest`, and proposed the school default with the option.
+
+**Tankun's words.** "What does `.round` do?", "Is it accurate? The name", "You said `.nearest` needed decidied anoter
+thihG?", "Make them choose?", "Wait, we're CLI game focused, right? So, we could have that opt, and default to
+school?", then, asked "Should I log it like that?", the owner chose: "yea".
