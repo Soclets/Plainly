@@ -128,9 +128,8 @@ It can come later for one small, critical piece if a bug there ever gets through
    exceptions, matching LLVM's own build: failures are `std::expected`, and its value is never taken without checking.
    No C-style casts, and `reinterpret_cast` or `const_cast` only in LLVM glue, each with a comment saying why it's safe.
    A bad program never crashes PlainCompiler: nothing a program can reach ends in `abort` or `llvm_unreachable`, and if
-   PlainCompiler itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle's OCaml
-   builds with every warning as an error, and its Rocq core has no `Admitted` (D129). (From Cyborg's rules 6 and 7,
-   carried over to C++ by D131.)
+   PlainCompiler itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle follows rule
+   14. (From Cyborg's rules 6 and 7, carried over to C++ by D131.)
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
    the design session first. (From Cyborg's rule 18.)
@@ -180,6 +179,17 @@ It can come later for one small, critical piece if a bug there ever gets through
     IMPLEMENTATION.md, the last only with Tankun's OK. Each building session edits only its own folders: the
     compiler session `compiler/` and `tools/`, the oracle session `oracle/` and `check/`. With several sessions in one
     folder, each commits only its own files by name, never `git add -A` or `git add .`. (From Cyborg's rule 2.)
+14. **OCaml and Rocq.** OCaml, for PlainOracle's shell and the extracted core: one pinned OCaml version, in its own opam
+    switch, built with `dune`, formatted with `ocamlformat`. Every warning on, as errors, non-exhaustive `match`es
+    included. No functions that crash on a reachable path: no `List.hd`, `List.nth`, `Option.get`, `failwith`, `assert
+    false` or exceptions used for failures; failures are `result` or `option`, checked. No `Obj`, no `-unsafe`, no
+    `Array.unsafe_get`. Plainly's `Whole` is always `Int64`, never OCaml's own `int`, which is 63-bit. The oracle stays
+    plain: no optimizations, no caches, no cleverness (rule 1). Rocq, for PlainOracle's core: one pinned Rocq version.
+    No `Admitted` and no `Axiom`, except a short list in one file, each with a comment saying why it's believed, such as
+    how Rocq's integers become OCaml's `Int64` on extraction. `Print Assumptions` runs on every main theorem in each
+    test run and shows nothing beyond that list. Every theorem's statement has a comment saying in plain words what it
+    promises, and a new or changed statement goes to the design session before anything relies on it, since the
+    statement is the part Rocq can't check. (D129, carried over from the C++ rules in rule 3.)
 
 ## Prompting
 
