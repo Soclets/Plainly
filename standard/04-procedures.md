@@ -180,9 +180,9 @@ $points |> double |> be.Text |> show_msg;
 ```
 
 So `$n |> be.Text |> show_msg` is refused, with `show_msg(be.Text($n))` as the fix, and
-`show_msg(be.Text(double($points)))` is refused, with the slide as the fix. When the innermost call takes one value, that value starts
-the fix's slide, as in `$points |> double`; when it takes more, the innermost call starts it whole, as in
-`larger(3, 9) |> be.Text |> show_msg`, since `3 |> larger(9)` would make its two values lopsided (D128).
+`show_msg(be.Text(double($points)))` is refused, with the slide as the fix. When the innermost call takes one value,
+that value starts the fix's slide, as in `$points |> double`; when it takes more, the innermost call starts it whole, as
+in `larger(3, 9) |> be.Text |> show_msg`, since `3 |> larger(9)` would make its two values lopsided (D128).
 
 - **A step with nothing else to pass is bare,** with no `( )`: `|> be.Text`.
 - **A step with more arguments takes `( )` for those only:** `|> clamp(min: 0, max: 100)`, and the slid value goes in
