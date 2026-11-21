@@ -4773,6 +4773,8 @@ beginner can read it; the docs can explain it. Ralph, building the oracle, asked
 keeps calling itself without stopping runs out." What runs out", then, asked "Should calls nesting too deep stop as
 `check failed:`, status 4, with "calls went too deep" and this `why:`?", the owner chose: "yea".
 
+(Changed by D158: the limit is a fixed 1,000,000 calls, counted by Unio, not the machine.)
+
 ## D155. Binary float types need `~` on inexact literals and show it on inexact values
 
 2026-11-21.
@@ -4855,3 +4857,22 @@ it.
 here's the thing. Is that rabbit hole worth it? Rather than just saying `Float` is ..., and `Decimal` is well... A
 real one", then, asked "Should the type be `Float`, IEEE 754 binary64, with `Decimal` kept for an exact type later?",
 the owner chose: "Fair enough".
+
+## D158. The call-depth limit is a fixed 1,000,000 calls, counted by Unio itself
+
+2026-11-21.
+
+**Chosen.** D154's stop comes at a fixed 1,000,000 calls waiting for one another, counted by Unio itself rather than
+when the machine's stack runs out: `when:` reads "1000000 calls deep, inside `count`" on every machine, in both modes,
+in Ralph and in `Unlo\n` alike. This replaces D154's "depends on the machine".
+
+**Weighed.**
+- The machine's own limit, as D154 had it. It differs between machines, can't be tested, and `final` turning a
+  recursion into a loop would change where or whether a program stops, which D46 forbids.
+
+**Why this won.** Counting gives the same stop at the same call everywhere, so it can be tested and compared (Building
+rule 12), for one compare per call: `fib(44)` still takes about 3 ms in `final`, and 2.9 s in `working`, from 1.95 s.
+A real program rarely goes ten thousand calls deep, and a runaway recursion reaches a million in under a second. Ralph
+and the compiler session each chose 1,000,000 on their own.
+
+**Tankun's words.** Asked "Should it be a fixed 1,000,000 calls?", the owner chose: "yea".

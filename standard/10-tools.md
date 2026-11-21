@@ -56,8 +56,9 @@ Every variable owns its own value, and a value is freed when its owner ends: the
 with `check failed:` and status 4, at the line that needed the memory, with what was needed, what was in use and the cap
 in `when:` (D115, D122).
 
-Calls nesting too deep, as when a procedure keeps calling itself without stopping, stop the program with `check
-failed:` and status 4, at the call that went too deep, with the depth and the procedure in `when:` (D154).
+Calls nesting too deep, as when a procedure keeps calling itself without stopping, stop the program with `check failed:`
+and status 4, at the call that went too deep, with the depth and the procedure in `when:` (D154). The limit is a fixed
+1,000,000 calls, counted by Unio itself, so it's the same on every machine and in both modes (D158).
 
 ## Build modes
 
