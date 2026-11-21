@@ -5012,3 +5012,27 @@ proofs. The basic maths matches everywhere anyway; nothing has to be defended to
 **Tankun's words.** In Cyborg's design session, on reading its answer, relayed by it: "Why the fuck did you suggest
 stable floats back again. Oh hell no". Here, asked "Should Unio make no same-bits promise for `Float`?", the owner
 chose: "yea".
+
+## D164. Unio's pitch: "Full concepts, plain words & ease where there should be"
+
+2026-11-21.
+
+**Chosen.** Unio's one-line pitch, and the GitHub repository's description, is "Full concepts, plain words & ease where
+there should be". It joins the README's two lines, "Learn concepts in full, type them shortly." and "the goal isn't no
+learning, rather it's plain words and ease where there should be".
+
+**Weighed.**
+- "Static Python, built for reading", the idea this version started from, never logged as a decision. Unio has moved
+  far from Python's look since (`end` closers, `;`, `$`, slides, labels, Hylo-style values), and the phrase says what
+  Unio resembles rather than what it's for.
+- "Learn concepts in full, type them shortly.", the README's first line alone.
+- "... & ease where possible", Tankun's first wording. The README's "where there should be" is more exact: ease only
+  where it belongs, so learners still learn the real thing.
+- Leaving out "Full concepts". It would read like any "easy" beginner language, the kind the README pushes back on.
+
+**Why this won.** It says what Unio is for, in Tankun's own README words: the real ideas, in plain words, made easy only
+where ease belongs.
+
+**Tankun's words.** "Wait, I swear, I thought our GH description changed", "Isn't static Python ol?", "How about "Full
+concepts, plain words & ease where possible"?", "Follow README on last msg?", "Remove full concepts from desc?", then,
+asked "Should the description stay "Full concepts, plain words & ease where there should be"?", the owner chose: "yea".
