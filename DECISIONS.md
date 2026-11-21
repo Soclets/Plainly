@@ -4894,3 +4894,37 @@ cache folder, which is safe to empty. The compiler session built it this way and
 
 **Tankun's words.** Asked "Should `unio run` keep the program it builds in the compile cache, instead of a temporary
 file?", the owner chose: "yea".
+
+## D160. `random` with `from:` above `to:` is refused when it's plain numbers, and a failed check otherwise
+
+2026-11-21.
+
+**Chosen.** `random` with `from:` above `to:`, which no number can satisfy (D26):
+- **When both are plain numbers** written in the code, as in `random(from: 6, to: 1)`, it's refused at compile time,
+  with the two swapped as the fix:
+
+  ```
+   fix:     `    let $roll: Whole = random(from: 1, to: 6);`
+   why:     `random` gives a whole number from `from:` up to `to:`, so `from:` can't be above `to:`.
+  ```
+- **Otherwise,** as in `random(from: $low, to: $high)`, it stops at runtime with `check failed:` and status 4:
+
+  ```
+   what:    `random`'s `from:` is above its `to:`
+   when:    from: 7, to: 3
+   why:     `random` gives a whole number from `from:` up to `to:`, so `from:` can't be above `to:`.
+  ```
+
+`from:` equal to `to:` is fine, and gives that number.
+
+**Weighed.**
+- Swapping them quietly. Friendly, but hides what's almost always a mix-up of two variables.
+- A failure the caller must handle. A `??` after every `random` for a mistake that should never happen.
+- Only at runtime. When the mistake is visible in the code itself, the writer should hear before running anything.
+
+**Why this won.** The writer is told as early as it can be known: at compile time when the code alone shows it, at
+runtime otherwise, with both values to spot the mix-up. Both implementations stopped with `NotDesignedYet` here.
+
+**Tankun's words.** "yea?", "I meant to ask what you're asking", "Stop when? Comp?", "So, boh ties?", then, asked
+"Should it work that way, refused at compile time when both are plain numbers, and stopping at runtime otherwise?", the
+owner chose: "yea".

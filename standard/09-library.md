@@ -19,4 +19,8 @@ let $secret: Whole = random(from: 1, to: 100);
 
 It's game randomness, fine for dice and loot, not for anything that must be unguessable (D26).
 
-**Not decided:** seeding; randomness for secrets; `from:` above `to:`; random numbers of other types.
+`from:` may equal `to:`, giving that number. `from:` above `to:` is refused at compile time when both are plain numbers,
+with the two swapped as the fix, and otherwise stops at runtime with `check failed:` and status 4, showing both values
+(D160).
+
+**Not decided:** seeding; randomness for secrets; random numbers of other types.
