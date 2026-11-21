@@ -394,6 +394,8 @@ what `placeholder` in that context means", asked has code, suggested "What about
 result too? When possible, maybe C, Python, Rust, or SPARK Platinum", then "Holy shit, bro. Do you know how diabolical
 Plat is?". Asked "Go with that?", the owner chose: "yea".
 
+(Changed by D140: the oracle is built first, to a set finish line, then the compiler.)
+
 ## D13. `let` makes a variable that can't change, `var` one that can, and the type is always written
 
 2026-11-20.
@@ -4397,3 +4399,32 @@ as `unio oracle game.unio` (D50, D136), as before.
 **Why this won.** It says what it is, and it's already the word in the command.
 
 **Tankun's words.** "It's actually just `oracle`".
+
+## D140. `oracle` is built first, to a finish line, then `Unlo\n`
+
+2026-11-21.
+
+**Chosen.** `oracle` (D129, D139) is built before `Unlo\n`, changing D12's order. Its first milestone is done when
+it passes every test in `tests/` and runs the guessing game, with type safety and the exactness of `Whole`
+arithmetic proven for that subset. Then `Unlo\n` starts, and `oracle` keeps growing alongside it.
+
+The subset is what the tests and the guessing game use: `Whole`, `Bool` and `Text`; `let` and `var` with `$` names and
+`=`; `+`, `-` and `*`, negatives and overflow; `&`, `be.Text`, `be.Whole` and `.fmt`; text escapes; `if`, `else if`
+and `else`; comparisons; `and`, `or` and `not`; `while` and `break`; procedures with `returns`, `return`, labels and
+`labels` lines; slides; `show_msg`, `show_msg.same_line`, `ask`, `??` and `random`; and the refusals the tests check.
+
+**Weighed.**
+- The compiler first, as D12 had it. A usable fast language sooner, but the part Tankun is excited about right now
+  is the Rocq core.
+- `oracle` first with no finish line, as Plainly v1 built its oracle and never started its compiler. Proofs make an
+  easy rabbit hole, since there's always one more theorem.
+
+**Why this won.** Building what excites Tankun is what kept v2 going, and its absence is what ended v1. Formalizing the
+checker and evaluator first makes every rule of the standard exact, so vague or contradictory rules surface before a
+compiler is built on a wrong reading; the compiler then has a referee from its first day (Building rule 12); and
+programs can already run through `unio oracle`. The finish line keeps it from swallowing the compiler, as it did in v1.
+
+**Tankun's words.** "Feeling like doing oracle first, why? It's geuinely exciting rn, it's gonna rock my cock (Rocq)",
+"What does the subset have?", then, asked "should `oracle` be built first, until it passes every test, runs the
+guessing game, and has type safety and exact `Whole` arithmetic proven for that subset, with `Unlo\n` starting right
+after?", the owner chose: "yea, oracle first. Give me the prompt link, make sure the prompt is aligned with Anthropic's"
