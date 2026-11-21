@@ -1,0 +1,1 @@
+sqrt gives the nearest Float to the square root, shown with ~ when inexact. D155, D181, D185; standard ch. 9.

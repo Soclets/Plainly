@@ -29,6 +29,25 @@ plain numbers, and stops the program with `check failed:` and status 4 otherwise
 
 A range is gone through with `for each` (D171).
 
+## `sqrt`
+
+```
+sqrt($x)
+```
+
+where `$x` is a `Float`. It gives the square root, the nearest `Float` to the true answer, the same on every machine,
+since IEEE 754 requires it as it does for `+` (D163, D185):
+
+```
+let $distance: Float = sqrt($dx * $dx + $dy * $dy);
+```
+
+- **A negative number stops the program** with a failed check and status 4, since its square root isn't a real number
+  (D177, D185).
+- **It takes a `Float` only:** `sqrt(9)` is refused, with `sqrt(9.0)` as the fix (D180, D185).
+
+`sqrt` is short for square root (D2).
+
 ## `random`
 
 ```

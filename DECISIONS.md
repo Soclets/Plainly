@@ -5642,3 +5642,31 @@ Unio's `~` on inexact literals and in printing shows why a comparison came out `
 `==`?", "is `~0.3` and `~0.30000004` or whatever it is the same?", "why?", "I meant ==\", "What is the trap?", "So, do
 we refuse tha?", then, asked "Should `==` and `!=` between two `Float`s be refused in a `while` condition, with `<`,
 `>`, `at_least` or `at_most` as the fix, while working exactly everywhere else?", the owner chose: "ye".
+
+## D185. `sqrt` gives a `Float`'s square root, and stops on a negative number
+
+2026-11-21.
+
+**Chosen.** `sqrt($x)` gives the square root of a `Float`, as a call like `random`:
+
+```
+let $distance: Float = sqrt($dx * $dx + $dy * $dy);
+```
+
+- **It gives the nearest `Float` to the true answer,** the same on every machine: IEEE 754 requires it, as it does for
+  `+`, and every CPU does it in one instruction (D163).
+- **A negative number stops the program** with a failed check and status 4: its square root isn't a real number, and
+  IEEE 754's NaN isn't allowed (D177). The wording comes with a later batch.
+- **It takes a `Float` only:** `sqrt(9)` is refused, with `sqrt(9.0)` as the fix (D180).
+- The docs teach "`sqrt` is short for square root" (D2).
+
+**Weighed.**
+- `square_root`. Clearer to someone who's never seen it, but `sqrt` is the name in every language, calculator and
+  tutorial a learner will meet, as `fmt` and `pos` are short forms already (D2).
+- NaN for a negative number, as IEEE 754 and most languages give. D177 keeps NaN out.
+
+**Why this won.** Games need it constantly, for the distance between two points, and it costs nothing to make exact.
+Cyborg's D405 and D406 chose the same: correctly rounded, and stopping on a negative number.
+
+**Tankun's words.** Asked "Should Unio have `sqrt` for a `Float`, giving the nearest `Float` and stopping with a failed
+check on a negative number?", the owner chose: "yea. Should stdlib not be a lib".
