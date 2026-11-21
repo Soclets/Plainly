@@ -159,6 +159,10 @@ Empty text is `""` (D76).
 let $speed: Float = ~0.1;
 ```
 
+Unio doesn't promise a `Float` gives the same bits on every machine (D163). `+`, `-`, `*`, `/` and the square root
+do anyway, since `final` never fuses or reorders float maths (D46, D124); maths functions, when Unio has them, may
+differ in the last digit between machines.
+
 `Whole` and `Float` don't mix in one calculation: `$lives * $speed` is refused, and `be.Float($lives) * $speed` says
 so (D162).
 

@@ -4987,3 +4987,28 @@ approximate visible, and catches real bugs, for the cost of a few `be.Float(...)
 
 **Tankun's words.** Asked "Should mixing `Whole` and `Float` need an explicit `be.Float`?", the owner chose: "yea. Our
 floats aren't stable like Cyborg's, right?"
+
+## D163. Unio makes no same-bits promise for `Float`
+
+2026-11-21.
+
+**Chosen.** Unio doesn't promise that `Float` maths gives the same bits on every machine. `+`, `-`, `*`, `/` and the
+square root do anyway, as a side effect of D46 (`final` behaves exactly as `working`) and D124 (no fast-math): the
+compiler never fuses or reorders them, and IEEE 754 rounds them the same everywhere. Maths functions, like `sin`, when
+Unio has them, use what the platform gives, and may differ in the last digit between machines; where they do, Ralph and
+`Unlo\n` compare their results as close rather than identical.
+
+**Weighed.**
+- Promising same bits everywhere, maths functions included, as Cyborg's `.stable` floats do (its D158, D161), through a
+  correctly rounded library like CORE-MATH, as the design claude recommended. Cyborg's design session listed what it
+  takes: a rule for float to whole number, NaN's bits, building and covering every function and keeping the system
+  library out, flush-to-zero sneaking in through foreign code, and fixed order in parallel sums. And Ralph's core is
+  proven in Rocq, so it would have to produce and prove correctly rounded maths functions itself: research-grade work,
+  landing on the part of Unio Tankun is most excited about.
+
+**Why this won.** Unio's audience doesn't need bit-identical floats across machines, and the cost would fall on Ralph's
+proofs. The basic maths matches everywhere anyway; nothing has to be defended to keep it so.
+
+**Tankun's words.** In Cyborg's design session, on reading its answer, relayed by it: "Why the fuck did you suggest
+stable floats back again. Oh hell no". Here, asked "Should Unio make no same-bits promise for `Float`?", the owner
+chose: "yea".
