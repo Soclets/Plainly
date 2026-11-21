@@ -225,7 +225,15 @@ let () =
             let refused = List.exists (fun (m : M.message) -> m.kind = M.Refused) messages in
             finish (if refused then 1 else 3)
           end
-          else walk file source (Core.run fuel definitions))
+          else
+            (* trace: D82, D103. Calls nested deeper than Ralph's own stack can hold are Ralph's limit, not the
+               program's mistake. *)
+            match walk file source (Core.run fuel definitions) with
+            | () -> ()
+            | exception Stack_overflow ->
+                end_open_line ();
+                prerr_string (M.internal_error "the program's calls are nested deeper than Ralph can follow");
+                finish 7)
   | _ ->
       prerr_string "ralph: give it one Unio file, as in `ralph game.unio`\n";
       finish 6

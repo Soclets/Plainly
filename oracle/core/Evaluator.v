@@ -185,10 +185,13 @@ Definition need_value (o : outcome) : io value :=
   | _ => Stop Stuck
   end.
 
-Definition need_bool {A : Type} (v : value) (then_ else_ : io A) : io A :=
+(* Picks a way by a `Bool`. Each way is given as a function, so the way not taken is never worked out: OCaml, which
+   the core is extracted to, works out a function's arguments before calling it, and working out both ways of an `if`
+   whose other way calls the procedure it's in would never end. *)
+Definition need_bool {A : Type} (v : value) (then_ else_ : unit -> io A) : io A :=
   match v with
-  | Bool_value true => then_
-  | Bool_value false => else_
+  | Bool_value true => then_ tt
+  | Bool_value false => else_ tt
   | _ => Stop Stuck
   end.
 
@@ -217,20 +220,20 @@ Fixpoint evaluate (fuel : nat) (p : program) (env : environment) (e : expression
             end)
       | Not operand _ =>
           bind (evaluate fuel' p env operand) (fun v =>
-            need_bool v (Done (Bool_value false)) (Done (Bool_value true)))
+            need_bool v (fun _ => Done (Bool_value false)) (fun _ => Done (Bool_value true)))
       (* trace: D34. `and` and `or` stop early: the right side runs only if it can still change the answer. *)
       | Binary And left_operand right_operand _ _ =>
           bind (evaluate fuel' p env left_operand) (fun a =>
             need_bool a
-              (bind (evaluate fuel' p env right_operand) (fun b =>
-                 need_bool b (Done (Bool_value true)) (Done (Bool_value false))))
-              (Done (Bool_value false)))
+              (fun _ => bind (evaluate fuel' p env right_operand) (fun b =>
+                 need_bool b (fun _ => Done (Bool_value true)) (fun _ => Done (Bool_value false))))
+              (fun _ => Done (Bool_value false)))
       | Binary Or left_operand right_operand _ _ =>
           bind (evaluate fuel' p env left_operand) (fun a =>
             need_bool a
-              (Done (Bool_value true))
-              (bind (evaluate fuel' p env right_operand) (fun b =>
-                 need_bool b (Done (Bool_value true)) (Done (Bool_value false)))))
+              (fun _ => Done (Bool_value true))
+              (fun _ => bind (evaluate fuel' p env right_operand) (fun b =>
+                 need_bool b (fun _ => Done (Bool_value true)) (fun _ => Done (Bool_value false)))))
       | Binary operator left_operand right_operand _ at_ =>
           bind (evaluate fuel' p env left_operand) (fun a =>
             bind (evaluate fuel' p env right_operand) (fun b => apply_binary operator a b at_))
@@ -345,18 +348,18 @@ with execute (fuel : nat) (p : program) (env : environment) (st : statement) {st
       (* trace: D16 *)
       | If condition then_part rest _ =>
           bind (evaluate fuel' p env condition) (fun c =>
-            need_bool c (execute_block fuel' p env then_part) (execute_else fuel' p env rest))
+            need_bool c (fun _ => execute_block fuel' p env then_part) (fun _ => execute_else fuel' p env rest))
       (* trace: D19, D32 *)
       | While condition body at_ =>
           bind (evaluate fuel' p env condition) (fun c =>
             need_bool c
-              (bind (execute_block fuel' p env body) (fun f =>
+              (fun _ => bind (execute_block fuel' p env body) (fun f =>
                  match f with
                  | Continue env' => execute fuel' p env' (While condition body at_)
                  | Leave_loop env' => Done (Continue env')
                  | Leave_procedure result => Done (Leave_procedure result)
                  end))
-              (Done (Continue env)))
+              (fun _ => Done (Continue env)))
       | Break _ => Done (Leave_loop env)
       (* trace: D57 *)
       | Return None _ => Done (Leave_procedure None)
@@ -398,7 +401,7 @@ with execute_else (fuel : nat) (p : program) (env : environment) (e : else_part)
       | Else body _ => execute_block fuel' p env body
       | Else_if condition body rest _ =>
           bind (evaluate fuel' p env condition) (fun c =>
-            need_bool c (execute_block fuel' p env body) (execute_else fuel' p env rest))
+            need_bool c (fun _ => execute_block fuel' p env body) (fun _ => execute_else fuel' p env rest))
       end
   end.
 

@@ -276,8 +276,8 @@ Lemma safe_checked_whole : forall at_ r op,
   safe (has_type Whole) (checked_whole at_ r op Whole_value).
 Proof. intros at_ [] op; simpl; constructor; try discriminate; reflexivity. Qed.
 
-Lemma safe_need_bool : forall (A : Type) (P : A -> Prop) v a b,
-  type_of_value v = Bool -> safe P a -> safe P b -> safe P (need_bool v a b).
+Lemma safe_need_bool : forall (A : Type) (P : A -> Prop) v (a b : io A),
+  type_of_value v = Bool -> safe P a -> safe P b -> safe P (need_bool v (fun _ => a) (fun _ => b)).
 Proof. intros A P [| [] |] a b T Ha Hb; simpl in *; try discriminate; assumption. Qed.
 
 Lemma safe_apply_binary : forall operator a b l r operator_at t x y at_,
