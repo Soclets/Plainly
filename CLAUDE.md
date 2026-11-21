@@ -92,9 +92,10 @@ Rules for the code of PlainCompiler and PlainOracle (owner, 2026-11-20):
 2. **Full words, not abbreviations:** `expression`, not `expr`. D2's short forms are for keywords typed in Plainly;
    compiler code is read like the docs, which teach the full word. A keyword like `proc` appears in code only as the
    text Plainly reads.
-3. **Each language's own casing:** Rust's `snake_case` and `CamelCase`, C's `snake_case`.
+3. **Each language's own casing:** C++ uses the standard library's style, `snake_case` for functions and variables
+   and `CamelCase` for types; OCaml uses its own `snake_case`.
 4. **Tests are named after their decision,** like `d17_comparisons`, so a failing test points at its rule.
-5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in Rust and C alike, so a check can
+5. **Code that carries out a decision says so** with a comment, `// trace: D17`, in C++ and OCaml alike, so a check can
    list any decision nothing carries out yet.
 
 ## Building
@@ -114,15 +115,17 @@ It can come later for one small, critical piece if a bug there ever gets through
    the part you're building (rule 5), at 8:30 PM, when Tankun says so, or before anything hard to undo, which still
    needs Tankun's OK. This is a rule, not just a prompt, because a
    session's first prompt doesn't survive compaction, and this file does. (From Cyborg's rule 17.)
-3. **Style and lints.** `rustfmt`, `clippy`, and comments that say why, not what. Every crate has
-   `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` and `#![warn(clippy::pedantic)]`, and denies
-   `clippy::indexing_slicing`, `clippy::todo`, `clippy::unimplemented`, `clippy::unreachable`,
-   `clippy::undocumented_unsafe_blocks` and `clippy::dbg_macro`, so no hidden panic is left and every `unsafe` block's
-   `// SAFETY:` comment is checked. `clippy::nursery` stays off, for its false alarms. Every crate
-   also has `#![forbid(unsafe_code)]`, except the runtime and the `plainly` crate's glue (D108), where each
-   `unsafe` block has a comment saying why it's safe. A bad program never crashes PlainCompiler: if PlainCompiler
-   itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle's OCaml builds with every
-   warning as an error, and its Rocq core has no unproven `Admitted` (D129). (From Cyborg's rules 6 and 7.)
+3. **Style and checks.** C++23, compiled with Clang, with `-Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror`;
+   `clang-format`; and `clang-tidy`'s `bugprone-*`, `cppcoreguidelines-*`, `performance-*` and `modernize-*` checks, as
+   errors. Comments say why, not what. Every test runs under AddressSanitizer and UndefinedBehaviorSanitizer, and
+   libc++'s hardened mode is on in every build, so `list[5]` past the end stops rather than reading garbage. Memory is
+   always owned by something, through RAII: no raw `new`, `delete` or `malloc`, and no owning raw pointers. No
+   exceptions, matching LLVM's own build: failures are `std::expected`, and its value is never taken without checking.
+   No C-style casts, and `reinterpret_cast` or `const_cast` only in LLVM glue, each with a comment saying why it's safe.
+   A bad program never crashes PlainCompiler: nothing a program can reach ends in `abort` or `llvm_unreachable`, and if
+   PlainCompiler itself goes wrong, it's an internal error saying how to report it (D82, D103). PlainOracle's OCaml
+   builds with every warning as an error, and its Rocq core has no `Admitted` (D129). (From Cyborg's rules 6 and 7,
+   carried over to C++ by D131.)
 4. **Fix what needs no question.** A bug, or a gap against a rule, gets fixed straight away, without asking, and is
    mentioned in the next report. Only a fix that needs a design choice, or would change what a test expects, goes to
    the design session first. (From Cyborg's rule 18.)
@@ -136,17 +139,18 @@ It can come later for one small, critical piece if a bug there ever gets through
    only for what's urgent, like a decision that changes what a session is building right now, for what needs explaining,
    or to wake an idle session. (From Cyborg's rule 16, with Tankun's change for redesigns.)
 6. **Cores.** On Tankun's 10-core Mac: the design session 1, the compiler session 3, and the oracle session 3 once it
-   exists. That covers builds and tests, as in `cargo build -j 3`, `CARGO_BUILD_JOBS=3` and
-   `cargo test -- --test-threads=3`. (From Cyborg's rule 9.)
+   exists. That covers builds and tests, as in `cmake --build . -j 3` and
+   `ctest -j 3`. (From Cyborg's rule 9.)
 7. **Scratchpad.** Scratch space is for what can be lost. Anything needed later goes in the repository and gets
    committed. This holds for every session, the design session included. (From Cyborg's rule 14.)
 8. **Downloads are free.** A dependency or tool is chosen on maturity, safety, maintenance and speed. A less mature or
    less safe option never wins because the better one needs installing. If an install needs Tankun's approval, ask for
    it. (From Cyborg's rule 15.)
-9. **Language.** PlainCompiler, the runtime and every tool are written in Rust, tools in a `tools/` crate: the
-   test runner, the trace check, and anything else committed. The exceptions: PlainOracle, which is OCaml and Rocq
-   (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
-   one-line commands in config; and scratch work that's never committed. (From Cyborg's rule 1.)
+9. **Language.** PlainCompiler, its runtime and every tool are C++, built with CMake, LLVM's own build system, against
+   one pinned LLVM version, upgraded once a year (D131). The exceptions: PlainOracle and `check/`, which are OCaml and
+   Rocq (D129); each test's `check.py`, which is Python on purpose, as a second language's opinion of the answer (D12);
+   the VS Code extension, which is TypeScript; and scratch work that's never committed. (From Cyborg's rule 1, carried
+   over to C++ by D131.)
 10. **No design in code.** Code follows `standard/`. Nothing undecided is guessed: anything the standard leaves open,
     or marks **Not decided**, stops with `NotDesignedYet` (D56), and the question goes to Tankun through the design
     session. Something decided but not built yet stops with `NotBuiltYet`, never `NotDesignedYet`. (From Cyborg's
