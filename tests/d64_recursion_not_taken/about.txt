@@ -1,1 +1,1 @@
-A procedure that calls itself, called both where its recursive way isn't taken and where it is: only the way taken is ever worked out. D4, D9, D57, D64, D128; standard ch. 4 and 5.
+A procedure that calls itself, called both where its recursive way isn't taken and where it is: only the way taken is ever worked out. D4, D9, D57, D64, D128, D165; standard ch. 4 and 5.

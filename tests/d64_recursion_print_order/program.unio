@@ -1,4 +1,4 @@
-proc count($n: Whole):
+proc count[$n: Whole]:
     if $n > 0:
         show_msg.fmt("down {$n}");
         count($n - 1);

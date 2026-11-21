@@ -1,1 +1,1 @@
-`and` and `or` stop early, so their right side is never worked out at all: here it would call itself forever. D34, D57, D64; standard ch. 5.
+`and` and `or` stop early, so their right side is never worked out at all: here it would call itself forever. D34, D57, D64, D165; standard ch. 5.

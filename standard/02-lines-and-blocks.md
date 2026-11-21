@@ -55,7 +55,7 @@ Spacing is fixed, and anything else is refused with the corrected line as the fi
 | a narrowing's `.` | none | `show_msg.same_line` |
 | a negating `-` | none after it | `-speed` |
 | after `,` and `:` | one space | `add(1, 2)` |
-| inside `( )` and `[ ]`, and before a call's `(` | none | `roll()`, `[1, 2]` |
+| inside `( )` and `[ ]`, and before a call's `(` or the `[` after a name or a type | none | `roll()`, `[1, 2]`, `add[$a: Whole]`, `List<Text>[max: 10]` |
 | anywhere but indentation | never two spaces in a row | |
 | at the end of a line, and on a blank line | no spaces | |
 
@@ -75,7 +75,7 @@ them all (D100).
 
 ```
 /// Gives the larger of two whole numbers.
-proc larger($a: Whole, $b: Whole) returns Whole:
+proc larger[$a: Whole, $b: Whole] returns Whole:
     // the tie goes to $b
     ...
 end proc larger

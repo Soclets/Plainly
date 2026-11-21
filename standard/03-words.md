@@ -56,15 +56,19 @@ a letter: `$player2`, `$hp_max_2`, `roll_dice`. No capitals, and `_` never at th
 
 ## Brackets
 
-Each kind of bracket has one job (D3):
+Each kind of bracket has one meaning (D3, D165):
 
-| Bracket | Job | Example |
+| Bracket | Means | Examples |
 |---|---|---|
-| `( )` | a procedure's parameters and a call's arguments; grouping in maths | `add(1, 2)` |
-| `[ ]` | lists | `[1, 2, 3]` |
-| `< >` | filling in a type | `List<Whole>` |
+| `( )` | calls a procedure; and, as school maths writes it, groups in maths | `add(1, 2)`, `($a + $b) * 2` |
+| `[ ]` | values, listed or described: a list, reaching an item, a type's settings, a procedure's parameters, building a record | `[1, 2, 3]`, `$bag[pos: 1]`, `List<Text>[max: 10]`, `proc add[$a: Whole, $b: Whole]` |
+| `< >` | a type, filled in | `List<Whole>` |
 
-**Not decided:** lists themselves, types themselves, maths.
+`( )` marks where a procedure is called, code with a name and a body; built-in operations, like `+`, reaching an item
+and reading `.len`, don't take it, though they're done at runtime too. Grouping in maths is the one exception, kept
+because it's how school maths writes it (D165).
+
+**Not decided:** types themselves, maths.
 
 ## Symbols
 

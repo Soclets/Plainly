@@ -133,7 +133,7 @@ block, and code that should run afterwards goes in the ways that don't leave (D9
 Each is refused at compile time (D9).
 
 ```
-proc larger($a: Whole, $b: Whole) returns Whole:
+proc larger[$a: Whole, $b: Whole] returns Whole:
     if $a > $b:
         return $a;
     else:

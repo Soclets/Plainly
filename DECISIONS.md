@@ -113,6 +113,8 @@ anything: `range(from: 1, to: 5)`, say, now looks like the call it is.
 real reason. So, maybe switch to `()`? `proc add()` and `add()` don't look the same". Asked "`( )` for parameters and
 calls?", the owner chose: "yea".
 
+(Changed by D165: a procedure's parameters go in `[ ]`, and `[ ]` also holds a type's settings and building a record.)
+
 ## D4. A definition that takes nothing has no brackets, and every call writes `()`
 
 2026-11-20.
@@ -2758,6 +2760,8 @@ Changed by D89: "but this call gives 1 value".
 
 **Tankun's words.** Asked "Do any of those read wrong?", the owner chose: "no".
 
+(Changed by D165: the message for brackets on a definition with no parameters is about `[ ]`, not `( )`.)
+
 ## D89. The fourth batch of refusals, and "but" where a sentence sets what's expected against what was found
 
 2026-11-20.
@@ -5036,3 +5040,50 @@ where ease belongs.
 **Tankun's words.** "Wait, I swear, I thought our GH description changed", "Isn't static Python ol?", "How about "Full
 concepts, plain words & ease where possible"?", "Follow README on last msg?", "Remove full concepts from desc?", then,
 asked "Should the description stay "Full concepts, plain words & ease where there should be"?", the owner chose: "yea".
+
+## D165. `( )` calls, `[ ]` holds or describes values, parameters included; grouping is `( )`'s one exception
+
+2026-11-21.
+
+**Chosen.** Each bracket has one meaning, following Cyborg's (its D23 and D460), except for grouping:
+
+| Bracket | Means | Examples |
+|---|---|---|
+| `( )` | calls a procedure; and, as school maths writes it, groups in maths | `add(1, 2)`, `($a + $b) * 2` |
+| `[ ]` | values, listed or described: a list, reaching an item, a type's settings, a procedure's parameters, building a record | `[1, 2, 3]`, `$bag[pos: 1]`, `List<Text>[max: 10]`, `proc add[$a: Whole, $b: Whole]`, `Reading[celsius = 21]` |
+| `< >` | a type, filled in | `List<Whole>` |
+
+```
+proc add[$a: Whole, $b: Whole] returns Whole:
+    return $a + $b;
+end proc add
+
+let $sum: Whole = add(1, 2);
+```
+
+`( )` marks where a procedure is called, code with a name and a body. Built-in operations, like `+`, reaching an item
+and reading `.len`, don't take it, though they're done at runtime too. Grouping in maths is the one exception, kept
+because it's how school maths writes it. A list's limits, records and how a record is built aren't decided here; this
+says only where they go. This replaces D3's `( )` for parameters, and D4's "a definition writes `( )`" now reads `[ ]`.
+
+**Weighed.**
+- D3 as it stood: `( )` for parameters, matching Python, and `[ ]` for lists alone. A type's settings had nowhere
+  clean to go: in `< >` they'd put a value among types (`List<Text, max: 10>`), and in `( )` they'd read as calling
+  `List` (`List<Text>(max: 10)`). D3's reason, matching Python, gave way with D164, and Tankun's worry then, a kid
+  asking why the brackets differ with no real reason, now has one.
+- Following Cyborg entirely, grouping in `{ }` too. Purer, but a new symbol for what every child learns at school as
+  `(2 + 3) × 4`.
+- Keeping parameters in `( )` and moving only a type's settings, as the design claude first suggested. A second
+  exception in `( )` with no school-maths reason behind it.
+
+**Why this won.** One sentence each tells a learner what a bracket means: `( )` makes a procedure run, `[ ]` lists or
+describes values, `< >` says what type. A definition and its call look different at a glance, `[ ]` after a value
+reaches an item while after a type or a name it describes, as in Cyborg, and Unio's `$` keeps the two apart. It also
+means one less difference between Tankun's languages. The cost is learners going on to languages that define with
+`( )`, and a sweep of the standard, the tests and both implementations.
+
+**Tankun's words.** "It's not generic, though", "Ask Cyborg Design Claude about its brackets rules. Now, what are our
+brackets rule", "So... How about we follow Cyborg, except grouping. So, change the rule?", "Why not param too?", "How
+does `()` in grouping not an exception?", "So, what do the brackets mean with tha", "Wait, does idx count as call or
+?", "Wait, wait. So, that doesn't run at runtime?", then, asked "Should Unio's brackets work that way: `( )` for calls,
+plus grouping, `[ ]` for values, parameters included, and `< >` for types?", the owner chose: "yea".

@@ -1,4 +1,4 @@
-proc is_even($n: Whole) returns Bool:
+proc is_even[$n: Whole] returns Bool:
     if $n == 0:
         return true;
     else:
@@ -6,7 +6,7 @@ proc is_even($n: Whole) returns Bool:
     end if
 end proc is_even
 
-proc is_odd($n: Whole) returns Bool:
+proc is_odd[$n: Whole] returns Bool:
     if $n == 0:
         return false;
     else:
@@ -14,7 +14,7 @@ proc is_odd($n: Whole) returns Bool:
     end if
 end proc is_odd
 
-proc show_even($n: Whole):
+proc show_even[$n: Whole]:
     if is_even($n):
         show_msg.fmt("{$n} is even");
     else:

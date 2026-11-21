@@ -16,8 +16,8 @@ A procedure that can fail lists its failures at the end of its header, after `fa
 `returns`, it's joined with `or`; with no `returns`, `fails` stands alone (D38, D39):
 
 ```
-proc load_level($name: Text) returns Level or fails not_found, broken:
-proc save_game($state: Text) fails disk_full:
+proc load_level[$name: Text] returns Level or fails not_found, broken:
+proc save_game[$state: Text] fails disk_full:
 ```
 
 A failure's name is a plain word, like `not_found` (D39).

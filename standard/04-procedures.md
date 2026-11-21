@@ -3,7 +3,7 @@
 ## Definitions
 
 ```
-proc name(parameters) returns Type:
+proc name[parameters] returns Type:
     body
 end proc name
 ```
@@ -11,7 +11,8 @@ end proc name
 where `name` is the procedure's name, `parameters` its parameters separated by commas, `Type` the type it gives back,
 and `body` its statements. `proc`, `returns`, the brackets, the `:` and `end proc` are written as they are (D3, D8).
 
-A definition writes `( )` only when it has parameters. One that takes nothing has no brackets (D4):
+A definition writes its parameters in `[ ]` (D165), and only when it has some. One that takes nothing has no brackets
+(D4):
 
 ```
 proc roll_dice returns Whole:
@@ -26,7 +27,7 @@ A procedure that gives back a value says so at the end of its header, with `retu
 A procedure that gives nothing back writes no `returns` (D38):
 
 ```
-proc greet($name: Text):
+proc greet[$name: Text]:
 ```
 
 Using what such a procedure gives as a value is refused (D38).
@@ -43,13 +44,13 @@ Using what such a procedure gives as a value is refused (D38).
 ### Parameters
 
 Each parameter is written as its name, with its `$`, then `:` and its type, as a declaration is, even when several share
-a type (D125, D126). Writing a shared type once in front, as in `proc add(Whole a, b)`, is refused (D126): A plain
+a type (D125, D126). Writing a shared type once in front, as in `proc add[Whole a, b]`, is refused (D126): A plain
 parameter is read-only, like a `let` (D147).
 
 ```
-proc add($a: Whole, $b: Whole) returns Whole:
-proc draw($x: Whole, $name: Text):
-proc double($n: Whole) returns Whole:
+proc add[$a: Whole, $b: Whole] returns Whole:
+proc draw[$x: Whole, $name: Text]:
+proc double[$n: Whole] returns Whole:
 ```
 
 Failures in a header: chapter 8.
@@ -85,11 +86,11 @@ where `kind` is what the family holds (`proc` for a procedure and its narrowings
 
 ```
 fam.proc show_msg:
-    proc show_msg($text: Text):
+    proc show_msg[$text: Text]:
         ...
     end proc show_msg
 
-    proc show_msg.same_line($text: Text):
+    proc show_msg.same_line[$text: Text]:
         ...
     end proc show_msg.same_line
 end fam.proc show_msg
@@ -141,7 +142,7 @@ where each `parameter` is one of the procedure's parameters and `label` the word
 the commas and the `;` are written as they are.
 
 ```
-proc random($low: Whole, $high: Whole) returns Whole:
+proc random[$low: Whole, $high: Whole] returns Whole:
     labels $low as from, $high as to;
     ...
 end proc random
